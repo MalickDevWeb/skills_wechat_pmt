@@ -1,66 +1,86 @@
 <div align="center">
-  <h1>🚀 Skills WeChat PMT</h1>
-  <p><strong>The Ultimate AI-Driven Frontend Architecture for WeChat Mini Programs</strong></p>
+  <img src="https://img.shields.io/badge/Architecture-Modular-blue?style=for-the-badge" alt="Modular" />
+  <img src="https://img.shields.io/badge/AI_Ready-.cursorrules-success?style=for-the-badge" alt="AI Ready" />
+  <img src="https://img.shields.io/badge/WeChat-MiniProgram-07C160?style=for-the-badge&logo=wechat" alt="WeChat" />
   
-  <img src="https://img.shields.io/badge/Architecture-Modular-blue?style=flat-square" alt="Modular" />
-  <img src="https://img.shields.io/badge/AI_Ready-.cursorrules-success?style=flat-square" alt="AI Ready" />
-  <img src="https://img.shields.io/badge/WeChat-MiniProgram-07C160?style=flat-square&logo=wechat" alt="WeChat" />
-  <img src="https://img.shields.io/badge/Status-Enterprise_Grade-orange?style=flat-square" alt="Enterprise" />
+  <h1>🚀 SKILLS WECHAT PMT</h1>
+  <p><strong>L'Architecture Frontend Ultime : Pilotable par IA & Zéro Conflit</strong></p>
 </div>
 
 <br />
 
-Ce dépôt définit le standard d'architecture ultime pour le développement d'applications Frontend (spécialisé WeChat Mini Program). Conçu pour le travail en équipe et l'automatisation par l'Intelligence Artificielle, il garantit un code propre, sans conflit et ultra-performant.
-
-## ✨ Pourquoi ce Kit ?
-
-Développer des interfaces complexes avec plusieurs développeurs (ou avec des IAs génératives) finit souvent en "code spaghetti". Ce kit résout ce problème en imposant **4 piliers fondamentaux** :
-
-1. 🤖 **Pilotage de l'IA (AI Handcuffing)** : Un fichier `.cursorrules` unique qui force n'importe quelle IA (Cursor, Copilot, Gemini) à respecter notre architecture au lieu de générer du code générique.
-2. 🛡️ **Couche Anti-Corruption (API)** : Isolation totale du réseau. Le backend peut changer, l'UI ne cassera jamais grâce au mapping `json-sculpt`.
-3. 🎭 **Développement Mock-First** : Création d'interfaces pixel-perfect déconnectées du réseau grâce aux "State Machines".
-4. ⚡ **Performance Native** : Utilisation stricte de `WXS` (WeChat Scripts) pour soulager le thread logique (JS) et animations CSS fluides (Cubic-Bezier).
+> **Ce kit n'est pas un simple template.** C'est un **cerveau architectural** conçu pour les équipes ambitieuses. Il combine une isolation stricte des API, des modèles UI haute-performance, et un fichier magique (`.cursorrules`) qui force les Intelligences Artificielles (Copilot, Cursor) à coder avec la rigueur d'un Tech Lead Senior.
 
 ---
 
-## 📁 Contenu du Kit
+## 🌊 Le Workflow "Mock-First" (Comment on code ici)
 
-```text
-📦 skills_wechat_pmt
- ┣ 📜 .cursorrules                     # Le Cerveau de l'IA (Règles API & UI combinées)
- ┣ 📜 DOC_API_POUR_DEVELOPPEURS.md     # Cheat Sheet Humain : Intégration API de A à Z
- ┣ 📜 DOC_UI_POUR_DEVELOPPEURS.md      # Cheat Sheet Humain : Création de Pages/Composants
- ┣ 📜 DOC_FLUX_COMPLEXES_ANIMATIONS.md # Modèles : Wizards, Bottom Sheets, Skeletons
- ┗ 📜 README.md
+Voici le flux de travail visuel imposé par cette architecture. On ne connecte jamais l'API avant d'avoir validé le design.
+
+```mermaid
+graph TD
+    %% Couleurs et Styles
+    classDef ai fill:#2ea44f,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef ui fill:#0366d6,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef api fill:#d73a49,stroke:#fff,stroke-width:2px,color:#fff;
+
+    A["🎨 1. Prompt: @UI-MOCK"]:::ai -->|"Génère 4 fichiers isolés"| B("📱 Construction de l'UI<br>(Fausses Données)"):::ui
+    B --> C{"Validation<br>Design"}
+    
+    C -->|"Design Approuvé"| D["🔌 2. Prompt: @API-CONNECT"]:::ai
+    C -->|"À retravailler"| B
+    
+    D -->|"Création du Mappeur"| E["⚙️ json-sculpt<br>(Filtre anti-corruption)"]:::api
+    E <-->|"Requête Sécurisée"| F[("🌐 Serveur Backend")]
+    
+    E -->|"Donnée Propre"| G["✅ Feature en Production"]:::ui
 ```
 
 ---
 
-## 🚀 Comment l'installer sur un projet ?
+## 🏛️ L'Architecture Globale (Data Flow)
 
-### 1. Configuration de l'Intelligence Artificielle (Cursor / Copilot)
-Prenez le fichier **`.cursorrules`** et glissez-le à la racine de votre projet d'application. 
-À partir de cet instant, l'IA est configurée comme un "Tech Lead Senior". 
+Comment les données circulent-elles sans créer de "Code Spaghetti" ?
 
-Utilisez ces **Mots-Clés Magiques** dans vos prompts pour la piloter :
-- 🎨 `@UI-MOCK` : Force l'IA à prototyper un design avec de fausses données (Mock-first).
-- 🔌 `@API-CONNECT` : Force l'IA à implémenter l'architecture réseau (`json-sculpt`, `EventBus`) sur une page existante.
-- ⚡ `@FULL-FEATURE` : Force l'IA à créer le design ET le connecter à l'API en une seule étape.
-
-### 2. Configuration pour l'Équipe (Humains)
-Glissez les fichiers `DOC_*.md` dans le dossier `/docs` de votre projet.
-Ce sont des "Textes à Trous" (Cheat Sheets) ultra-pédagogiques. N'importe quel développeur junior peut copier-coller ces modèles pour créer des flux complexes (Tiroirs, Animations de chargement, Appels API) sans risquer de créer des conflits Git avec ses collègues.
+```mermaid
+sequenceDiagram
+    autonumber
+    participant UI as 📱 Composant UI
+    participant Event as 🚌 EventBus (Global)
+    participant Net as 🌐 BackendAPI
+    
+    Note over UI,Net: 1. Mode Connecté (@API-CONNECT)
+    UI->>Net: await userAPI.getProfile()
+    Net-->>UI: sculpt.data (Donnée nettoyée)
+    
+    Note over UI,Event: 2. Mode Partagé (Singletons)
+    UI->>Event: Bus.setState('user', data)
+    Event-->>UI: Toutes les NavBars se mettent à jour
+```
 
 ---
 
-## 🛑 Les 5 Lois Immuables de l'Architecture
-- **Loi de l'Isolation** : Un composant UI reste dans son dossier. On n'impacte jamais le global sans l'`EventBus`.
-- **Loi de la Vue** : Pas de `formatDate()` en Javascript. On utilise `WXS` pour les calculs de vue.
-- **Loi du Réseau** : On n'utilise jamais `wx.request` directement. Tout passe par le `HttpClient` sécurisé.
-- **Loi des Mocks** : Toute UI doit pouvoir s'afficher avec une variable locale avant d'interroger le serveur.
-- **Loi du i18n** : 0 texte en dur dans le code HTML.
+## 🔑 Piloter l'IA (Les Mots de Pouvoir)
+
+Glissez le fichier `.cursorrules` à la racine de votre projet. Ensuite, utilisez ces commandes dans votre chat IA :
+
+| Commande Magique | Action de l'Intelligence Artificielle | Résultat |
+| :--- | :--- | :--- |
+| <kbd>@UI-MOCK</kbd> | Ignore le réseau. Construit une interface pixel-perfect avec WXS et des fausses données. | 🎨 Prototype visuel immédiat |
+| <kbd>@API-CONNECT</kbd> | Se connecte au Backend. Construit le Mappeur `json-sculpt` et gère le Token OAuth2. | 🔌 Intégration Robuste |
+| <kbd>@FULL-FEATURE</kbd> | Saute l'étape Mock. Construit la vue ET le réseau en simultané. | 🚀 Déploiement Rapide |
+
+---
+
+## 📦 Bibliothèque Humaine (Guides de Survie)
+
+L'IA a son `.cursorrules`, mais vos développeurs humains ont aussi leurs guides :
+
+- 📖 **`DOC_API_POUR_DEVELOPPEURS.md`** : L'antisèche ultime pour intégrer n'importe quel endpoint (GET, POST, PUT) les yeux fermés.
+- 🎨 **`DOC_UI_POUR_DEVELOPPEURS.md`** : Comment créer des composants isolés, gérer les `lifetimes` WeChat, et formater via WXS.
+- 🎬 **`DOC_FLUX_COMPLEXES_ANIMATIONS.md`** : Code copiable pour des parcours stressants (Wizards, Skeletons, Bottom Sheets).
 
 ---
 <div align="center">
-  <i>Développé et architecturé avec exigence pour des applications scalables.</i>
+  <i>Propulsé par des standards d'ingénierie modernes. Écrit pour scale.</i>
 </div>
