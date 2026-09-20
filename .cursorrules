@@ -1,165 +1,158 @@
-# 🤖 SYSTEM PROMPT: FRONTEND ARCHITECTURE RULES
+# 🤖 FRONTEND ARCHITECTURE RULES — WECHAT MINI PROGRAM
+# Ce fichier est lu automatiquement par l'IA (Cursor, Copilot, Windsurf).
+# Il impose les règles d'architecture pour ce projet.
 
-You are an expert Frontend Developer and Architect working on a WeChat Mini Program. 
-You MUST strictly follow the rules in this document for every code change, UI creation, or API integration you perform. If you deviate from these rules, the project will fail.
-
-## 🎯 MAGIC TRIGGER KEYWORDS
-If the user's prompt includes any of these keywords, activate the specific behavior:
-- **`@UI-MOCK`**: Strictly follow the UI rules. DO NOT connect to the backend. Use Mock data.
-- **`@API-CONNECT`**: Strictly apply the API rules to connect an existing UI component to the backend.
-- **`@FULL-FEATURE`**: Build the view AND connect it directly to the backend API simultaneously (Skip the "Mock-First" rule).
-
-This skill dictates how to build User Interfaces (Pages and Components) in this project.
-
-## 🎯 TRIGGER KEYWORDS (HOW TO ACTIVATE THIS SKILL)
-- **`@UI-MOCK`**: Strictly follow all rules below, especially the Mock-First rule. DO NOT connect to the backend.
-- **`@FULL-FEATURE`**: Apply all UI rules (WXS formatting, Safe Areas, i18n, triggerEvents), BUT **SKIP** the Mock-First rule (Section 1). You must connect the UI directly to the `BackendAPI` instead of using mocks.
-
-## STANDARD OPERATING PROCEDURE (SOP): BUILDING A NEW UI
-
-When the user asks you to build a UI component or page, follow this EXACT sequence:
-
-### Phase 1: Mock-First Implementation
-1. **Scaffold the 4 Files:** Create `.js`, `.wxml`, `.wxss`, and `.json`.
-2. **Inject Mock Data:** Populate the `data: {}` object with realistic Mock Data that mirrors the expected backend schema. Do NOT connect to `BackendAPI` initially.
-3. **i18n Setup:** Identify all user-facing text and use translation keys (e.g., `{{ i18n.t('key') }}`). NEVER hardcode text.
-
-### Phase 2: Building the View
-1. **WXML Layout:** Use semantic WeChat tags. Handle empty/loading states.
-2. **WXS Formatting:** Format dates/prices using `.wxs` filters directly in the `.wxml`.
-3. **Styling:** Use scoped CSS (BEM). Handle safe areas.
+You are an expert Frontend Developer working on a WeChat Mini Program.
+You MUST follow ALL rules in this document for every code change.
 
 ---
 
-## 1. MOCK DATA ISOLATION (CRITICAL)
+## 🎯 MAGIC KEYWORDS — Lis le prompt, active le bon mode
 
-Your first iteration MUST be disconnected from the network.
+| Mot-Clé dans le prompt | Comportement imposé |
+|---|---|
+| `@UI-MOCK` | Crée l'UI avec de fausses données. N'appelle AUCUNE API. |
+| `@API-CONNECT` | Connecte une page existante au backend (Mapper + Méthode API). |
+| `@FULL-FEATURE` | Crée l'UI ET l'API en même temps. Pas de données Mock. |
+
+---
+
+## RÈGLE 0 — Isolation (Anti-Conflit Git)
+
+- Travaille UNIQUEMENT dans le dossier du module demandé.
+- Ne touche JAMAIS aux fichiers globaux (`app.js`, `utils/`, `components/`) sans que l'utilisateur le demande explicitement.
+- Chaque page/composant vit dans son propre dossier de 4 fichiers (`.js`, `.wxml`, `.wxss`, `.json`).
+
+---
+
+## RÈGLE 1 — Créer une Interface (UI)
+
+### Structure obligatoire
+
+```
+pages/ma-page/
+  ├── index.js      ← Logique + State Machine
+  ├── index.wxml    ← Vue + WXS Import
+  ├── index.wxss    ← Styles scoped (BEM)
+  └── index.json    ← Config
+
+components/mon-composant/   ← Composants globaux partagés
+  └── (mêmes 4 fichiers)
+```
+
+### State Machine (TOUJOURS)
+
+Toute page doit exposer une variable `uiState` pour piloter l'affichage.
+
 ```javascript
 Page({
   data: {
-    isLoading: false,
-    mockProfile: { firstName: "John", balance: 15000 } // Mirror json-sculpt schema
+    uiState: 'content', // 'loading' | 'content' | 'empty' | 'error'
+    mockData: { name: "Mock User", price: 15000 }
   }
 });
 ```
 
-## 2. GLOBAL LAYOUTS & COMPONENT SCOPING
+```xml
+<view wx:if="{{uiState === 'loading'}}" class="skeleton animate-pulse" />
+<view wx:elif="{{uiState === 'content'}}" class="container animate-fade-in">
+  <text>{{ mockData.name }}</text>
+</view>
+<view wx:elif="{{uiState === 'empty'}}"><text>Aucun résultat</text></view>
+<view wx:elif="{{uiState === 'error'}}"><text>Erreur. Réessaie.</text></view>
+```
 
-You MUST respect directory isolation to prevent code spaghetti:
-- **Shared/Global Components:** Items shared across the app (e.g., NavBar, TabBar, custom Modals) MUST be placed in `components/layout/` or `components/ui/`. They should use `Bus.onState` to react to global changes (like User Avatar or Cart Count) independently.
-- **Page-Specific Components:** Sub-components that only exist on one page MUST be locked inside that page's folder (e.g., `pages/home/components/promo-banner/`).
+### Formatage WXS (OBLIGATOIRE, jamais dans le JS)
 
-## 3. COMPONENT COMMUNICATION (`triggerEvent`)
+```xml
+<wxs src="../../utils/wxs/filters.wxs" module="f" />
+<text>{{ f.formatPrice(mockData.price) }}</text>
+```
 
-- **Rule:** Reusable UI components (in `components/`) MUST communicate with parents using native events: `this.triggerEvent('myevent', detailData)`.
-- **Anti-Pattern:** Do NOT use the global `EventBus` (`Bus.emit`) for simple parent-child communication. The EventBus is strictly reserved for app-wide global state.
+> WXS = ES5 UNIQUEMENT. Pas de `const`, pas de `=>`, pas de destructuring.
 
-## 4. LIFECYCLE STRICTNESS (Page vs Component)
+### Page vs Composant (NE PAS CONFONDRE)
 
-WeChat has strict separation between Pages and Components. Do not mix them up:
-- **Pages:** Use `onLoad`, `onShow`, `onReady`, `onHide`, `onUnload`.
-- **Components:** MUST use the `lifetimes` object: `lifetimes: { attached() {}, detached() {} }`. NEVER use `onLoad` inside a Component.
+- **Page** : utilise `onLoad()`, `onShow()`, `onUnload()`
+- **Composant** : utilise `lifetimes: { attached() {}, detached() {} }`
+- **Composant → Page** : `this.triggerEvent('action', data)` (PAS Bus.emit)
+- **Données globales** : `Bus.setState('cle', data)` / `Bus.onState('cle', cb)`
 
-## 5. VIEW-LAYER FORMATTING (WXS) & ES5 LIMITATION
+### Composants Globaux vs Locaux
 
-- **Rule:** You MUST use WeChat Scripts (`.wxs`) for data formatting in `.wxml`.
-- **CRITICAL WXS LIMITATION:** WXS is NOT modern JavaScript. You MUST write WXS in strict **ES5 syntax**. Do NOT use arrow functions (`=>`), `let/const`, destructuring, or Promises inside `.wxs` files. Use `var` and standard `function()`.
+- `components/layout/` = Composants partagés (NavBar, Modal). Utilisent `Bus.onState`.
+- `pages/ma-page/components/` = Composants locaux à la page uniquement.
 
-## 6. PERFORMANCE (`setData`) & SAFE AREAS
+### Animations CSS (Copier-Coller)
 
-- **`setData` Performance:** ONLY place variables in `data: {}` if they are actually rendered in the `.wxml`. If a variable is pure JS logic (e.g., a timer ID), store it directly on the instance (`this.timerId = ...`), NOT in `this.setData()`.
-- **Safe Areas:** When building fixed layouts (navbars, bottom sheets), you MUST handle mobile safe areas in `.wxss` (e.g., `padding-bottom: env(safe-area-inset-bottom);`).
+```css
+.animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-## 7. UI FEEDBACK & EMPTY STATES
+.animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
 
-- **Loading States:** Always wrap interactive elements in loading states based on `this.data.isLoading`.
-- **Empty States:** If an array is empty, the UI MUST handle it gracefully (e.g., `<view wx:if="{{list.length === 0}}">No items</view>`).
----
-name: frontend-api-architecture
-description: Guide d'architecture Frontend et de consommation API (orienté WeChat/Modulaire). À utiliser pour intégrer des API, créer des pages, tout en respectant l'isolation du code pour éviter les conflits en équipe.
----
+/* TOUJOURS sur les barres fixes en bas */
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+```
 
-# Frontend API & Architecture Guidelines (Modular / Anti-Conflict)
+### Performance setData
 
-This skill provides the strict rules for consuming APIs and writing frontend code in this repository.
-
-## 🎯 TRIGGER KEYWORDS (HOW TO ACTIVATE THIS SKILL)
-If the user's prompt includes any of these keywords, you MUST activate specific behaviors:
-- **`@API-CONNECT`**: Strictly apply this entire skill to connect an existing UI component to the backend.
-- **`@FULL-FEATURE`**: Combine this skill with the UI skill. Build the view AND connect it directly to the backend API simultaneously (Skip the "Mock-First" rule from the UI skill).
-
-## 0. CRITICAL: MODULARITY & ANTI-CONFLICT RULES
-You are working in a collaborative environment. Modifying shared files unnecessarily will cause merge conflicts.
-- **Stay in Your Lane:** ONLY modify the files inside the specific module, page, or component folder you were asked to work on.
-- **No Unsolicited Refactoring:** DO NOT reformat, refactor, or "clean up" shared files (e.g., `app.js`, shared `utils/`, shared `components/`) unless the user explicitly requests it.
-- **Scoping:** When creating a new page or component, encapsulate its logic, styles, and templates strictly within its own directory.
-
----
-
-## STANDARD OPERATING PROCEDURE (SOP): CONSUMING A NEW API
-
-When asked to consume a new API endpoint, follow this exact sequence:
-
-### Phase 1: Information Gathering
-If the user hasn't provided them, you MUST ask for:
-1. **Method & Path:** (e.g., `POST /api/v2/orders`).
-2. **Expected Response JSON:** A sample of the backend response is REQUIRED to build the `json-sculpt` mapping schema.
-3. **Payload/Query parameters:** Expected input.
-4. **Auth context:** Does it require the OAuth2 token or is it public?
-
-### Phase 2: Execution Steps (Module by Module)
-Execute the integration in this EXACT order:
-1. **Routing:** Add the endpoint path to `ENDPOINTS` in `utils/apis/index.js`.
-2. **Schema Definition:** Create a schema in `utils/mappers/index.js` using `json-sculpt` to extract ONLY what the UI needs from the raw JSON.
-3. **Service Method:** Create the method in `BackendAPI` (`utils/apis/index.js`). It must call `await authenticate()`, make the HTTP call via `this.#client`, check `!res.success`, and return `sculpt.data()`.
-4. **UI Integration:** Implement the call strictly within the requested Page/Component folder.
+- Met dans `this.data` UNIQUEMENT les variables rendues dans le `.wxml`.
+- Variables JS pures (timers, IDs) → `this.myTimer = ...` (pas de setData).
 
 ---
 
-## 1. FRONTEND & UI STANDARDS
+## RÈGLE 2 — Consommer une API
 
-When working on Pages, Components, or Views (e.g., `.wxml`, `.js`):
+### Ordre d'implémentation (ne jamais dévier)
 
-- **No Hardcoded Texts (i18n):** NEVER hardcode user-facing text (English or French) in the HTML or JS. You MUST use the internationalization system (e.g., `t('key.name')`). If a key doesn't exist, tell the user to add it to the translation files, or add it if instructed.
-- **User Feedback:** When an API call fails or succeeds, you must inform the user visually. Use standard UI patterns (e.g., `wx.showToast`, custom alerts) in the `catch` block. Do not just `console.log` errors.
-- **View-Layer Formatting (WXS):** Do not pollute JS logic with complex string or date formatting if it can be avoided. Use WXS (WeChat Scripts) filters in the view layer for rendering formats.
-- **Loading States:** Always manage loading states (e.g., `this.setData({ isLoading: true })` in `try` and `false` in `finally`) to prevent double-clicks.
+1. Ajouter l'URL dans `ENDPOINTS` du fichier `.api.js` du domaine.
+2. Créer le Schema `json-sculpt` dans `utils/mappers/`.
+3. Créer la méthode dans la classe `.api.js`.
+4. Appeler depuis la page dans un `try/catch/finally`.
 
-## 2. HTTP CLIENT & API LAYER
-
-The application wraps requests in a custom HTTP client (`HttpClient`).
-**CRITICAL RULE:** NEVER use `wx.request` directly. ALWAYS use the `BackendAPI` singleton.
+### Template Méthode API
 
 ```javascript
-// Correct BackendAPI Method implementation
-async getMyFeature(params) {
-  await authenticate(); // Handles OAuth2 token caching/refresh automatically
-  const res = await this.#client.get(ENDPOINTS.MY_NEW_FEATURE, { query: params });
-  
-  if (!res.success) {
-    // Rely on the structured error handling
-    throw new Error(res.error?.message || "Failed to fetch feature");
-  }
-  
-  return sculpt.data({ data: res.data, to: MyFeatureSchema });
+async getMyData(params) {
+  await authenticate();                                          // Token auto
+  const res = await httpClient.get(ENDPOINTS.MY_URL, { query: params });
+  if (!res.success) throw new Error(res.error?.message);        // Erreur
+  return sculpt.data({ data: res.data, to: MySchema });         // Données propres
 }
 ```
 
-## 3. ERROR HANDLING & CONSTANTS
+### Template Appel Page
 
-- **Custom Errors:** When writing business logic, throw specific custom errors from `utils/errors/index.js` (e.g., `ValidationError`, `NetworkError`) rather than generic `Error` objects.
-- **Constants:** NEVER hardcode magic strings, status codes, or storage keys in your components. Reference them from `utils/constants/index.js`. Configuration (URLs) belongs in `utils/config.js`.
+```javascript
+async loadData() {
+  this.setData({ uiState: 'loading' });
+  try {
+    const data = await myAPI.getMyData();
+    this.setData({ data, uiState: 'content' });
+  } catch (error) {
+    this.setData({ uiState: 'error' });
+    wx.showToast({ title: error.message, icon: 'none' });
+  }
+}
+```
 
-## 4. STATE MANAGEMENT (`utils/event/index.js`)
+### Règles API strictes
 
-The app uses an advanced `EventBus` (`Bus`) for global state and events.
-- **Mutate State:** `Bus.setState('key', data)`
-- **Listen to State:** `Bus.onState('key', callback)`
-- **Events:** `Bus.emit('event', data)` and `Bus.on('event', callback)`
-- **Rule:** DO NOT mutate `app.globalData` manually for state that UI components depend on.
+- JAMAIS `wx.request()` directement → Toujours `httpClient`
+- JAMAIS gérer le token manuellement → `authenticate()` le fait seul
+- JAMAIS passer le JSON brut à l'UI → Toujours `sculpt.data()`
+- JAMAIS `wx.getStorageSync()` → Utiliser `storage.get()`
+- Constantes et URLs → `utils/constants/index.js` et `utils/config.js`
+- Erreurs business → Classes custom (`ValidationError`, `NetworkError`, etc.)
 
-## 5. STORAGE (`utils/storage.js`)
+---
 
-NEVER use `wx.getStorageSync` or `wx.setStorageSync` directly (they throw on quota limits).
-- Use the provided wrapper: `storage.set('KEY', value)` and `storage.get('KEY', defaultValue)`.
+## RÈGLE 3 — i18n (Zéro Texte en Dur)
 
+JAMAIS de texte en dur dans `.wxml` ou `.js`.
+Toujours utiliser les clés de traduction : `{{ t('ma.cle') }}`
