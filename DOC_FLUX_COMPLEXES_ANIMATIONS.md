@@ -1,3 +1,7 @@
+> 🔗 **Navigation :** [Guide UI (Pages & Composants)](DOC_UI_POUR_DEVELOPPEURS.md) | [Guide API (Réseau)](DOC_API_POUR_DEVELOPPEURS.md) | [Guide Animations & Flux](DOC_FLUX_COMPLEXES_ANIMATIONS.md)
+
+---
+
 # 🚀 Le Guide Ultime : Flux Complexes & Animations (Zéro Stress)
 
 Ce document est votre bibliothèque de composants complexes. Quand le design demande un parcours sur plusieurs écrans (Réservation, Inscription) ou des animations fluides, **copiez-collez ces modèles**. 
@@ -33,20 +37,21 @@ Page({
   
   <!-- 🔒 SCÈNE 1 (Apparition Fondu) -->
   <view wx:if="{{uiState === 'etape1_choix'}}" class="scene animate-fade-in">
-    <text>Étape 1 : Faites votre choix</text>
-    <button bindtap="goEtape2">Continuer</button>
+    <!-- ⚠️ Attention : Toujours utiliser i18n, zéro texte en dur ! -->
+    <text>{{ i18n.t('wizard.etape1_titre') }}</text>
+    <button bindtap="goEtape2">{{ i18n.t('commun.continuer') }}</button>
   </view>
 
   <!-- 🔒 SCÈNE 2 (Glissement depuis la droite) -->
   <view wx:elif="{{uiState === 'etape2_formulaire'}}" class="scene animate-slide-left">
-    <text>Étape 2 : Entrez vos infos</text>
-    <button bindtap="goSucces">Payer</button>
+    <text>{{ i18n.t('wizard.etape2_titre') }}</text>
+    <button bindtap="goSucces">{{ i18n.t('commun.payer') }}</button>
   </view>
 
   <!-- 🔒 SCÈNE 3 (Victoire avec rebond) -->
   <view wx:elif="{{uiState === 'etape3_succes'}}" class="scene animate-bounce-in">
     <icon type="success" size="64" />
-    <text>C'est terminé !</text>
+    <text>{{ i18n.t('wizard.succes_titre') }}</text>
   </view>
 
 </view>
@@ -71,7 +76,7 @@ Page({
 
 ### 2. La Vue (`.wxml`)
 ```xml
-<button bindtap="openTiroir">Ouvrir les options</button>
+<button bindtap="openTiroir">{{ i18n.t('options.ouvrir') }}</button>
 
 <!-- 🔒 L'OVERLAY (Fond noir transparent) -->
 <view 
@@ -86,10 +91,10 @@ Page({
   class="bottom-sheet animate-slide-up">
   
   <!-- ✏️ Mettez votre contenu ici -->
-  <view class="bottom-sheet__header">Titre des options</view>
+  <view class="bottom-sheet__header">{{ i18n.t('options.titre') }}</view>
   <view class="bottom-sheet__content">
-    <text>Option 1</text>
-    <text>Option 2</text>
+    <text>{{ i18n.t('options.option1') }}</text>
+    <text>{{ i18n.t('options.option2') }}</text>
   </view>
 
   <!-- 🔒 Espace de sécurité pour iPhone -->
@@ -106,8 +111,8 @@ Page({
 ```javascript
 Page({
   data: {
-    // 💡 Déclencheur : Mettez à 'true' le temps que l'API réponde
-    isLoading: true 
+    // 💡 Déclencheur : Utilisez 'loading' le temps que l'API réponde
+    uiState: 'loading' 
   }
 });
 ```
@@ -115,14 +120,14 @@ Page({
 ### 2. La Vue (`.wxml`)
 ```xml
 <!-- 🔒 SI ÇA CHARGE : Affiche les blocs gris fantômes -->
-<view wx:if="{{isLoading}}" class="skeleton-container">
+<view wx:if="{{uiState === 'loading'}}" class="skeleton-container">
   <view class="skeleton-box skeleton-avatar"></view>
   <view class="skeleton-box skeleton-text"></view>
   <view class="skeleton-box skeleton-text-short"></view>
 </view>
 
 <!-- 🔒 SINON : Affiche la vraie donnée -->
-<view wx:else class="real-content animate-fade-in">
+<view wx:elif="{{uiState === 'content'}}" class="real-content animate-fade-in">
   <image src="{{user.avatar}}" />
   <text>{{user.name}}</text>
 </view>
@@ -195,4 +200,3 @@ Page({
   100% { transform: scale(1); opacity: 1; }
 }
 ```
-

@@ -1,3 +1,7 @@
+> 🔗 **Navigation :** [Guide UI (Pages & Composants)](DOC_UI_POUR_DEVELOPPEURS.md) | [Guide API (Réseau)](DOC_API_POUR_DEVELOPPEURS.md) | [Guide Animations & Flux](DOC_FLUX_COMPLEXES_ANIMATIONS.md)
+
+---
+
 # 🚀 Le Guide Ultra-Simple : Créer une Interface UI (Pages & Composants)
 
 Si vous lisez ceci, vous devez créer une nouvelle Page ou un nouveau Composant visuel. 
@@ -16,24 +20,25 @@ Il y a une différence **vitale** entre une Page complète et un petit Composant
 ```javascript
 Page({
   data: {
-    // 🔒 Gestion du chargement
-    isLoading: false,
+    // 🔒 1. La Machine à États (State Machine)
+    // Changez ce mot pour tester l'écran (loading | content | empty | error)
+    uiState: 'content',
     
-    // ✏️ 1. METTEZ VOS FAUSSES DONNÉES ICI (Mocks)
+    // ✏️ 2. METTEZ VOS FAUSSES DONNÉES ICI (Mocks)
     [MA_VARIABLE]: {
       titre: "Exemple",
       prix: 1500
     }
   },
 
-  // 🔒 2. Cycle de vie d'une PAGE
+  // 🔒 3. Cycle de vie d'une PAGE
   onLoad(options) {
     // L'écran s'ouvre, on initialise l'affichage ici.
   },
 
-  // ✏️ 3. Actions de la page
+  // ✏️ 4. Actions de la page
   [MON_ACTION_CLIC]() {
-    this.setData({ isLoading: true });
+    this.setData({ uiState: 'loading' });
     // Plus tard, on appellera l'API ici.
   }
 });
@@ -83,19 +88,21 @@ C'est ici qu'on dessine l'écran. Interdiction d'écrire du texte en dur, et int
 <!-- 🔒 1. Import obligatoire pour formater les prix et les dates (Ultra-Rapide) -->
 <wxs src="../../utils/wxs/filters.wxs" module="filters" />
 
-<view class="container">
+<!-- 🔒 2. GESTION DES ÉTATS -->
+<view wx:if="{{uiState === 'loading'}}" class="skeleton animate-pulse" />
+
+<view wx:elif="{{uiState === 'content'}}" class="container animate-fade-in">
   
-  <!-- ✏️ 2. Zéro texte en dur ! On utilise les traductions (i18n) -->
+  <!-- ✏️ 3. Zéro texte en dur ! On utilise les traductions (i18n) -->
   <text class="titre">{{ i18n.t('[MA.CLE.TRADUCTION]') }}</text>
 
-  <!-- 🔒 3. On utilise WXS pour formater les données -->
+  <!-- 🔒 4. On utilise WXS pour formater les données -->
   <text class="prix">{{ filters.formatPrice([MA_VARIABLE].prix) }}</text>
 
-  <!-- 🔒 4. GESTION DU VIDE (Empty State) -->
-  <view wx:if="{{ ![MA_VARIABLE] }}">
-    <text>{{ i18n.t('commun.vide') }}</text>
-  </view>
+</view>
 
+<view wx:elif="{{uiState === 'empty'}}">
+  <text>{{ i18n.t('commun.vide') }}</text>
 </view>
 ```
 
@@ -125,5 +132,4 @@ Dans WeChat, l'écran des téléphones a souvent une "encoche" en haut, ou une b
 ## 💡 Résumé des 3 questions à se poser (Anti-Bug) :
 1. **Ai-je mis du texte en dur dans le HTML ?** (Si oui, remplacez-le par `i18n.t()`).
 2. **Ai-je bien utilisé `lifetimes: { attached() }` pour mon composant ?** (Si vous avez mis `onLoad`, ça va crasher !).
-3. **Mon composant est-il bien indépendant ?** (Utilise-t-il bien `triggerEvent` au lieu d'essayer de modifier la page directement ?).
-
+3. **Ai-je utilisé `uiState` au lieu de multiplier les booléens (`isLoading`, `isEmpty`) ?**

@@ -1,7 +1,3 @@
----
-name: frontend-api-architecture
-description: Guide d'architecture Frontend et de consommation API (orienté WeChat/Modulaire). À utiliser pour intégrer des API, créer des pages, tout en respectant l'isolation du code pour éviter les conflits en équipe.
----
 
 # Frontend API & Architecture Guidelines (Modular / Anti-Conflict)
 

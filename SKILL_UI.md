@@ -1,7 +1,3 @@
----
-name: frontend-ui-architecture
-description: Guide strict d'architecture UI (WeChat). À utiliser pour construire des pages/composants isolés en "Mock-First", formater via WXS (ES5), optimiser les performances, et communiquer proprement.
----
 
 # Frontend UI & Component Architecture Guidelines (Mock-First / WeChat)
 

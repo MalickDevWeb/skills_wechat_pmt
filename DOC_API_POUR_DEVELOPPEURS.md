@@ -1,3 +1,7 @@
+> 🔗 **Navigation :** [Guide UI (Pages & Composants)](DOC_UI_POUR_DEVELOPPEURS.md) | [Guide API (Réseau)](DOC_API_POUR_DEVELOPPEURS.md) | [Guide Animations & Flux](DOC_FLUX_COMPLEXES_ANIMATIONS.md)
+
+---
+
 # 🚀 Le Guide Ultra-Simple : Ajouter une API (Même pour les non-codeurs)
 
 Si vous lisez ceci, vous avez pour mission d'ajouter une nouvelle connexion au serveur (un "Endpoint"). Pas de panique. Considérez cela comme un jeu de Lego. Il y a 3 pièces à assembler, toujours dans le même ordre.
@@ -55,55 +59,60 @@ class MonApi {
     await authenticate(); 
     
     // 🔒 NE TOUCHEZ PAS : Le livreur va chercher les données
-    // ✏️ Remplacez [NOM_URL] par celui défini juste au-dessus
     const res = await httpClient.get(ENDPOINTS.[NOM_URL], { query: parametres });
     
     // 🔒 NE TOUCHEZ PAS : Gestion des pannes du serveur
     if (!res.success) throw new Error(res.error?.message || "Erreur réseau");
     
     // 🔒 NE TOUCHEZ PAS au sculpt.data
-    // ✏️ REMPLACEZ [NOM_DU_SCHEMA] par celui de la PIÈCE 1
     return sculpt.data({ data: res.data, to: [NOM_DU_SCHEMA] });
   }
 }
+
+// 🔒 EXPORT OBLIGATOIRE :
+export const monAPI = new MonApi();
 ```
+
+> ⚠️ **LE HUB CENTRAL (TRES IMPORTANT)**  
+> Pour que le reste de l'application puisse utiliser votre API, vous devez l'enregistrer dans le Hub !  
+> Ouvrez `utils/apis/index.js` et ajoutez :  
+> `export { monAPI } from './votre_fichier.api.js';`
 
 ---
 
 ## 🧩 PIÈCE 3 : L'Écran (La Page ou le Composant)
 **Où aller ?** Ouvrez le dossier de votre page (ex: `pages/mon-profil/index.js`).
 
-**Pourquoi ?** C'est ce que voit l'utilisateur. On affiche un chargement ("Veuillez patienter..."), on appelle le livreur (Pièce 2), et on affiche le résultat.
+**Pourquoi ?** C'est ce que voit l'utilisateur. On affiche un chargement, on appelle le livreur, et on affiche le résultat.
 
 **Le code à copier-coller (dans votre objet Page) :**
 ```javascript
+import { monAPI } from '../../utils/apis/index.js';
+
 Page({
   data: {
-    // 🔒 C'est ici qu'on stocke les données pour l'écran HTML
-    isLoading: false, 
+    // 🔒 Machine à états
+    uiState: 'loading', 
     [MA_VARIABLE_POUR_L_ECRAN]: null 
   },
 
-  // ✏️ Remplacez [NOM_DE_L_ACTION] (ex: auClicSurLeBouton, ou onReady)
   async [NOM_DE_L_ACTION]() {
     
-    // 1. 🔒 On affiche le sablier de chargement
-    this.setData({ isLoading: true }); 
+    this.setData({ uiState: 'loading' }); 
     
     try {
-      // 2. ✏️ On appelle notre Livreur (PIÈCE 2)
+      // ✏️ On appelle notre Livreur (PIÈCE 2)
       const resultat = await monAPI.[NOM_DE_LA_FONCTION]();
       
-      // 3. ✏️ On sauvegarde le résultat pour l'afficher à l'écran
-      this.setData({ [MA_VARIABLE_POUR_L_ECRAN]: resultat });
+      // ✏️ On sauvegarde le résultat pour l'afficher à l'écran
+      this.setData({ 
+        [MA_VARIABLE_POUR_L_ECRAN]: resultat,
+        uiState: 'content'
+      });
       
     } catch (erreur) {
-      // 4. 🔒 Si le serveur est cassé, on affiche une petite bulle rouge à l'utilisateur
+      this.setData({ uiState: 'error' });
       wx.showToast({ title: erreur.message, icon: 'none' });
-      
-    } finally {
-      // 5. 🔒 Quoi qu'il arrive, on cache le sablier de chargement
-      this.setData({ isLoading: false }); 
     }
   }
 });
@@ -113,7 +122,7 @@ Page({
 
 ## 💡 Résumé des 3 questions à se poser (Anti-Bug) :
 1. **Mon URL est-elle bonne ?** (Vérifiez dans la *PIÈCE 2*)
-2. **Le nom de mes champs correspond-il à ce qu'envoie le serveur ?** (Vérifiez `@link.mon_champ` dans la *PIÈCE 1*)
-3. **Ai-je bien caché le chargement à la fin ?** (Vérifiez le `finally` dans la *PIÈCE 3*)
+2. **Ai-je bien enregistré mon API dans le Hub ?** (`utils/apis/index.js`)
+3. **Le nom de mes champs correspond-il à ce qu'envoie le serveur ?** (Vérifiez `@link.mon_champ` dans la *PIÈCE 1*)
 
 Si les 3 cases sont cochées, votre code fonctionne ! 🎉
