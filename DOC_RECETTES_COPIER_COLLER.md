@@ -9,12 +9,19 @@ Chaque recette est une **solution complète et autonome**. Vous trouvez votre si
 ## 📑 Sommaire — Trouvez votre situation
 | Numéro | Je dois coder... | Complexité |
 |---|---|---|
-| 🔵 [Recette 1](#-recette-1--page-de-liste-avec-api--skeleton--scroll-infini) | Une page de liste qui charge depuis le serveur, avec chargement fantôme et défilement infini | Moyenne |
+| 🔵 [Recette 1](#-recette-1--page-de-liste-avec-api--skeleton--scroll-infini) | Une page de liste qui charge depuis le serveur, avec skeleton et scroll infini | Moyenne |
 | 🔵 [Recette 2](#-recette-2--formulaire-complet-avec-validation-et-envoi-api) | Un formulaire avec validation en direct et envoi au serveur | Moyenne |
 | 🔵 [Recette 3](#-recette-3--page-de-détail-avec-api) | Une page de détail (produit, vol, profil) qui affiche les données du serveur | Facile |
 | 🔵 [Recette 4](#-recette-4--upload-photo--envoi-au-serveur) | Un bouton pour choisir une photo et l'envoyer au serveur | Moyenne |
 | 🔵 [Recette 5](#-recette-5--filtres-sur-une-page-séparée-qui-rafraîchit-la-liste) | Un système de filtres sur une page dédiée qui recharge la liste principale | Avancée |
-| 🔵 [Recette 6](#-recette-6--compteur-de-panier-partagé-entre-toutes-les-pages) | Un compteur (panier, notifications) visible sur toutes les pages en même temps | Avancée |
+| 🔵 [Recette 6](#-recette-6--compteur-de-panier-partagé-entre-toutes-les-pages) | Un compteur (panier, notifications) visible sur toutes les pages | Avancée |
+| 🟢 [Recette 7](#-recette-7--connexion--login-et-protection-de-pages) | Une page de connexion avec sauvegarde du token et redirection | Facile |
+| 🟢 [Recette 8](#-recette-8--pull-to-refresh-tirer-pour-recharger) | Tirer vers le bas pour recharger la liste (comme Facebook, Instagram) | Facile |
+| 🟢 [Recette 9](#-recette-9--recherche-en-temps-réel-debounce) | Une barre de recherche qui interroge le serveur après que l'utilisateur a fini de taper | Moyenne |
+| 🟢 [Recette 10](#-recette-10--bouton-favoritlike-toggle) | Un bouton "Cœur" ou "Étoile" qui s'allume et s'éteint (avec sauvegarde serveur) | Facile |
+| 🟢 [Recette 11](#-recette-11--partage-wechat-envoyer-à-un-ami) | Envoyer une page ou un contenu à un ami via WeChat | Facile |
+| 🟢 [Recette 12](#-recette-12--onglets-tabs-avec-changement-de-données) | Un menu à onglets qui change le contenu et recharge les données | Moyenne |
+| 🟢 [Recette 13](#-recette-13--cache-local-garder-des-données-hors-ligne) | Sauvegarder des données localement pour que l'app fonctionne sans réseau | Moyenne |
 
 ---
 
@@ -405,6 +412,335 @@ Page({
     // 🔒 Mettre à jour le tableau central. La NavBar se met à jour instantanément.
     Bus.setState('panier.compteur', nouveauCompteur);
     wx.showToast({ title: 'Ajouté !', icon: 'success' });
+  }
+});
+```
+
+---
+
+## 🟢 Recette 7 : Connexion / Login et Protection de Pages
+
+**Quand l'utiliser ?** Toute application avec des comptes utilisateurs. La page de login envoie les identifiants, reçoit un token, et redirige vers l'accueil. Les autres pages vérifient que l'utilisateur est connecté avant de s'afficher.
+
+### La Page de Login (`pages/login/index.js`)
+```javascript
+Page({
+  data: {
+    uiState: 'idle',
+    champs: { email: '', motDePasse: '' },
+    formulaireValide: false
+  },
+
+  auChangement(e) {
+    const champ = e.currentTarget.dataset.champ;
+    const champsMaj = { ...this.data.champs, [champ]: e.detail.value };
+    this.setData({
+      champs: champsMaj,
+      formulaireValide: champsMaj.email.length > 3 && champsMaj.motDePasse.length >= 6
+    });
+  },
+
+  async seConnecter() {
+    if (!this.data.formulaireValide) return;
+    this.setData({ uiState: 'loading' });
+    try {
+      const res = await authAPI.login(this.data.champs);
+      // 🔒 Sauvegarde du token pour toutes les futures requêtes
+      wx.setStorageSync('auth_token', res.token);
+      wx.setStorageSync('user_id', res.userId);
+      // 🔒 Redirection sans possibilité de revenir en arrière
+      wx.reLaunch({ url: '/pages/accueil/index' });
+    } catch (e) {
+      this.setData({ uiState: 'idle' });
+      wx.showToast({ title: e.message, icon: 'none' });
+    }
+  }
+});
+```
+
+### Protection d'une Page Privée (à mettre dans `onLoad`)
+```javascript
+onLoad() {
+  // 🔒 GARDIEN : Si pas de token, on renvoie au login
+  const token = wx.getStorageSync('auth_token');
+  if (!token) {
+    wx.reLaunch({ url: '/pages/login/index' });
+    return; // Arrêter l'exécution
+  }
+  // Suite du code de la page...
+}
+```
+
+---
+
+## 🟢 Recette 8 : Pull-to-Refresh (Tirer pour Recharger)
+
+**Quand l'utiliser ?** L'utilisateur tire vers le bas pour recharger manuellement la liste (comme sur Facebook, Instagram, Twitter).
+
+### Dans le `index.json` de la page (OBLIGATOIRE)
+```json
+{
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark"
+}
+```
+
+### Dans le `index.js`
+```javascript
+Page({
+  data: { liste: [], uiState: 'loading' },
+
+  onLoad() { this.charger(); },
+
+  // 🔒 Se déclenche automatiquement quand on tire vers le bas
+  async onPullDownRefresh() {
+    this.setData({ liste: [], pageActuelle: 1 });
+    await this.charger();
+    // 🔒 OBLIGATOIRE : Arrête l'animation de rechargement
+    wx.stopPullDownRefresh();
+  },
+
+  async charger() {
+    try {
+      const liste = await monAPI.getListe();
+      this.setData({ liste, uiState: 'content' });
+    } catch (e) {
+      this.setData({ uiState: 'error' });
+    }
+  }
+});
+```
+
+---
+
+## 🟢 Recette 9 : Recherche en Temps Réel (Debounce)
+
+**Quand l'utiliser ?** Une barre de recherche qui ne lance pas une requête à chaque lettre tapée (trop lent), mais attend que l'utilisateur ait fini de taper (après 400ms de silence).
+
+### Dans le `index.js`
+```javascript
+Page({
+  data: { resultats: [], uiState: 'idle' },
+  // 🔒 Variable interne pour le timer (PAS dans data)
+  _debounceTimer: null,
+
+  auChangementRecherche(e) {
+    const texte = e.detail.value;
+
+    // 🔒 On annule le timer précédent à chaque nouvelle frappe
+    if (this._debounceTimer) clearTimeout(this._debounceTimer);
+
+    if (texte.length < 2) {
+      this.setData({ resultats: [], uiState: 'idle' });
+      return;
+    }
+
+    // 🔒 On lance la recherche seulement 400ms après la dernière frappe
+    this._debounceTimer = setTimeout(async () => {
+      this.setData({ uiState: 'loading' });
+      try {
+        // ✏️ Votre appel API ici
+        const resultats = await monAPI.rechercher({ q: texte });
+        this.setData({ resultats, uiState: resultats.length ? 'content' : 'empty' });
+      } catch (e) {
+        this.setData({ uiState: 'error' });
+      }
+    }, 400);
+  }
+});
+```
+
+### Dans le `index.wxml`
+```xml
+<input placeholder="Rechercher..." bindinput="auChangementRecherche" />
+
+<view wx:if="{{uiState === 'loading'}}"><text>Recherche en cours...</text></view>
+<view wx:elif="{{uiState === 'empty'}}"><text>Aucun résultat.</text></view>
+<view wx:elif="{{uiState === 'content'}}">
+  <view wx:for="{{resultats}}" wx:key="id" class="resultat-item animate-fade-in">
+    <text>{{item.titre}}</text>
+  </view>
+</view>
+```
+
+---
+
+## 🟢 Recette 10 : Bouton Favoris/Like (Toggle)
+
+**Quand l'utiliser ?** Un bouton cœur ou étoile qui s'allume/s'éteint quand on clique, et qui sauvegarde l'état sur le serveur.
+
+### Dans le `index.js`
+```javascript
+Page({
+  data: { estFavori: false, idItem: null },
+
+  onLoad(options) {
+    this.setData({ idItem: options.id });
+    // ✏️ Charger l'état favori depuis le serveur ou le cache
+    const cache = wx.getStorageSync(`favori_${options.id}`);
+    this.setData({ estFavori: !!cache });
+  },
+
+  async toggleFavori() {
+    const nouvelEtat = !this.data.estFavori;
+    // 🔒 Mise à jour immédiate de l'UI (pas d'attente serveur)
+    this.setData({ estFavori: nouvelEtat });
+
+    try {
+      if (nouvelEtat) {
+        await monAPI.ajouterFavori(this.data.idItem);
+        wx.setStorageSync(`favori_${this.data.idItem}`, true);
+      } else {
+        await monAPI.supprimerFavori(this.data.idItem);
+        wx.removeStorageSync(`favori_${this.data.idItem}`);
+      }
+    } catch (e) {
+      // 🔒 Si le serveur échoue, on annule le changement visuel
+      this.setData({ estFavori: !nouvelEtat });
+      wx.showToast({ title: 'Erreur, réessayez.', icon: 'none' });
+    }
+  }
+});
+```
+
+### Dans le `index.wxml`
+```xml
+<!-- Le cœur change de couleur instantanément -->
+<view class="btn-favori {{estFavori ? 'actif' : ''}}" bindtap="toggleFavori">
+  <text>{{ estFavori ? '❤️' : '🤍' }}</text>
+</view>
+```
+
+---
+
+## 🟢 Recette 11 : Partage WeChat (Envoyer à un Ami)
+
+**Quand l'utiliser ?** L'utilisateur veut partager un produit, un article, ou une page de l'app à un ami dans une conversation WeChat.
+
+### Dans le `index.js`
+```javascript
+Page({
+  data: { detail: { titre: '', id: '' } },
+
+  // 🔒 Fonction native WeChat : S'active quand on clique sur le bouton Share
+  onShareAppMessage() {
+    return {
+      // ✏️ Le titre de la bulle dans la conversation
+      title: this.data.detail.titre,
+      // ✏️ La page où l'ami va atterrir quand il clique (avec l'ID en paramètre)
+      path: `/pages/detail/index?id=${this.data.detail.id}`,
+      // ✏️ L'image qui s'affiche dans la bulle
+      imageUrl: this.data.detail.imageUrl
+    };
+  }
+});
+```
+
+### Dans le `index.wxml`
+```xml
+<!-- 🔒 open-type="share" est OBLIGATOIRE pour déclencher le partage WeChat -->
+<button open-type="share" class="btn-partager">
+  Envoyer à un ami 📤
+</button>
+```
+
+---
+
+## 🟢 Recette 12 : Onglets (Tabs) avec Changement de Données
+
+**Quand l'utiliser ?** Un menu à onglets ("En cours" / "Terminé" / "Annulé") où chaque onglet affiche des données différentes chargées depuis le serveur.
+
+### Dans le `index.js`
+```javascript
+Page({
+  data: {
+    ongletActif: 'en_cours', // ✏️ Valeur par défaut
+    onglets: [
+      { id: 'en_cours', label: 'En Cours' },
+      { id: 'termine', label: 'Terminé' },
+      { id: 'annule', label: 'Annulé' }
+    ],
+    liste: [],
+    uiState: 'loading'
+  },
+
+  onLoad() { this.charger('en_cours'); },
+
+  changerOnglet(e) {
+    const nouvelOnglet = e.currentTarget.dataset.id;
+    if (nouvelOnglet === this.data.ongletActif) return; // Pas de double chargement
+    this.setData({ ongletActif: nouvelOnglet, uiState: 'loading', liste: [] });
+    this.charger(nouvelOnglet);
+  },
+
+  async charger(statut) {
+    try {
+      // ✏️ Votre appel API avec le filtre statut
+      const liste = await monAPI.getListe({ statut });
+      this.setData({ liste, uiState: liste.length ? 'content' : 'empty' });
+    } catch (e) {
+      this.setData({ uiState: 'error' });
+    }
+  }
+});
+```
+
+### Dans le `index.wxml`
+```xml
+<!-- Les boutons des onglets -->
+<view class="tabs-bar">
+  <view
+    wx:for="{{onglets}}" wx:key="id"
+    class="tab {{ongletActif === item.id ? 'tab--actif' : ''}}"
+    bindtap="changerOnglet"
+    data-id="{{item.id}}">
+    {{item.label}}
+  </view>
+</view>
+
+<!-- Le contenu -->
+<view wx:if="{{uiState === 'loading'}}" class="skeleton animate-pulse" />
+<view wx:elif="{{uiState === 'content'}}" class="animate-fade-in">
+  <view wx:for="{{liste}}" wx:key="id">
+    <text>{{item.titre}}</text>
+  </view>
+</view>
+<view wx:elif="{{uiState === 'empty'}}"><text>Aucun élément.</text></view>
+```
+
+---
+
+## 🟢 Recette 13 : Cache Local (Données Hors Ligne)
+
+**Quand l'utiliser ?** Vous voulez que l'application affiche des données même sans réseau. On affiche d'abord le cache, puis on met à jour depuis le serveur en arrière-plan.
+
+### Dans le `index.js`
+```javascript
+const CLE_CACHE = 'cache_ma_liste'; // ✏️ Changez ce nom
+
+Page({
+  data: { liste: [], uiState: 'loading' },
+
+  async onLoad() {
+    // 🔒 ÉTAPE 1 : Afficher le cache immédiatement (zéro attente)
+    const cache = wx.getStorageSync(CLE_CACHE);
+    if (cache) {
+      this.setData({ liste: cache, uiState: 'content' });
+    }
+
+    // 🔒 ÉTAPE 2 : Mettre à jour depuis le serveur en arrière-plan
+    try {
+      const fraîches = await monAPI.getListe();
+      // Mettre à jour seulement si les données ont changé
+      if (JSON.stringify(fraîches) !== JSON.stringify(this.data.liste)) {
+        this.setData({ liste: fraîches });
+        // 🔒 Sauvegarder le nouveau cache pour la prochaine visite
+        wx.setStorageSync(CLE_CACHE, fraîches);
+      }
+    } catch (e) {
+      // Pas grave si le réseau échoue : le cache est déjà affiché
+      if (!cache) this.setData({ uiState: 'error' });
+    }
   }
 });
 ```
