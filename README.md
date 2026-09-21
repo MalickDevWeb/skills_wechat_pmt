@@ -251,3 +251,5 @@ Si tu utilises Cursor, Copilot ou Gemini avec le fichier `.cursorrules` :
 <div align="center">
   <i>Lisez une fois. Appliquez toujours.</i>
 </div>
+
+- ❓ **`DOC_FAQ_ERREURS_FREQUENTES.md`** : 30+ questions/réponses pour ne jamais faire d'erreur (UI, API, Git, Performance, Sécurité).
