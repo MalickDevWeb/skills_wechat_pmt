@@ -18,7 +18,7 @@ Chaque réponse vous dit exactement quoi faire et quel guide ouvrir.
 | Un écran complet (Accueil, Profil, Panier...) | 📄 **Page** | `pages/[mon-ecran]/` |
 | Un élément réutilisable (Bouton, Carte, Modal...) | 🧩 **Composant** | `components/[mon-element]/` |
 
-**➡️ Guide à ouvrir :** [`DOC_UI_POUR_DEVELOPPEURS.md`](DOC_UI_POUR_DEVELOPPEURS.md) → Choisir Option A (Page) ou Option B (Composant)
+**➡️ Guide à ouvrir :** [`DOC_UI_POUR_DEVELOPPEURS.md`](DOC_UI_POUR_DEVELOPPEURS.md) → Option A (Page) ou Option B (Composant)
 
 ---
 
@@ -30,11 +30,11 @@ Listez tous les états que l'utilisateur peut voir. **Minimum requis : 3 états.
 |---|---|
 | `loading` | Pendant le chargement des données |
 | `content` | Quand les données sont affichées |
-| `empty` | Quand il n'y a aucune donnée à afficher |
+| `empty` | Quand il n'y a aucune donnée |
 | `error` | Quand le réseau ou le serveur a un problème |
-| `success` | Après une action réussie (formulaire soumis, etc.) |
+| `success` | Après une action réussie (formulaire soumis) |
 
-**➡️ Action :** Dans votre `.js`, définissez `uiState: 'loading'` et un `wx:if` / `wx:elif` par état dans votre `.wxml`.
+**➡️ Action :** Dans votre `.js`, définissez `uiState: 'loading'` et un `wx:if/wx:elif` par état.
 
 ---
 
@@ -42,24 +42,22 @@ Listez tous les états que l'utilisateur peut voir. **Minimum requis : 3 états.
 
 ```
 OUI → Je dois créer un Mappeur + une méthode API
-NON → Je travaille uniquement avec des données Mock (fausses données locales)
+NON → Je travaille avec des données Mock (fausses données locales)
 ```
 
 **Si OUI :**
-1. Est-ce que le fichier API de ce domaine existe déjà ? (`utils/apis/user.api.js`, `utils/apis/flight.api.js`...)
+1. Le fichier API de ce domaine existe ? (`utils/apis/user.api.js`...)
    - **OUI** → J'ajoute ma méthode dans ce fichier existant.
-   - **NON** → Je crée un nouveau fichier `utils/apis/[mondomaine].api.js`.
-2. Est-ce que le mappeur de ce domaine existe déjà ? (`utils/mappers/user.js`...)
-   - **OUI** → J'ajoute mon nouveau schéma dans ce fichier existant.
-   - **NON** → Je crée un nouveau fichier `utils/mappers/[mondomaine].js`.
+   - **NON** → Je crée `utils/apis/[mondomaine].api.js`.
+2. Le mappeur de ce domaine existe ? (`utils/mappers/user.js`...)
+   - **OUI** → J'ajoute mon schéma dans ce fichier existant.
+   - **NON** → Je crée `utils/mappers/[mondomaine].js`.
 
 **➡️ Guide à ouvrir :** [`DOC_API_POUR_DEVELOPPEURS.md`](DOC_API_POUR_DEVELOPPEURS.md)
 
 ---
 
 ## ❓ Question 4 : Est-ce que ma SITUATION ressemble à une Recette existante ?
-
-Ouvrez le Sommaire des Recettes et cherchez votre cas :
 
 | Si mon besoin ressemble à... | Recette à utiliser |
 |---|---|
@@ -70,13 +68,12 @@ Ouvrez le Sommaire des Recettes et cherchez votre cas :
 | Filtrer depuis une page séparée | Recette 5 (Filtres) |
 | Un compteur visible partout | Recette 6 (Compteur Partagé) |
 | Page de connexion | Recette 7 (Login) |
-| Recharger en tirant vers le bas | Recette 8 (Pull-to-Refresh) |
+| Tirer vers le bas pour recharger | Recette 8 (Pull-to-Refresh) |
 | Barre de recherche intelligente | Recette 9 (Recherche Debounce) |
 | Bouton Favori / Like | Recette 10 (Favori Toggle) |
 | Bouton "Envoyer à un ami" | Recette 11 (Partage WeChat) |
 | Menu à onglets | Recette 12 (Tabs) |
 | Afficher sans réseau | Recette 13 (Cache Local) |
-| ❌ Aucune recette ne correspond | → Codez, puis ajoutez votre recette ! |
 
 **➡️ Guide à ouvrir :** [`DOC_RECETTES_COPIER_COLLER.md`](DOC_RECETTES_COPIER_COLLER.md)
 
@@ -84,21 +81,36 @@ Ouvrez le Sommaire des Recettes et cherchez votre cas :
 
 ## ❓ Question 5 : Est-ce que mon composant doit COMMUNIQUER avec quelqu'un ?
 
+**Posez-vous UNE seule question et suivez la flèche :**
+
 ```
-Mon composant parle à sa PAGE PARENT directement
-    → Utiliser this.triggerEvent('action', data)
-    → Guide : DOC_COMMUNICATION_EVENEMENTS.md → Outil 1
-
-Deux PAGES DISTANTES doivent se parler (une action dans Page B rafraîchit Page A)
-    → Utiliser Bus.emit() / Bus.on()
-    → Guide : DOC_COMMUNICATION_EVENEMENTS.md → Outil 2
-
-Une DONNÉE GLOBALE doit être visible partout (Panier, Profil, Thème)
-    → Utiliser Bus.setState() / Bus.onState()
-    → Guide : DOC_COMMUNICATION_EVENEMENTS.md → Outil 3
+Est-ce que mon composant <xxx> est directement dans le HTML de ma page ?
+        │
+        ├── OUI ──► 🎯 triggerEvent
+        │           L'enfant "crie" un événement à sa page parent.
+        │           Ex: <ma-carte bind:supprime="onSupprime">
+        │
+        └── NON ──► Est-ce que je partage une DONNÉE que tout le monde doit voir ?
+                    (Panier, Profil, Thème, Langue...)
+                        │
+                        ├── OUI ──► 🌍 Bus.setState / Bus.onState
+                        │           Tableau d'affichage global.
+                        │           Ex: Compteur panier sur toutes les pages.
+                        │
+                        └── NON ──► 📻 Bus.emit / Bus.on
+                                    Talkie-walkie entre deux pages.
+                                    Ex: Page B dit à Page A de se recharger.
 ```
 
-**➡️ Guide à ouvrir :** [`DOC_COMMUNICATION_EVENEMENTS.md`](DOC_COMMUNICATION_EVENEMENTS.md)
+**Le test rapide en 3 secondes :**
+
+| Je me demande... | L'outil |
+|---|---|
+| *"Mon composant `<carte>` est dans mon HTML, je veux envoyer un ID à ma page"* | `triggerEvent` |
+| *"La Page Détail doit dire à la Page Liste de se recharger"* | `Bus.emit` |
+| *"Le compteur du panier doit changer sur TOUTES les pages"* | `Bus.setState` |
+
+**➡️ Exemples prêts à copier :** [`DOC_COMMUNICATION_EVENEMENTS.md`](DOC_COMMUNICATION_EVENEMENTS.md)
 
 ---
 
@@ -106,13 +118,13 @@ Une DONNÉE GLOBALE doit être visible partout (Panier, Profil, Thème)
 
 ```
 Prix, devises → WXS formatPrix()
-Dates → WXS formatDate()
-Statuts (0/1/2 → "En cours"/"Terminé") → WXS formatStatut()
-Calculs mathématiques (TVA, réductions) → Helper JS dans utils/helpers/
+Dates         → WXS formatDate()
+Statuts 0/1/2 → WXS formatStatut()
+Calculs (TVA) → Helper JS dans utils/helpers/
 ```
 
-**⚠️ Règle absolue :** On ne formate JAMAIS dans le `.js` avec `setData({ prixFormate: "15 000 FCFA" })`.
-On formate toujours dans le `.wxml` avec `{{ f.formatPrix(item.prix) }}`.
+**⚠️ Règle absolue :** Jamais `setData({ prixFormate: "15 000 FCFA" })` dans le `.js`.
+Toujours `{{ f.formatPrix(item.prix) }}` dans le `.wxml`.
 
 **➡️ Guide à ouvrir :** [`DOC_DONNEES_MAPPERS_HELPERS.md`](DOC_DONNEES_MAPPERS_HELPERS.md)
 
@@ -120,42 +132,127 @@ On formate toujours dans le `.wxml` avec `{{ f.formatPrix(item.prix) }}`.
 
 ## ❓ Question 7 : Est-ce que je dois ajouter une ANIMATION ?
 
+**Décrivez ce qui se passe visuellement, la classe se trouve dans la flèche :**
+
 ```
-Un écran qui apparaît → .animate-fade-in
-Un tiroir qui monte du bas → .animate-slide-up + Overlay
-Un écran de succès → .animate-bounce-in
-Un chargement → .skeleton-box + @keyframes pulse
-Un wizard (plusieurs étapes) → uiState + wx:elif par étape
+Quelque chose APPARAÎT ?
+    ├── Depuis le bas (tiroir, pop-up)   ──► .animate-slide-up
+    ├── Depuis la droite (étape wizard)  ──► .animate-slide-left
+    ├── Victoire / Confirmation          ──► .animate-bounce-in
+    └── Apparition normale               ──► .animate-fade-in
+
+Quelque chose ATTEND (chargement) ?
+    └── Blocs gris clignotants           ──► .skeleton-box + .animate-pulse
 ```
 
-**➡️ Guide à ouvrir :** [`DOC_FLUX_COMPLEXES_ANIMATIONS.md`](DOC_FLUX_COMPLEXES_ANIMATIONS.md)
+**Table des classes (à mettre dans `app.wxss`) :**
+
+| Classe | Effet | Situation |
+|---|---|---|
+| `.animate-fade-in` | Fondu | Contenu chargé, liste affichée |
+| `.animate-slide-up` | Monte du bas | Tiroir, Bottom Sheet, pop-up |
+| `.animate-slide-left` | Vient de droite | Étape suivante (Wizard) |
+| `.animate-bounce-in` | Rebond | Écran de succès |
+| `.skeleton-box` | Bloc gris clignotant | Chargement initial |
+
+**➡️ CSS Complet à copier :** [`DOC_FLUX_COMPLEXES_ANIMATIONS.md`](DOC_FLUX_COMPLEXES_ANIMATIONS.md)
 
 ---
 
 ## ❓ Question 8 : Ai-je vérifié les RÈGLES ANTI-CONFLIT ?
 
-Avant de commencer à coder, cochez ces cases :
-
 ```
-☐ Je vais travailler UNIQUEMENT dans le dossier de MA page / MON composant
-☐ Je ne vais PAS modifier app.js, app.wxss sans que ce soit explicitement demandé
-☐ Je ne vais PAS modifier les fichiers des autres développeurs
-☐ Si j'ajoute un endpoint API, je crée/modifie UNIQUEMENT mon fichier .api.js
-☐ Si j'ajoute un mappeur, je crée/modifie UNIQUEMENT mon fichier dans utils/mappers/
-☐ Je n'oublie pas d'exporter ma classe API dans utils/apis/index.js
+☐ Je travaille UNIQUEMENT dans le dossier de MA page / MON composant
+☐ Je ne modifie PAS app.js, app.wxss sans autorisation explicite
+☐ Je ne touche PAS aux fichiers des autres développeurs
+☐ Mon nouveau endpoint est UNIQUEMENT dans mon fichier .api.js
+☐ Mon nouveau schema est UNIQUEMENT dans mon fichier utils/mappers/
+☐ J'ai exporté ma classe API dans utils/apis/index.js
 ```
 
 ---
 
-## 🚀 Le Résumé : Le Parcours Complet d'un Développeur
+## 🚀 Le Parcours Complet d'un Développeur
 
 ```
-1. ANALYSER  → Répondre aux 8 questions ci-dessus (5 minutes)
-2. TROUVER   → Chercher la recette qui correspond à ma situation
-3. CRÉER     → Créer les 4 fichiers (.js, .wxml, .wxss, .json)
-4. MOCKER    → Mettre de fausses données + définir tous les uiState
-5. CONSTRUIRE → Coder le WXML avec wx:if par état + CSS + animations
-6. CONNECTER → Quand le design est validé, brancher l'API (@API-CONNECT)
-7. TESTER    → Utiliser dd() et la "Remontée de Chaîne" si bug
-8. LIVRER    → git add / commit / push
+1. ANALYSER   → Répondre aux 8 questions (5 minutes)
+2. TROUVER    → Copier la recette qui correspond
+3. CRÉER      → Créer les 4 fichiers (.js .wxml .wxss .json)
+4. MOCKER     → Fausses données + tous les uiState définis
+5. CONSTRUIRE → WXML + CSS + animations
+6. CONNECTER  → Brancher l'API quand le design est validé
+7. TESTER     → dd() + Remontée de Chaîne si bug
+8. LIVRER     → git add / commit / push
+```
+
+---
+
+## 🤖 Le Prompt IA Magique (Obtenez un Plan Parfait en 30 Secondes)
+
+**Comment ça marche :** Répondez aux questions ci-dessous, copiez-collez dans votre chat avec l'IA, et elle génère le code parfait en respectant toute l'architecture.
+
+```
+Je veux coder une nouvelle fonctionnalité.
+Lis le .cursorrules de ce projet et génère-moi le code. Voici mes réponses :
+
+1. TYPE : [Page / Composant]
+   Dossier : [pages/mon-ecran/ OU components/mon-element/]
+
+2. ÉTATS : [loading, content, empty, error, success - indiquez lesquels]
+   État initial : [loading / content]
+
+3. DONNÉES DU SERVEUR : [OUI / NON]
+   Si OUI :
+   - URL : [GET /api/v1/ma-route]
+   - Méthode HTTP : [GET / POST / PUT / DELETE]
+   - Fichier API à utiliser : [utils/apis/xxx.api.js - existant OU nouveau]
+
+4. RECETTE : [Recette N° ... / Aucune]
+
+5. COMMUNICATION : [triggerEvent / Bus.emit / Bus.setState / Aucune]
+   Détail : [Décrivez en 1 phrase ce qui doit se passer]
+
+6. FORMATAGE : [OUI / NON]
+   Si OUI : [prix FCFA / dates / statuts 0-1-2]
+
+7. ANIMATIONS : [fade-in / slide-up / slide-left / bounce-in / skeleton / aucune]
+
+8. FICHIERS AUTORISÉS :
+   - Autorisation : [listez les dossiers que vous pouvez modifier]
+   - Interdit : [listez les fichiers partagés à ne PAS toucher]
+
+@UI-MOCK [OU @API-CONNECT OU @FULL-FEATURE]
+```
+
+**Exemple concret prêt à copier et adapter :**
+
+```
+Je veux coder une nouvelle fonctionnalité.
+Lis le .cursorrules et génère le code.
+
+1. TYPE : Page
+   Dossier : pages/mes-vols/
+
+2. ÉTATS : loading, content, empty, error
+   État initial : loading
+
+3. DONNÉES DU SERVEUR : OUI
+   URL : GET /api/v1/flights/my-bookings
+   Méthode : GET
+   Fichier API : utils/apis/flight.api.js (existant, ajouter UNE méthode)
+
+4. RECETTE : Recette 1 (Liste + Scroll Infini)
+
+5. COMMUNICATION : Bus.emit
+   Détail : Si l'utilisateur annule un vol, la liste se recharge
+
+6. FORMATAGE : OUI — prix en FCFA, dates en français
+
+7. ANIMATIONS : skeleton pendant le chargement, fade-in pour la liste
+
+8. FICHIERS AUTORISÉS :
+   - Autorisés : pages/mes-vols/, utils/apis/flight.api.js, utils/mappers/flight.js
+   - Interdit : app.js, pages/accueil/, components/navbar/
+
+@UI-MOCK
 ```
