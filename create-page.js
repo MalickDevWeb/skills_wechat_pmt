@@ -253,3 +253,4 @@ fileNames.forEach((name, i) => {
 
 console.log(`\n🎉 Page [${pageName}] créée avec succès selon les standards PMT !`);
 console.log(`👉 N'oubliez pas d'ajouter "${pageTarget}/index" dans app.json > pages.`);
+
