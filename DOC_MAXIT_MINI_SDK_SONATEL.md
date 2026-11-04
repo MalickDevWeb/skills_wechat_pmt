@@ -220,3 +220,4 @@ miniSDK.configure({
 * `miniSDK.helpers.normaliseMsisdn(raw)` : Transforme `"+221 77 123.45.67"` en `"771234567"`.
 * `miniSDK.helpers.isSenegalMobile(digits)` : Valide un numéro mobile sénégalais à 9 chiffres.
 * `miniSDK.helpers.maskParams(params)` : Masque les numéros de téléphone pour les logs sécurisés.
+

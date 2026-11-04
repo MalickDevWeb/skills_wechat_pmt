@@ -20,6 +20,7 @@ Cherchez votre question dans la liste. La réponse vous dit exactement quoi fair
 - [📱 Responsive iPhone Réel & Custom TabBar](#-responsive-iphone-réel--custom-tabbar)
 - [🧭 Navigation & Behaviors WeChat](#-navigation--behaviors-wechat)
 - [📱 SDK Officiel Max It (@sonatel-os/maxit-mini-sdk)](#-sdk-officiel-max-it-sonatel-osmaxit-mini-sdk)
+- [🛠️ Pièges Compilateur & Robustesse](#-pièges-compilateur--robustesse)
 
 ---
 
@@ -504,3 +505,26 @@ Exemples :
 
 **Q : Pourquoi `contactList` me renvoie une liste vide ?**
 > Si vous passez un champ `data: {}` à l'appel natif `contactList`, l'hôte plante silencieusement et renvoie un tableau vide. Le SDK officiel appelle le plugin avec un paramètre vide pour garantir le renvoi de la liste.
+
+
+---
+
+## 🛠️ Pièges Compilateur & Robustesse
+
+**Q : TCMPP DevTools affiche une erreur 404 sur un fichier de police locale avec le suffixe `-do-not-use-local-path-`. Comment régler ça ?**
+> Le compilateur WeChat/TCMPP interdit formellement les fichiers de polices locales (`.ttf`, `.woff`) dans les feuilles de style WXSS. Supprimez les blocs `@font-face` locaux de `app.wxss` et utilisez les polices natives du système : `font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;`.
+
+---
+
+**Q : J'ai une erreur `SyntaxError: Unexpected token ILLEGAL` au démarrage alors que mon code JS ou JSON est parfaitement valide. Pourquoi ?**
+> Votre fichier a été enregistré sous Windows avec un **BOM UTF-8 (`\uFEFF`)** invisible en tête de fichier. Le moteur JavaScript de WeChat ne supporte pas ce caractère. Réenregistrez votre fichier en UTF-8 sans BOM (UTF-8 Plain).
+
+---
+
+**Q : Pourquoi mon bouton Retour personnalisé ne fait rien du tout sur certains écrans ?**
+> Si l'utilisateur a accédé directement à l'écran depuis un SMS, une notification ou un scan QR, la pile ne contient qu'une seule page (`getCurrentPages().length === 1`). `wx.navigateBack()` ne peut donc pas reculer. Utilisez le pattern du **Retour Intelligent** : vérifiez `getCurrentPages().length > 1`, sinon basculez sur `wx.switchTab({ url: '/pages/home/home' })`.
+
+---
+
+**Q : Pourquoi mon écran affiche brièvement "0 résultat" avant d'afficher la liste ?**
+> Vous avez initialisé votre variable dans `data` avec `'0 résultat'`. Initialisez-la toujours avec une chaîne vide `resultsLabel: ''`, et masquez le bandeau tant que `loading` est actif via `wx:if="{{ !loading && items.length > 0 }}"`.

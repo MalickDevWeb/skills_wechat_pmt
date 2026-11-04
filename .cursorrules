@@ -20,6 +20,7 @@ You MUST follow ALL rules in this document for every code change.
 | `@SAFE-NAV` | Sécurise la navigation contre la limite des 10 pages et le double-tap. |
 | `@BEHAVIOR-MIXIN` | Factorise le code récurrent (loading, state) via les Behaviors natifs WeChat. |
 | `@MAXIT-SDK` | Utilise le SDK officiel Sonatel Max It (`@sonatel-os/maxit-mini-sdk`). |
+| `@COMPILER-SAFE` | Élimine les pièges compilateur (BOM UTF-8, @font-face 404, guards onLoad, retour intelligent). |
 
 ---
 
@@ -205,3 +206,13 @@ Toujours utiliser les clés de traduction : `{{ t('ma.cle') }}`
 2. **Paiement Incertain (`uncertain: true`) :** Si une erreur de paiement porte `err.uncertain === true`, l'argent a pu être prélevé. Ne redemande jamais de payer immédiatement.
 3. **Protection d'Écran Obligatoire :** Tout `miniSDK.screen.protect(true)` doit obligatoirement avoir son `miniSDK.screen.protect(false)` dans `onHide` et `onUnload`.
 4. **DevTools :** Configure `simulate: isDev` au démarrage dans `app.js`.
+
+
+---
+
+## RÈGLE 8 — Compilateur TCMPP & Robustesse
+
+1. **Bannir les polices locales dans WXSS :** Utilise toujours les polices système pour éviter l'erreur 404 `-do-not-use-local-path-`.
+2. **Pas de BOM UTF-8 :** Enregistre en UTF-8 sans BOM.
+3. **Retour Intelligent :** Toujours vérifier `getCurrentPages().length > 1` avant `navigateBack()`, sinon basculer vers `switchTab('/pages/home/home')`.
+4. **Guards d'arguments dans onLoad :** Vérifie toujours la présence de l'ID obligatoire.

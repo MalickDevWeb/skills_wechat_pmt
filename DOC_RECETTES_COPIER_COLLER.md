@@ -1,4 +1,4 @@
-> 🔗 **Navigation :** [UI](DOC_UI_POUR_DEVELOPPEURS.md) | [API](DOC_API_POUR_DEVELOPPEURS.md) | [SDK Max It Sonatel](DOC_MAXIT_MINI_SDK_SONATEL.md) | [Paiement & Résilience](DOC_PAIEMENT_NATIVE_MAXIT_ET_RESILIENCE.md) | [Responsive & TabBar](DOC_RESPONSIVE_IPHONE_ET_CUSTOM_TABBAR.md) | [Navigation & Behaviors](DOC_NAVIGATION_BEHAVIORS_ET_METIER.md) | [Animations](DOC_FLUX_COMPLEXES_ANIMATIONS.md) | [Communication](DOC_COMMUNICATION_EVENEMENTS.md) | [Données](DOC_DONNEES_MAPPERS_HELPERS.md) | [Recettes](DOC_RECETTES_COPIER_COLLER.md) | [Debug](DOC_DEBUG_ET_NOUVELLES_RECETTES.md) | [Checklist](DOC_CHECKLIST_AVANT_DE_CODER.md) | [FAQ](DOC_FAQ_ERREURS_FREQUENTES.md)
+> 🔗 **Navigation :** [UI](DOC_UI_POUR_DEVELOPPEURS.md) | [API](DOC_API_POUR_DEVELOPPEURS.md) | [SDK Max It Sonatel](DOC_MAXIT_MINI_SDK_SONATEL.md) | [Paiement & Résilience](DOC_PAIEMENT_NATIVE_MAXIT_ET_RESILIENCE.md) | [Responsive & TabBar](DOC_RESPONSIVE_IPHONE_ET_CUSTOM_TABBAR.md) | [Navigation & Behaviors](DOC_NAVIGATION_BEHAVIORS_ET_METIER.md) | [Pièges Compilateur & Prod](DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md) | [Animations](DOC_FLUX_COMPLEXES_ANIMATIONS.md) | [Communication](DOC_COMMUNICATION_EVENEMENTS.md) | [Données](DOC_DONNEES_MAPPERS_HELPERS.md) | [Recettes](DOC_RECETTES_COPIER_COLLER.md) | [Debug](DOC_DEBUG_ET_NOUVELLES_RECETTES.md) | [Checklist](DOC_CHECKLIST_AVANT_DE_CODER.md) | [FAQ](DOC_FAQ_ERREURS_FREQUENTES.md)
 
 ---
 
@@ -37,6 +37,12 @@ Chaque recette est une **solution complète et autonome**. Vous trouvez votre si
 | 🛡️ [Recette 26](#-recette-26--protection-anti-screenshot-de-billet-qr) | Verrouillage capture d'écran sur billet avec déverrouillage obligatoire | Moyenne |
 | 📷 [Recette 27](#-recette-27--scanner-qr-caméra-seule-anti-fraude) | Lecture de QR code via caméra uniquement (sans accès galerie photo) | Facile |
 | 🔗 [Recette 28](#-recette-28--deep-linking-sans-boucle-onshow) | Traitement propre des liens d'ouverture sans redéclenchement au retour | Moyenne |
+| 🛡️ [Recette 29](#-recette-29--clause-de-garde-darguments-onload) | Sécurisation des pages contre les paramètres manquants avec retour auto | Facile |
+| 🔄 [Recette 30](#-recette-30--bouton-retour-intelligent-anti-blocage) | Fallback automatique vers l'accueil quand la page est ouverte sans historique | Facile |
+| ⚡ [Recette 31](#-recette-31--anti-flash-de-chargement-0-élément) | Suppression du clignotement à zéro et gestion pluriel propre | Facile |
+| 🔒 [Recette 32](#-recette-32--anti-clic-universel-withlock) | Verrouillage anti-rebond d'action réutilisable sur n'importe quelle méthode | Facile |
+| 🚨 [Recette 33](#-recette-33--gestionnaire-centralisé-derreurs-typées) | Toast d'erreur contextualisé selon le type (Réseau, Session, Validation) | Moyenne |
+| 🤝 [Recette 34](#-recette-34--matrice-disolation-multi-développeurs) | Organisation à 7 développeurs en simultané avec zéro conflit Git | Avancée |
 
 ---
 
@@ -1373,3 +1379,176 @@ App({
   }
 });
 ```
+
+
+---
+
+## 🛡️ Recette 29 : Clause de Garde d'Arguments (`onLoad`)
+
+**Quand l'utiliser ?** Dès qu'une page a besoin d'un `id` pour s'afficher. Si l'utilisateur y arrive par erreur avec un lien incomplet, on évite la page blanche et on le renvoie proprement en arrière.
+
+### Dans votre Page (`pages/[ma-page]/[ma-page].js`)
+```javascript
+Page({
+  onLoad(options = {}) {
+    const id = options.id ? Number(options.id) : null;
+
+    if (!id || Number.isNaN(id)) {
+      wx.showToast({
+        title: 'Élément introuvable',
+        icon: 'none',
+        duration: 2000
+      });
+      // Retour en arrière automatique après 1.5s
+      setTimeout(() => wx.navigateBack({ delta: 1 }), 1500);
+      return;
+    }
+
+    this.chargerDonnees(id);
+  }
+});
+```
+
+---
+
+## 🔄 Recette 30 : Bouton "Retour" Intelligent (Anti-Blocage)
+
+**Quand l'utiliser ?** Dans tous vos en-têtes personnalisés avec bouton "‹" ou "Retour", pour ne jamais bloquer l'utilisateur s'il est arrivé directement via une notification ou un SMS.
+
+### Dans votre Page ou Composant Navbar
+```javascript
+handleBack() {
+  const pages = getCurrentPages();
+  if (pages.length > 1) {
+    // Cas standard : il y a un historique
+    wx.navigateBack({ delta: 1 });
+  } else {
+    // Cas lien direct / deep link : retour vers l'accueil de l'app
+    wx.switchTab({
+      url: '/pages/home/home'
+    });
+  }
+}
+```
+
+---
+
+## ⚡ Recette 31 : Anti-Flash de Chargement ("0 Élément")
+
+**Quand l'utiliser ?** Sur toute page de liste avec skeletons pour ne pas faire clignoter un message alarmant "0 réservation" pendant les 300 premières millisecondes de chargement.
+
+### Dans le Contrôleur de Page (`index.js`)
+```javascript
+Page({
+  data: {
+    items: [],
+    loading: true,
+    resultsLabel: '' // 🔒 TOUJOURS initialiser vide !
+  },
+
+  async chargerDonnees() {
+    this.setData({ loading: true });
+    const items = await monAPI.getListe();
+    const count = items.length;
+
+    this.setData({
+      items,
+      loading: false,
+      resultsLabel: count > 0 ? `${count} élément${count > 1 ? 's' : ''}` : ''
+    });
+  }
+});
+```
+
+### Dans le WXML (`index.wxml`)
+```xml
+<!-- Le header n'apparaît QUE lorsque le chargement est terminé ET qu'il y a des éléments -->
+<view class="list-header" wx:if="{{ !loading && items.length > 0 }}">
+  <text>{{ resultsLabel }}</text>
+</view>
+```
+
+---
+
+## 🔒 Recette 32 : Anti-Clic Universel (`withLock`)
+
+**Quand l'utiliser ?** Empêcher qu'un utilisateur clique 3 fois de suite sur un bouton de validation sans polluer le code de votre page avec des variables de locks manuelles.
+
+### Le Helper (`utils/helpers/interaction.js`)
+```javascript
+export function withLock(fn, delay = 500) {
+  let isLocked = false;
+  return function (...args) {
+    if (isLocked) return;
+    isLocked = true;
+    setTimeout(() => { isLocked = false; }, delay);
+    return fn.apply(this, args);
+  };
+}
+```
+
+### Utilisation dans une Page
+```javascript
+import { withLock } from '../../utils/helpers/interaction.js';
+
+Page({
+  // Envelopper la fonction avec withLock
+  handleValider: withLock(function () {
+    this.envoyerFormulaire();
+  }, 600)
+});
+```
+
+---
+
+## 🚨 Recette 33 : Gestionnaire Centralisé d'Erreurs Typées (`handleAppError`)
+
+**Quand l'utiliser ?** Convertir automatiquement les erreurs techniques de votre application en messages compréhensibles pour l'utilisateur sur mobile.
+
+### Le Helper (`utils/helpers/error-handler.js`)
+```javascript
+import { NetworkError, ValidationError, AuthorizationError } from '../errors/index.js';
+
+export function handleAppError(error, defaultMessage = 'Une erreur est survenue') {
+  console.error('[Erreur Applicative]', error);
+
+  let message = defaultMessage;
+  if (error instanceof NetworkError) {
+    message = 'Réseau instable. Veuillez vérifier votre connexion.';
+  } else if (error instanceof AuthorizationError) {
+    message = 'Votre session a expiré. Reconnexion en cours...';
+  } else if (error instanceof ValidationError) {
+    message = error.message || 'Données saisies incorrectes.';
+  } else if (error?.message) {
+    message = error.message;
+  }
+
+  wx.showToast({
+    title: message,
+    icon: 'none',
+    duration: 3000
+  });
+}
+```
+
+---
+
+## 🤝 Recette 34 : Matrice d'Isolation Multi-Développeurs
+
+**Quand l'utiliser ?** Faire collaborer 5 à 10 développeurs sur le même mini-programme sans aucun conflit Git lors des fusions.
+
+### La Matrice d'Attribution Stricte des Fichiers
+```
+DÉV 1 (UX & Skeletons)       ➔ components/ux/**
+DÉV 2 (Composants UI purs)   ➔ components/ui/**
+DÉV 3 (Tunnel Réservation)   ➔ pages/booking/**
+DÉV 4 (Détail & Actions)     ➔ pages/reservation-detail/**
+DÉV 5 (Listing & Filtres)    ➔ pages/voyage/**
+DÉV 6 (Favoris & Routage)    ➔ pages/favoris/**
+DÉV 7 (Core & Mappers)       ➔ utils/mappers/**, utils/helpers/**
+```
+
+### Les 3 Règles d'Or :
+1. **Un dossier = Un seul propriétaire à la fois.**
+2. **On ne touche jamais au fichier d'un collègue.**
+3. **Les modifications du Core (DÉV 7) sont mergées en premier, puis tout le monde rebase.**

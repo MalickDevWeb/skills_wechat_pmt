@@ -20,6 +20,7 @@ If the user's prompt includes any of these keywords, you MUST activate specific 
 - **`@SAFE-NAV`**: Use `navigateToSafe` and navigation lock to avoid the 10-page stack limit crash and double-tap duplicate page pushes.
 - **`@BEHAVIOR-MIXIN`**: Share state and asynchronous loading/error logic across pages/components using native WeChat Behaviors (`loadingBehavior`).
 - **`@MAXIT-SDK`**: Implement or migrate host features to `@sonatel-os/maxit-mini-sdk` (user identity, pay, contacts, camera scan, screen protection, simulate).
+- **`@COMPILER-SAFE`**: Eliminate compiler traps (UTF-8 BOM, local @font-face 404, argument guards in onLoad, smart back button fallback).
 
 ## 0. CRITICAL: MODULARITY & ANTI-CONFLICT RULES
 You are working in a collaborative environment. Modifying shared files unnecessarily will cause merge conflicts.
@@ -126,3 +127,11 @@ When building for Sonatel Max It / Orange Money, prefer the official `miniSDK` f
 - **Screen Protection Protocol:** Whenever calling `miniSDK.screen.protect(true)` on sensitive views (paid QR), ALWAYS call `miniSDK.screen.protect(false)` in both `onHide()` and `onUnload()`.
 - **Uncertain Payment Guard:** If `err.uncertain === true`, money may have left the account. NEVER prompt the user to re-pay immediately; trigger backend verification.
 - **DevTools Simulation:** Turn on `simulate: true` in `app.js` when running under WeChat DevTools.
+
+
+## 10. COMPILER & PRODUCTION ROBUSTNESS
+
+- **No Local @font-face:** NEVER use local `.ttf` or `.woff` in WXSS; it produces fatal 404 errors with `-do-not-use-local-path-`. Use system font stacks.
+- **No UTF-8 BOM:** Save all files in pure UTF-8 without BOM (`\uFEFF`) to avoid compiler syntax crashes.
+- **Smart Back Navigation:** In back button handlers, verify `getCurrentPages().length > 1` before calling `wx.navigateBack()`; fallback to `wx.switchTab({ url: '/pages/home/home' })` if the user landed via deep link.
+- **Page Argument Guards:** Always validate required query params in `onLoad(options)`; if missing, show a toast and `wx.navigateBack()`.
