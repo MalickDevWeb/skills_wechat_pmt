@@ -2648,5 +2648,204 @@ Page({
 });
 ```
 
+---
+
+## 📴 Recette 51 : Outbox Pattern & File d'Attente Hors-Ligne avec Auto-Replay 4G
+
+**Quand l'utiliser ?** Pour les actions utilisateur non-monétaires (saisie de formulaires, signalements d'incidents, synchronisation de favoris, profils) afin d'empêcher toute perte de données en cas de micro-coupure réseau mobile en zone rurale ou en transit.
+
+### 1. Le Gestionnaire de File d'Attente Outbox (`utils/offline/outbox.js`)
+```javascript
+import { Bus } from '../bus/index';
+
+const STORAGE_KEY = 'pmt_offline_outbox';
+const MAX_QUEUE_SIZE = 50;
+const handlers = {};
+let isFlushing = false;
+
+function getQueue() {
+  try {
+    const raw = wx.getStorageSync(STORAGE_KEY);
+    return Array.isArray(raw) ? raw : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveQueue(queue) {
+  try {
+    wx.setStorageSync(STORAGE_KEY, queue.slice(0, MAX_QUEUE_SIZE));
+  } catch (e) {
+    console.warn('[Outbox] Erreur sauvegarde stockage :', e);
+  }
+}
+
+export const Outbox = {
+  /**
+   * Enregistre un gestionnaire d'exécution pour un type d'action donné
+   */
+  registerHandler(type, handlerFn) {
+    handlers[type] = handlerFn;
+  },
+
+  /**
+   * Enfile une action dans la file d'attente locale
+   */
+  enqueue(type, payload) {
+    const queue = getQueue();
+    const item = {
+      id: `${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      type,
+      payload,
+      createdAt: Date.now(),
+      retryCount: 0
+    };
+
+    queue.push(item);
+    saveQueue(queue);
+
+    Bus.emit('OUTBOX_COUNT_CHANGED', queue.length);
+    console.log(`[Outbox] Action enfilée (${type}) :`, item.id);
+    return item.id;
+  },
+
+  /**
+   * Nombre d'actions en attente de synchronisation
+   */
+  getPendingCount() {
+    return getQueue().length;
+  },
+
+  /**
+   * Rejoue toutes les actions en attente de façon séquentielle
+   */
+  async flush() {
+    if (isFlushing) return;
+    const queue = getQueue();
+    if (queue.length === 0) return;
+
+    isFlushing = true;
+    console.log(`[Outbox] Lancement de la synchronisation (${queue.length} action(s))...`);
+
+    const remaining = [];
+
+    for (let i = 0; i < queue.length; i++) {
+      const item = queue[i];
+      const handler = handlers[item.type];
+
+      if (!handler) {
+        console.warn(`[Outbox] Aucun handler pour le type : ${item.type}. Élément ignoré.`);
+        continue;
+      }
+
+      try {
+        await handler(item.payload, item.id);
+        console.log(`[Outbox] Action synchronisée avec succès : ${item.id}`);
+      } catch (err) {
+        console.warn(`[Outbox] Échec synchronisation ${item.id} :`, err);
+        item.retryCount = (item.retryCount || 0) + 1;
+
+        // Conserver dans la file si moins de 5 échecs
+        if (item.retryCount < 5) {
+          remaining.push(item);
+        }
+      }
+    }
+
+    saveQueue(remaining);
+    isFlushing = false;
+
+    Bus.emit('OUTBOX_COUNT_CHANGED', remaining.length);
+    Bus.emit('OUTBOX_FLUSH_COMPLETE', { remainingCount: remaining.length });
+  },
+
+  /**
+   * Démarre l'écouteur automatique du retour réseau
+   */
+  initAutoSync() {
+    wx.onNetworkStatusChange((res) => {
+      if (res.isConnected) {
+        console.log('[Outbox] Réseau rétabli. Déclenchement automatique du flush...');
+        Outbox.flush();
+      }
+    });
+  }
+};
+```
+
+### 2. Initialisation Globale (`app.js`)
+```javascript
+import { Outbox } from './utils/offline/outbox';
+
+App({
+  onLaunch() {
+    // 1. Initialiser l'auto-sync sur rétablissement du réseau
+    Outbox.initAutoSync();
+
+    // 2. Enregistrer les handlers métier
+    Outbox.registerHandler('SUBMIT_FEEDBACK', async (payload, idempotencyKey) => {
+      return wx.request({
+        url: 'https://api.sonatel.com/v1/feedback',
+        method: 'POST',
+        header: { 'X-Idempotency-Key': idempotencyKey },
+        data: payload
+      });
+    });
+
+    // 3. Premier essai de flush au démarrage si connecté
+    Outbox.flush();
+  }
+});
+```
+
+### 3. Utilisation dans une Page (`pages/feedback/index.js`)
+```javascript
+import { Outbox } from '../../utils/offline/outbox';
+import { Bus } from '../../utils/bus/index';
+
+Page({
+  data: {
+    pendingSyncCount: 0,
+    comment: ''
+  },
+
+  onLoad() {
+    this.setData({ pendingSyncCount: Outbox.getPendingCount() });
+    this._unsubOutbox = Bus.on('OUTBOX_COUNT_CHANGED', (count) => {
+      this.setData({ pendingSyncCount: count });
+    });
+  },
+
+  async onSubmit() {
+    const payload = { comment: this.data.comment, date: new Date().toISOString() };
+
+    try {
+      // Tentative d'envoi direct
+      await wx.request({
+        url: 'https://api.sonatel.com/v1/feedback',
+        method: 'POST',
+        data: payload
+      });
+      wx.showToast({ title: 'Envoyé avec succès !', icon: 'success' });
+    } catch (err) {
+      // En cas d'échec réseau : Enfilement sécurisé dans l'Outbox
+      Outbox.enqueue('SUBMIT_FEEDBACK', payload);
+      wx.showToast({
+        title: 'Enregistré hors-ligne. Envoi dès retour réseau.',
+        icon: 'none',
+        duration: 2500
+      });
+    }
+  },
+
+  onUnload() {
+    if (this._unsubOutbox) {
+      this._unsubOutbox();
+    }
+  }
+});
+```
+
+
 
 

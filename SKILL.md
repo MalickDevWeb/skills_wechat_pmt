@@ -146,6 +146,12 @@ Exécuter impérativement dans cet ordre :
 - Toute image capturée doit être compressée via `wx.compressImage` (qualité 75) avant upload afin d'économiser 95% du forfait data de l'utilisateur.
 - Utiliser `NetworkMonitor` pour détecter les réseaux dégradés 2G/3G et adapter l'UI sans blocage.
 
+### 3.5 Résilience Hors-Ligne & Outbox Pattern (Offline-First)
+- File d'attente FIFO persistante dans `wxStorage` pour toutes les actions non-monétaires (formulaires, favoris, signalements).
+- Clé d'idempotence unique par action (`X-Idempotency-Key`) pour éliminer tout risque de doublon au niveau backend.
+- Rejeu automatique déclenché sur `wx.onNetworkStatusChange` dès le rétablissement de la 4G/Wi-Fi.
+- *Référentiel détaillé : [docs/DOC_OFFLINE_FIRST_ET_OUTBOX_QUEUE.md](docs/DOC_OFFLINE_FIRST_ET_OUTBOX_QUEUE.md).*
+
 ---
 
 ## ⚙️ PÔLE 4 : INTÉGRATION HÔTE MAX IT, PAIEMENT & SÉCURITÉ
