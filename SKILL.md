@@ -1,3 +1,10 @@
+---
+name: wechat-pmt
+description: >-
+  Expertise complète pour WeChat Mini-Program (PMT / TCMPP) : architecture modulaire anti-conflits,
+  intégration API avec json-sculpt mappers, client HTTP BackendAPI, EventBus (Bus), gestion d'erreurs typées,
+  bonnes pratiques UI WeChat (WXS ES5, setData optimisé, safe areas env(safe-area-inset-bottom), lifetimes composants).
+---
 
 # Frontend API & Architecture Guidelines (Modular / Anti-Conflict)
 
@@ -7,6 +14,9 @@ This skill provides the strict rules for consuming APIs and writing frontend cod
 If the user's prompt includes any of these keywords, you MUST activate specific behaviors:
 - **`@API-CONNECT`**: Strictly apply this entire skill to connect an existing UI component to the backend.
 - **`@FULL-FEATURE`**: Combine this skill with the UI skill. Build the view AND connect it directly to the backend API simultaneously (Skip the "Mock-First" rule from the UI skill).
+- **`@NATIVE-PAY`**: Strictly apply the TCMPP/Max It Native Payment architecture with the `_confirmedTxnid` bank shield (0% double debit) and Smart Polling.
+- **`@RESPONSIVE-UI`**: Apply strict physical iPhone rules: dynamic safe areas, `min-height`, capsule geometry calculation, and anti-clipping.
+- **`@CUSTOM-TABBAR`**: Implement or maintain the official WeChat custom tab bar without flickering using `this.getTabBar().setData({ selected })` in `onShow`.
 
 ## 0. CRITICAL: MODULARITY & ANTI-CONFLICT RULES
 You are working in a collaborative environment. Modifying shared files unnecessarily will cause merge conflicts.
@@ -83,3 +93,17 @@ The app uses an advanced `EventBus` (`Bus`) for global state and events.
 NEVER use `wx.getStorageSync` or `wx.setStorageSync` directly (they throw on quota limits).
 - Use the provided wrapper: `storage.set('KEY', value)` and `storage.get('KEY', defaultValue)`.
 
+
+
+## 6. NATIVE PAYMENT & DOUBLE-DEBIT SHIELD (`merchantPay`)
+
+When integrating mobile payments (Orange Money / Max It via `wx.invokeNativePlugin`):
+- **Bank Shield (`this._confirmedTxnid`):** As soon as the native payment succeeds, seal the `txnid` in the page instance. If backend confirmation fails, retrying MUST bypass the native payment completely. Zero duplicate debits.
+- **No Artificial JS Timeout:** NEVER use `Promise.race` or a 30s timeout on the native plugin call. Let the host app / PIN container handle its own lifecycle.
+- **Smart Polling (3 Attempts):** Use progressive backoff (0s, 2s, 4s) for backend confirmation before asking the user to manually retry.
+
+## 7. PHYSICAL IPHONE RESPONSIVENESS & SAFE AREAS
+
+- **Safe Area Inset:** ALWAYS add `padding-bottom: calc(XXrpx + env(safe-area-inset-bottom));` to fixed bottom bars, modals, and sticky action buttons.
+- **No Rigid `100vh`:** Use `min-height: 100vh;` instead of `height: 100vh; overflow: hidden;` to prevent clipped forms on real devices with notches or Dynamic Island.
+- **Custom TabBar Sync:** On tab pages, ALWAYS call `this.getTabBar().setData({ selected: INDEX })` in `onShow()` to eliminate flicker and tab state mismatch.

@@ -14,6 +14,9 @@ You MUST follow ALL rules in this document for every code change.
 | `@UI-MOCK` | Crée l'UI avec de fausses données. N'appelle AUCUNE API. |
 | `@API-CONNECT` | Connecte une page existante au backend (Mapper + Méthode API). |
 | `@FULL-FEATURE` | Crée l'UI ET l'API en même temps. Pas de données Mock. |
+| `@NATIVE-PAY` | Déploie le paiement marchand natif (Max It / TCMPP) avec bouclier bancaire `_confirmedTxnid` (0% double débit) et smart polling. |
+| `@RESPONSIVE-UI` | Adapte l'interface aux contraintes physiques iPhone (Safe Area, Home Indicator, pas de `100vh` rigide, capsule WeChat). |
+| `@CUSTOM-TABBAR` | Implémente ou synchronise le custom tab bar officiel WeChat sans aucun clignotement. |
 
 ---
 
@@ -156,3 +159,27 @@ async loadData() {
 
 JAMAIS de texte en dur dans `.wxml` ou `.js`.
 Toujours utiliser les clés de traduction : `{{ t('ma.cle') }}`
+
+
+---
+
+## RÈGLE 4 — Paiement Marchand Natif & Anti-Double Débit (`merchantPay`)
+
+1. **Bouclier Bancaire (`this._confirmedTxnid`) :** Dès que `wx.invokeNativePlugin('merchantPay')` retourne un succès, scelle immédiatement `this._confirmedTxnid = txnid`.
+2. **Idempotence :** En cas d'erreur de confirmation backend, toute relance de la fonction de paiement vérifie d'abord `if (this._confirmedTxnid)` pour sauter intégralement le débit bancaire. Zéro double débit.
+3. **Zéro Timeout JS :** Ne place JAMAIS de `Promise.race` ou de timeout de 30s sur le plugin natif.
+4. **Smart Polling :** Effectue 3 tentatives silencieuses avec backoff (0s, 2s, 4s) avant d'afficher un dialogue de retry utilisateur.
+
+---
+
+## RÈGLE 5 — Responsive iPhone Réel & Custom TabBar
+
+1. **Safe Area Bas :** Tout élément fixé en bas (`position: fixed; bottom: 0;`) DOIT avoir `padding-bottom: calc(XXrpx + env(safe-area-inset-bottom));`.
+2. **Bannir `height: 100vh; overflow: hidden;` :** Utilise toujours `min-height: 100vh;` pour permettre le défilement naturel sur les écrans à encoche et Dynamic Island.
+3. **Capsule WeChat :** Calcule dynamiquement la géométrie de la barre de navigation via `wx.getMenuButtonBoundingClientRect()`.
+4. **Custom TabBar Sans Clignotement :** Dans le `onShow()` de chaque page d'onglet, appelle obligatoirement :
+   ```javascript
+   if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+     this.getTabBar().setData({ selected: MON_INDEX });
+   }
+   ```

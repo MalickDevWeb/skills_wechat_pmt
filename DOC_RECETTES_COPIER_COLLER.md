@@ -1,4 +1,4 @@
-> 🔗 **Navigation :** [UI](DOC_UI_POUR_DEVELOPPEURS.md) | [API](DOC_API_POUR_DEVELOPPEURS.md) | [Animations](DOC_FLUX_COMPLEXES_ANIMATIONS.md) | [Communication](DOC_COMMUNICATION_EVENEMENTS.md) | [Données](DOC_DONNEES_MAPPERS_HELPERS.md) | [Recettes](DOC_RECETTES_COPIER_COLLER.md) | [Debug](DOC_DEBUG_ET_NOUVELLES_RECETTES.md) | [Checklist](DOC_CHECKLIST_AVANT_DE_CODER.md) | [FAQ](DOC_FAQ_ERREURS_FREQUENTES.md)
+> 🔗 **Navigation :** [UI](DOC_UI_POUR_DEVELOPPEURS.md) | [API](DOC_API_POUR_DEVELOPPEURS.md) | [Paiement & Résilience](DOC_PAIEMENT_NATIVE_MAXIT_ET_RESILIENCE.md) | [Responsive & TabBar](DOC_RESPONSIVE_IPHONE_ET_CUSTOM_TABBAR.md) | [Animations](DOC_FLUX_COMPLEXES_ANIMATIONS.md) | [Communication](DOC_COMMUNICATION_EVENEMENTS.md) | [Données](DOC_DONNEES_MAPPERS_HELPERS.md) | [Recettes](DOC_RECETTES_COPIER_COLLER.md) | [Debug](DOC_DEBUG_ET_NOUVELLES_RECETTES.md) | [Checklist](DOC_CHECKLIST_AVANT_DE_CODER.md) | [FAQ](DOC_FAQ_ERREURS_FREQUENTES.md)
 
 ---
 
@@ -22,6 +22,11 @@ Chaque recette est une **solution complète et autonome**. Vous trouvez votre si
 | 🟢 [Recette 11](#-recette-11--partage-wechat-envoyer-à-un-ami) | Envoyer une page ou un contenu à un ami via WeChat | Facile |
 | 🟢 [Recette 12](#-recette-12--onglets-tabs-avec-changement-de-données) | Un menu à onglets qui change le contenu et recharge les données | Moyenne |
 | 🟢 [Recette 13](#-recette-13--cache-local-garder-des-données-hors-ligne) | Sauvegarder des données localement pour que l'app fonctionne sans réseau | Moyenne |
+| 🔴 [Recette 14](#-recette-14--paiement-marchand-natif-avec-bouclier-anti-double-débit) | Paiement Marchand TCMPP / Max It avec protection 0% double débit | Critique |
+| 🔴 [Recette 15](#-recette-15--smart-polling-asynchrone-avec-backoff-progressif) | Validation asynchrone résiliente aux micro-coupures 4G (3 essais) | Avancée |
+| 📱 [Recette 16](#-recette-16--barre-de-navigation-custom--capsule-wechat) | En-tête sur mesure aligné au pixel près sur la capsule WeChat | Moyenne |
+| 📱 [Recette 17](#-recette-17--custom-tabbar-wechat-sans-scintillement) | Barre d'onglets personnalisée officielle WeChat avec badges | Avancée |
+| ⚡ [Recette 18](#-recette-18--store-réactif-léger-avec-cache-stale-while-revalidate) | Partage d'état global sans bibliothèque externe avec cache TTL | Avancée |
 
 ---
 
@@ -740,6 +745,291 @@ Page({
     } catch (e) {
       // Pas grave si le réseau échoue : le cache est déjà affiché
       if (!cache) this.setData({ uiState: 'error' });
+    }
+  }
+});
+```
+
+
+---
+
+## 🔴 Recette 14 : Paiement Marchand Natif avec Bouclier Anti-Double Débit
+
+**Quand l'utiliser ?** Vous devez déclencher un paiement mobile via le plugin natif TCMPP / Max It (`merchantPay`) en garantissant qu'aucun client ne peut être débité deux fois même s'il clique plusieurs fois ou si la connexion saute.
+
+### Étape 1/2 — Le Service Natif (`utils/apis/native.js`)
+```javascript
+export function invokeMerchantPay({ merchantId, amount, orderId }) {
+  return new Promise((resolve, reject) => {
+    if (typeof wx.invokeNativePlugin !== 'function') {
+      return reject(new Error('Plugin natif non disponible'));
+    }
+    wx.invokeNativePlugin({
+      plugin: 'merchantPay',
+      param: {
+        merchantId,
+        amount: Math.round(Number(amount)),
+        orderId,
+        serviceType: 'MERCHANT_PAY'
+      },
+      success(res) {
+        const code = String(res?.code || res?.resultCode || '').toUpperCase();
+        if (code === 'SUCCEED' || code === 'SUCCESS' || code === '00') {
+          resolve({ txnid: String(res.txnid || res.transactionId || '') });
+        } else if (code === 'CANCEL') {
+          reject(new Error('Paiement annulé par l'utilisateur'));
+        } else {
+          reject(new Error(res?.message || 'Échec du paiement'));
+        }
+      },
+      fail(err) {
+        reject(new Error(err?.errMsg || 'Service de paiement indisponible'));
+      }
+    });
+  });
+}
+```
+
+### Étape 2/2 — Le Contrôleur de Page (`pages/[ma-page]/[ma-page].js`)
+```javascript
+import { invokeMerchantPay } from '../../utils/apis/native.js';
+import { BackendAPI } from '../../utils/apis/index.js';
+
+Page({
+  data: { isSubmitting: false, montant: 15000, commandeId: 'CMD-123' },
+  _confirmedTxnid: null, // 🛡️ Bouclier d'idempotence
+
+  async handlePayer() {
+    if (this.data.isSubmitting) return;
+    this.setData({ isSubmitting: true });
+
+    try {
+      let txnid = this._confirmedTxnid;
+
+      // 1. Débit bancaire UNIQUEMENT si pas encore débité
+      if (!txnid) {
+        wx.showLoading({ title: 'Paiement...', mask: true });
+        const res = await invokeMerchantPay({
+          merchantId: 'MARCHAND_ID',
+          amount: this.data.montant,
+          orderId: this.data.commandeId
+        });
+        txnid = res.txnid;
+        this._confirmedTxnid = txnid; // 🔒 Scellé !
+      }
+
+      // 2. Enregistrement backend (rejouable sans repayer)
+      wx.showLoading({ title: 'Confirmation...', mask: true });
+      await BackendAPI.confirmerCommande({ commandeId: this.data.commandeId, txnid });
+
+      this._confirmedTxnid = null;
+      wx.hideLoading();
+      wx.redirectTo({ url: '/pages/confirmation/confirmation' });
+
+    } catch (err) {
+      wx.hideLoading();
+      this.setData({ isSubmitting: false });
+
+      if (this._confirmedTxnid) {
+        // Débité mais confirmation réseau échouée : on rassure le client
+        wx.showModal({
+          title: 'Paiement effectué',
+          content: 'Votre compte a été débité. Cliquez sur Réessayer pour valider votre commande sans repayer.',
+          confirmText: 'Réessayer',
+          showCancel: false,
+          success: (res) => { if (res.confirm) this.handlePayer(); }
+        });
+      } else {
+        wx.showToast({ title: err.message, icon: 'none' });
+      }
+    }
+  }
+});
+```
+
+---
+
+## 🔴 Recette 15 : Smart Polling Asynchrone avec Backoff Progressif
+
+**Quand l'utiliser ?** Vous avez une opération sensible (validation de paiement, réservation) et vous voulez encaisser 95 % des micro-coupures 4G de manière 100 % transparente sans déranger l'utilisateur.
+
+### Dans vos Helpers ou dans la Page
+```javascript
+/**
+ * Exécute une promesse avec 3 tentatives silencieuses (immédiat, +2s, +4s)
+ * @param {Function} asyncFn - Fonction asynchrone à exécuter
+ * @param {number[]} [delays=[0, 2000, 4000]] - Délais entre les essais
+ */
+export async function executeSmartPolling(asyncFn, delays = [0, 2000, 4000]) {
+  let lastError;
+  for (let i = 0; i < delays.length; i++) {
+    if (delays[i] > 0) {
+      await new Promise((r) => setTimeout(r, delays[i]));
+    }
+    try {
+      return await asyncFn(i + 1); // Succès immédiat !
+    } catch (err) {
+      lastError = err;
+      // Arrêter si erreur 4xx définitive (ex: 400 mauvaise requête)
+      if (err.status && err.status >= 400 && err.status < 500) {
+        throw err;
+      }
+    }
+  }
+  throw lastError; // Propage l'erreur si tous les essais ont échoué
+}
+```
+
+---
+
+## 📱 Recette 16 : Barre de Navigation Custom & Capsule WeChat
+
+**Quand l'utiliser ?** Vous voulez un en-tête d'application sur mesure (titre personnalisé, bouton retour, logo) qui ne rentre JAMAIS en collision avec la capsule native de WeChat sur iPhone comme sur Android.
+
+### Étape 1/3 — Le Helper de Calcul (`utils/helpers/system-info.js`)
+```javascript
+export function getNavBarGeometry() {
+  const sys = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
+  const menu = wx.getMenuButtonBoundingClientRect ? wx.getMenuButtonBoundingClientRect() : null;
+  const statusBarHeight = sys.statusBarHeight || 20;
+
+  if (menu && menu.top > 0) {
+    const navBarHeight = (menu.top - statusBarHeight) * 2 + menu.height;
+    return {
+      statusBarHeight,
+      navBarHeight,
+      totalHeight: statusBarHeight + navBarHeight,
+      capsuleWidth: menu.width
+    };
+  }
+  return { statusBarHeight, navBarHeight: 44, totalHeight: statusBarHeight + 44, capsuleWidth: 87 };
+}
+```
+
+### Étape 2/3 — Le WXML du Composant (`components/custom-nav-bar/index.wxml`)
+```xml
+<view class="nav-bar-fixed" style="height: {{ geometry.totalHeight }}px; padding-top: {{ geometry.statusBarHeight }}px;">
+  <view class="nav-bar-inner" style="height: {{ geometry.navBarHeight }}px;">
+    <view class="nav-back" bindtap="goBack">‹</view>
+    <view class="nav-title">{{ title }}</view>
+  </view>
+</view>
+<view style="height: {{ geometry.totalHeight }}px;"></view>
+```
+
+### Étape 3/3 — Le JS du Composant (`components/custom-nav-bar/index.js`)
+```javascript
+import { getNavBarGeometry } from '../../utils/helpers/system-info.js';
+
+Component({
+  properties: { title: { type: String, value: '' } },
+  data: { geometry: {} },
+  attached() {
+    this.setData({ geometry: getNavBarGeometry() });
+  },
+  methods: {
+    goBack() {
+      if (getCurrentPages().length > 1) wx.navigateBack();
+      else wx.switchTab({ url: '/pages/home/home' });
+    }
+  }
+});
+```
+
+---
+
+## 📱 Recette 17 : Custom TabBar WeChat Sans Scintillement
+
+**Quand l'utiliser ?** Vous utilisez le mode officiel `"custom": true` dans `app.json` et vous voulez que l'onglet actif s'affiche immédiatement sans clignoter et sans désynchronisation.
+
+### Dans chaque page d'onglet (`pages/home/home.js`, `pages/favoris/favoris.js`, etc.)
+```javascript
+Page({
+  onShow() {
+    // 🔒 Indique le bon index au custom tab bar (ex: 0 pour Home, 1 pour Explore, etc.)
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({ selected: 0 });
+    }
+  }
+});
+```
+
+### Le WXSS du Custom TabBar (`custom-tab-bar/index.wxss`)
+```wxss
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 98rpx;
+  background: #FFFFFF;
+  display: flex;
+  box-shadow: 0 -2rpx 10rpx rgba(0,0,0,0.05);
+  /* 🛡️ Protection Safe Area obligatoire sur iPhone */
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 999;
+}
+.tab-item { flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.tab-icon { width: 48rpx; height: 48rpx; }
+.tab-text { font-size: 20rpx; color: #999999; margin-top: 4rpx; }
+.tab-item.active .tab-text { color: #FF7900; font-weight: bold; }
+```
+
+---
+
+## ⚡ Recette 18 : Store Réactif Léger avec Cache Stale-While-Revalidate
+
+**Quand l'utiliser ?** Partager des données entre plusieurs pages (ex: liste de produits, favoris, panier) sans installer Redux/MobX, avec lecture immédiate depuis le stockage local et mise à jour en tâche de fond.
+
+### Le Store (`utils/stores/mon-store.js`)
+```javascript
+const CACHE_KEY = 'mon_app_store_cache';
+const TTL_MS = 15 * 60 * 1000; // 15 minutes
+
+let state = {
+  items: wx.getStorageSync(CACHE_KEY)?.items || [],
+  lastUpdated: wx.getStorageSync(CACHE_KEY)?.timestamp || 0
+};
+
+export const MonStore = {
+  getItems() {
+    return state.items;
+  },
+  isFresh() {
+    return (Date.now() - state.lastUpdated) < TTL_MS && state.items.length > 0;
+  },
+  setItems(newItems) {
+    state.items = Array.isArray(newItems) ? newItems : [];
+    state.lastUpdated = Date.now();
+    wx.setStorage({
+      key: CACHE_KEY,
+      data: { items: state.items, timestamp: state.lastUpdated }
+    });
+  }
+};
+```
+
+### Utilisation dans une Page (`pages/catalogue/catalogue.js`)
+```javascript
+import { MonStore } from '../../utils/stores/mon-store.js';
+import { BackendAPI } from '../../utils/apis/index.js';
+
+Page({
+  data: { items: [] },
+
+  async onLoad() {
+    // 1. Rendu instantané depuis le store / cache
+    this.setData({ items: MonStore.getItems() });
+
+    // 2. Si le cache a expiré, mise à jour silencieuse
+    if (!MonStore.isFresh()) {
+      try {
+        const freshItems = await BackendAPI.getItems();
+        MonStore.setItems(freshItems);
+        this.setData({ items: freshItems });
+      } catch (e) {
+        console.warn('Impossible de rafraîchir en arrière-plan', e);
+      }
     }
   }
 });

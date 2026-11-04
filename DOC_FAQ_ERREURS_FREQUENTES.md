@@ -1,4 +1,4 @@
-> 🔗 **Navigation :** [UI](DOC_UI_POUR_DEVELOPPEURS.md) | [API](DOC_API_POUR_DEVELOPPEURS.md) | [Animations](DOC_FLUX_COMPLEXES_ANIMATIONS.md) | [Communication](DOC_COMMUNICATION_EVENEMENTS.md) | [Données](DOC_DONNEES_MAPPERS_HELPERS.md) | [Recettes](DOC_RECETTES_COPIER_COLLER.md) | [Debug](DOC_DEBUG_ET_NOUVELLES_RECETTES.md) | [Checklist](DOC_CHECKLIST_AVANT_DE_CODER.md) | [FAQ](DOC_FAQ_ERREURS_FREQUENTES.md)
+> 🔗 **Navigation :** [UI](DOC_UI_POUR_DEVELOPPEURS.md) | [API](DOC_API_POUR_DEVELOPPEURS.md) | [Paiement & Résilience](DOC_PAIEMENT_NATIVE_MAXIT_ET_RESILIENCE.md) | [Responsive & TabBar](DOC_RESPONSIVE_IPHONE_ET_CUSTOM_TABBAR.md) | [Animations](DOC_FLUX_COMPLEXES_ANIMATIONS.md) | [Communication](DOC_COMMUNICATION_EVENEMENTS.md) | [Données](DOC_DONNEES_MAPPERS_HELPERS.md) | [Recettes](DOC_RECETTES_COPIER_COLLER.md) | [Debug](DOC_DEBUG_ET_NOUVELLES_RECETTES.md) | [Checklist](DOC_CHECKLIST_AVANT_DE_CODER.md) | [FAQ](DOC_FAQ_ERREURS_FREQUENTES.md)
 
 ---
 
@@ -16,6 +16,8 @@ Cherchez votre question dans la liste. La réponse vous dit exactement quoi fair
 - [🔐 Sécurité & Authentification](#-sécurité--authentification)
 - [⚡ Performance](#-performance)
 - [🤝 Travail en Équipe & Git](#-travail-en-équipe--git)
+- [💳 Paiement Marchand & Résilience Réseau](#-paiement-marchand--résilience-réseau)
+- [📱 Responsive iPhone Réel & Custom TabBar](#-responsive-iphone-réel--custom-tabbar)
 
 ---
 
@@ -405,3 +407,47 @@ Exemples :
   docs(recettes): ajout recette scroll infini
 ```
 
+
+
+---
+
+## 💳 Paiement Marchand & Résilience Réseau
+
+**Q : Comment être sûr à 100% qu'un client ne sera jamais débité deux fois sur Orange Money ?**
+> Scellez immédiatement le reçu `this._confirmedTxnid = txnid` dès le retour de `wx.invokeNativePlugin`. Si l'enregistrement backend échoue ensuite à cause d'une coupure 4G, le bouton "Réessayer" vérifie d'abord `if (this._confirmedTxnid)` : il saute intégralement l'appel de débit Orange Money et rejoue uniquement l'enregistrement backend avec la preuve déjà obtenue. Zéro franc supplémentaire prélevé !
+
+---
+
+**Q : L'utilisateur a été débité, mais l'app affichait une erreur "Délai dépassé". Pourquoi ?**
+> Vous avez probablement mis un timeout arbitraire (`setTimeout` de 30 secondes via `Promise.race`) sur le paiement natif. Si l'utilisateur met 35 secondes pour taper son code PIN secret sur le clavier sécurisé Orange Money, le JavaScript déclenche une fausse erreur alors que le SDK natif valide le paiement juste après. **Règle absolue :** Ne mettez aucun timeout artificiel JS sur l'appel du plugin natif `merchantPay`.
+
+---
+
+**Q : Que faire si le réseau 4G se coupe pile au moment de la confirmation du billet ?**
+> Utilisez le **Smart Polling à 3 essais** (immédiat, +2s, +4s). Si au bout des 3 essais le réseau est toujours mort, affichez une modale explicite : *"Votre compte a bien été débité, mais la connexion a été ralentie. Cliquez sur Réessayer pour valider votre billet sans repayer."*
+
+---
+
+## 📱 Responsive iPhone Réel & Custom TabBar
+
+**Q : Sur iPhone, mon bouton "Payer" en bas d'écran est à moitié masqué ou difficile à cliquer. Pourquoi ?**
+> C'est l'absence de gestion du Home Indicator (la barre virtuelle des iPhone récents). Ajoutez impérativement dans votre WXSS du footer fixé :
+> `padding-bottom: calc(24rpx + env(safe-area-inset-bottom));`.
+> Et veillez à ajouter un padding équivalent au conteneur de scroll de la page pour ne pas cacher le dernier élément.
+
+---
+
+**Q : Pourquoi mon Custom TabBar affiche le mauvais onglet sélectionné ou clignote au changement de page ?**
+> Lors d'un `wx.switchTab`, WeChat peut réinstancier le composant de la barre d'onglets. La règle officielle pour éliminer tout clignotement est d'ajouter dans le cycle de vie `onShow()` de **chaque page d'onglet** :
+> ```javascript
+> onShow() {
+>   if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+>     this.getTabBar().setData({ selected: MON_INDEX });
+>   }
+> }
+> ```
+
+---
+
+**Q : Pourquoi ma page est coupée en bas et ne scrolle pas sur iPhone alors que le simulateur était parfait ?**
+> Vous avez probablement mis `height: 100vh; overflow: hidden;`. Sur un appareil réel avec encoche ou Dynamic Island, la hauteur utile est inférieure à `100vh`. Remplacez toujours `height: 100vh` par `min-height: 100vh;` et laissez le flux de document s'exprimer naturellement.

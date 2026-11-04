@@ -245,6 +245,10 @@ Si tu utilises Cursor, Copilot ou Gemini avec le fichier `.cursorrules` :
 | `const` dans un `.wxs` | Erreur de syntaxe WeChat | Utiliser `var` (ES5 seulement) |
 | Texte en dur dans le WXML | App non-traduisible | Utiliser les clés `i18n` |
 | `Bus.emit()` entre composants proches | Couplage invisible | `this.triggerEvent()` |
+| `Promise.race` 30s sur `merchantPay` | Débit fantôme (Ghost Debit) | Laisser le SDK natif gérer le cycle PIN |
+| Bouton fixé sans Safe Area | Masqué par Home Indicator iPhone | `padding-bottom: calc(XXrpx + env(safe-area-inset-bottom))` |
+| `height: 100vh; overflow: hidden` | Contenu tronqué sur iPhone réel | Préférer `min-height: 100vh` souple |
+| Oublier `getTabBar().setData()` dans `onShow` | Mauvais onglet actif / scintillement | Synchroniser l'index dans le cycle `onShow` |
 
 ---
 
@@ -252,4 +256,7 @@ Si tu utilises Cursor, Copilot ou Gemini avec le fichier `.cursorrules` :
   <i>Lisez une fois. Appliquez toujours.</i>
 </div>
 
-- ❓ **`DOC_FAQ_ERREURS_FREQUENTES.md`** : 30+ questions/réponses pour ne jamais faire d'erreur (UI, API, Git, Performance, Sécurité).
+- 💳 **`DOC_PAIEMENT_NATIVE_MAXIT_ET_RESILIENCE.md`** : Architecture complète paiement marchand Max It / TCMPP, bouclier anti-double débit (`_confirmedTxnid`), Smart Polling 4G et récupération hors-ligne.
+- 📱 **`DOC_RESPONSIVE_IPHONE_ET_CUSTOM_TABBAR.md`** : Rendu iPhone réel, Safe Areas, calcul de capsule WeChat et architecture officielle Custom TabBar.
+- 📚 **`DOC_RECETTES_COPIER_COLLER.md`** : 18 recettes prêtes à l'emploi (Liste, Formulaire, Upload, Pull-to-refresh, Paiement natif, Smart polling, Custom navbar, Custom tabbar, Store réactif).
+- ❓ **`DOC_FAQ_ERREURS_FREQUENTES.md`** : 35+ questions/réponses pour ne jamais faire d'erreur (UI, API, Paiement, iPhone, Git, Performance).
