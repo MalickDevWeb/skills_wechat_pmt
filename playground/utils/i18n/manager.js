@@ -25,3 +25,4 @@ export function setLang(newLang) {
 export function onLangChange(callback) {
   return Bus.on('LANG_CHANGED', callback);
 }
+

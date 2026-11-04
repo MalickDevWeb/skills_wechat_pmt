@@ -138,6 +138,7 @@ Toutes les compétences du kit sont organisées en **5 pôles d'excellence**, co
 
 ### 🛠️ PÔLE 5 : Compilateur TCMPP & Qualité d'Équipe
 * 📦 **[`DOC_ARCHITECTURE_SUBPACKAGES_TCMPP.md`](docs/DOC_ARCHITECTURE_SUBPACKAGES_TCMPP.md)** : Règle des 2 Mo, découpage en sous-paquets, préchargement `preloadRule` et option `--subpackage`.
+* 🚨 **[`DOC_MATRICE_ERREURS_PROD_TCMPP.md`](docs/DOC_MATRICE_ERREURS_PROD_TCMPP.md)** : Matrice anti-panique des 30 erreurs critiques de production (réseau TCMPP, double débit OM, limite 2 Mo, limitation 10 pages).
 * 🛠️ **[`DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md`](docs/DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md)** : Résolution des erreurs fatales du compilateur (BOM UTF-8, erreur 404 sur les polices locales `@font-face`, clauses de garde dans `onLoad`).
 * 🤝 **Matrice d'Isolation Multi-Développeurs** : Attribution exclusive des dossiers pour faire collaborer 7 développeurs en simultané avec zéro conflit Git.
 * 📚 **[`DOC_RECETTES_COPIER_COLLER.md`](docs/DOC_RECETTES_COPIER_COLLER.md)** : 52 recettes de code complètes prêtes à copier.

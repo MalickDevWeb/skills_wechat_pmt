@@ -184,6 +184,7 @@ Exécuter impérativement dans cet ordre :
 - **Zéro @font-face local** : Ne jamais charger de `.ttf` locaux dans les WXSS (erreur 404 avec `-do-not-use-local-path-`).
 - **Guards dans onLoad** : Valider tout paramètre requis dès l'entrée avec toast d'alerte et retour automatique.
 - **Plafond des 2 Mo & Sous-Paquets** : Le paquet principal ne doit jamais dépasser 2 Mo. Tout parcours riche doit être découpé en sous-paquet (`subpackages/`) avec préchargement silencieux `preloadRule` dans `app.json`.
+- **Matrice Anti-Panique des 30 Erreurs** : Résolution en 60s des erreurs réseau, domaine, double débit OM et saturation de pile. Voir [docs/DOC_MATRICE_ERREURS_PROD_TCMPP.md](docs/DOC_MATRICE_ERREURS_PROD_TCMPP.md).
 
 ### 5.2 Collaboration Multi-Développeurs (Zéro Conflit Git)
 - Chaque développeur est propriétaire d'un sous-dossier exclusif.

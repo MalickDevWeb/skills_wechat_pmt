@@ -16,7 +16,7 @@
 
   <!-- 1. Composant Signature Solde Orange Money -->
   <view class="section">
-    <om-balance-pill balance="45250" currency="FCFA" />
+    <om-balance-pill balance="45250" currency="FCFA"/>
   </view>
 
   <!-- 2. Contrôles Machine à États (uiState) -->
@@ -69,9 +69,7 @@
       <text class="section-title">Outbox Pattern (Résilience 4G)</text>
       <text class="outbox-badge">{{ pendingOutboxCount }} en attente</text>
     </view>
-    <button class="ods-btn ods-btn--primary" hover-class="ods-btn--pressed" bindtap="testOfflineOutbox">
-      {{ i18n.t('btn.offline_test', lang) }}
-    </button>
+    <button class="ods-btn ods-btn--primary" hover-class="ods-btn--pressed" bindtap="testOfflineOutbox">{{ i18n.t('btn.offline_test', lang) }}</button>
     <button wx:if="{{ pendingOutboxCount > 0 }}" class="ods-btn ods-btn--secondary flush-btn" bindtap="flushOutboxNow">
       Synchroniser Manuellement
     </button>
