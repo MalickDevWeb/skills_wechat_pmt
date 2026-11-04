@@ -13,29 +13,23 @@ Ce skill impose les règles strictes d'ingénierie logicielle pour concevoir, st
 
 ---
 
-## 🎯 DÉCLENCHEURS IA (MOTS-CLÉS D'ACTIVATION)
+## 🎯 DÉCLENCHEURS IA (LES 10 COMMANDES MAÎTRESSES)
 
-| Mot-Clé | Domaine d'Application |
-|---|---|
-| **`@UI-MOCK`** | Crée l'UI en mode Mock-First avec state machine (`uiState`) sans appel réseau. |
-| **`@SKELETON-UX`** | Conçoit les skeletons shimmer wave (`components/ux/`), empty-states et error-boundaries. |
-| **`@PAGE-ANIM`** | Ajoute le feedback tactile (`hover-class` Apple Press) et les transitions de page 60 FPS. |
-| **`@RESPONSIVE-UI`** | Dimensionnement iPhone réel (Safe Area, suppression de `100vh` rigide, capsule WeChat). |
-| **`@CUSTOM-TABBAR`** | Implémente ou synchronise le custom tab bar officiel WeChat sans aucun clignotement. |
-| **`@CUSTOM-NAVBAR`** | Barre de navigation custom dynamique (`statusBarHeight + 44px + offset`), retour intelligent et mode logo. |
-| **`@SAFE-NAV`** | Sécurise la navigation (pile de 10 pages, anti-double tap lock `withLock`, retour intelligent). |
-| **`@BEHAVIOR-MIXIN`** | Factorise l'état et le chargement asynchrone avec les Behaviors natifs (`loadingBehavior`). |
-| **`@IMAGE-MEDIA`** | Composant image résilient (auto-retry 3x, cache timestamps, previewable plein écran, fallback). |
-| **`@MODAL-SHEET`** | Bottom-sheets et modales responsives (placement center/bottom, hexToRGBA, blur, safe-area). |
-| **`@DATE-PICKER`** | Calendrier horizontal custom (chips scrollables, dates bloquées, dates additionnelles, ISO strict). |
-| **`@SAFE-STORAGE`** | Persistance protégée quota 10 MB WeChat (gestion chaîne vide, fallback par défaut, `getOrSet`). |
-| **`@PAGE-BINDINGS`** | Bind déclaratif Page <-> EventBus avec auto-subscribe/unsubscribe prévenant toute fuite mémoire. |
-| **`@STALE-REVALIDATE`** | Pattern SWR (cache instantané L1/L2 + background refresh API + garde anti-race `_refreshRequestId`). |
-| **`@API-CONNECT`** | Connecte un écran existant au backend via le workflow strict en 4 étapes (Endpoint, Schema, Service, UI). |
-| **`@FULL-FEATURE`** | Construit la vue UI et la connecte directement à l'API en une seule passe. |
-| **`@MAXIT-SDK`** | Utilise la façade officielle `@sonatel-os/maxit-mini-sdk` (identité, login, contacts, scan, protect). |
-| **`@NATIVE-PAY`** | Déploie le flux de paiement marchand Orange Money avec bouclier bancaire `_confirmedTxnid` (0% double débit). |
-| **`@COMPILER-SAFE`** | Élimine les pièges de compilation TCMPP (BOM UTF-8, @font-face 404, guards `onLoad`). |
+| Commande IA | Domaine | Comportement Strict Imposé à l'IA |
+|---|---|---|
+| **`@UI-MOCK`** | UI & Prototypage | Crée l'UI en mode Mock-First avec state machine (`uiState`), feedback tactile Apple Press (`hover-class="btn--pressed"`) et animations 60 FPS. Zéro appel API. |
+| **`@SKELETON-UX`** | États d'Attente UX | Conçoit les skeletons shimmer wave (`components/ux/`), cartes fantômes, empty-states et error-boundaries. Isolation totale de `components/ui/`. |
+| **`@RESPONSIVE-UI`** | Layout iPhone Réel | Dimensionnement iPhone physique : Safe Areas `env(safe-area-inset-bottom)`, suppression de `100vh` rigide, nav bar dynamique calculée sous l'encoche et custom tab bar officiel synchronisé. |
+| **`@INTERACTIVE-UI`** | Modales & Dates | Bottom-sheets avec backdrop blur et fermeture sécurisée (`catchtap="noop"`), et calendrier horizontal sans décalage de fuseau UTC avec gestion du délai `minDays`. |
+| **`@IMAGE-MEDIA`** | Médias Résilients | Composant image tout-terrain : auto-retry à 3 essais pour réseau 4G instable, cache local de timestamps, fallback d'erreur et zoom plein écran natif WeChat (`wx.previewImage`). |
+| **`@STATE-ENGINE`** | État & Cache | Gestion d'état industrielle : liaison déclarative sans fuite mémoire (`createPageHelpers`), Mixin `loadingBehavior` et cache Stale-While-Revalidate à 0 ms avec garde anti-race. |
+| **`@SAFE-STORAGE`** | Persistance Locale | Accès stockage sécurisé : contournement du piège natif de la chaîne vide WeChat, protection contre le dépassement du quota de 10 Mo et méthode atomique `getOrSet`. |
+| **`@SAFE-NAV`** | Routage WeChat | Sécurise la navigation contre le crash silencieux de la pile à 10 pages (`navigateToSafe`), anti-double clic (`withLock`) et retour intelligent vers Home si historique vide. |
+| **`@API-CONNECT`** | Consommation Backend | Connecte l'écran au backend via le workflow strict en 4 étapes (Endpoint, Schema json-sculpt, Méthode BackendAPI, UI), auth OAuth2 avec buffer de sécurité de 60s et erreurs typées. |
+| **`@NATIVE-PAY`** | Paiement Orange Money | Déploie le paiement marchand natif avec bouclier bancaire `_confirmedTxnid` (garantie 0% double débit), Smart Polling 4G et gestion des statuts incertains (`err.uncertain`). |
+| **`@MAXIT-SDK`** | Façade Sonatel Max It | Intègre le SDK officiel `@sonatel-os/maxit-mini-sdk` : profil sans écran de login (`user()`), contacts, scan caméra seule anti-fraude et protection anti-capture d'écran (`screen.protect`). |
+| **`@ANALYTICS-TRACK`** | Télémétrie & Taggage | Suivi d'audience et de conversion conforme Sonatel/Orange : traçage des écrans (`page_view`), clics CTA, tunnel de réservation et paiements avec file d'attente hors-ligne. |
+| **`@COMPILER-SAFE`** | Compilateur TCMPP | Élimine les pièges de compilation fatals : zéro BOM UTF-8 (`\uFEFF`), zéro `@font-face` local, clauses de garde obligatoires dans `onLoad` avec retour automatique. |
 
 ---
 

@@ -70,6 +70,7 @@ Toutes les compétences du kit sont organisées en **5 pôles d'excellence**, co
 * 📱 **[`DOC_MAXIT_MINI_SDK_SONATEL.md`](DOC_MAXIT_MINI_SDK_SONATEL.md)** : Guide officiel du SDK Sonatel (`@sonatel-os/maxit-mini-sdk`), identité sans écran de login (`user()`), contacts, scan caméra seule anti-fraude et simulation sous DevTools.
 * 💳 **[`DOC_PAIEMENT_NATIVE_MAXIT_ET_RESILIENCE.md`](DOC_PAIEMENT_NATIVE_MAXIT_ET_RESILIENCE.md)** : Bouclier bancaire (`_confirmedTxnid`) garantissant 0 % de double débit, Smart Polling 4G à 3 essais et gestion des erreurs incertaines (`err.uncertain`).
 * 🛡️ **Sécurité Écran** : Verrouillage anti-capture d'écran sur les billets QR (`screen.protect(true)` puis obligatoirement `protect(false)`).
+* 📊 **[`DOC_TAGGAGE_EVENEMENTS_ET_ANALYTICS.md`](DOC_TAGGAGE_EVENEMENTS_ET_ANALYTICS.md)** : Télémétrie et suivi des conversions conforme Orange/Sonatel avec file d'attente hors-ligne.
 
 ### 🛠️ PÔLE 5 : Compilateur TCMPP & Qualité d'Équipe
 * 🛠️ **[`DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md`](DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md)** : Résolution des erreurs fatales du compilateur (BOM UTF-8, erreur 404 sur les polices locales `@font-face`, clauses de garde dans `onLoad`).

@@ -247,3 +247,4 @@ Il vous suffit d'insérer le mot-clé directement dans votre requête :
 - *"Gère le paiement de la commande sans risque de double débit `@NATIVE-PAY`"*
 
 L'IA appliquera immédiatement l'ensemble des règles de production sans aucune omission technique.
+

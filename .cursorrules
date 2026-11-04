@@ -11,24 +11,19 @@ You MUST follow ALL rules in this document for every code change.
 
 | Mot-Clé dans le prompt | Comportement imposé |
 |---|---|
-| `@UI-MOCK` | Crée l'UI avec de fausses données. N'appelle AUCUNE API. |
-| `@API-CONNECT` | Connecte une page existante au backend (Mapper + Méthode API). |
-| `@FULL-FEATURE` | Crée l'UI ET l'API en même temps. Pas de données Mock. |
-| `@NATIVE-PAY` | Déploie le paiement marchand natif (Max It / TCMPP) avec bouclier bancaire `_confirmedTxnid` (0% double débit) et smart polling. |
-| `@RESPONSIVE-UI` | Adapte l'interface aux contraintes physiques iPhone (Safe Area, Home Indicator, pas de `100vh` rigide, capsule WeChat). |
-| `@CUSTOM-TABBAR` | Implémente ou synchronise le custom tab bar officiel WeChat sans aucun clignotement. |
-| `@CUSTOM-NAVBAR` | Barre de navigation custom dynamique (`statusBarHeight + 44px + offset`), retour intelligent et mode logo. |
-| `@SAFE-NAV` | Sécurise la navigation contre la limite des 10 pages et le double-tap. |
-| `@BEHAVIOR-MIXIN` | Factorise le code récurrent (loading, state) via les Behaviors natifs WeChat. |
-| `@IMAGE-MEDIA` | Composant image résilient (auto-retry 3x, cache timestamps, previewable plein écran, fallback). |
-| `@MODAL-SHEET` | Bottom-sheets et modales responsives (placement center/bottom, hexToRGBA, blur, safe-area). |
-| `@DATE-PICKER` | Calendrier horizontal custom (chips scrollables, dates bloquées, dates additionnelles, ISO strict). |
-| `@SAFE-STORAGE` | Persistance protégée quota 10 MB WeChat (gestion chaîne vide, fallback par défaut, `getOrSet`). |
-| `@PAGE-BINDINGS` | Bind déclaratif Page <-> EventBus avec auto-subscribe/unsubscribe prévenant toute fuite mémoire. |
-| `@STALE-REVALIDATE` | Pattern SWR (cache instantané L1/L2 + background refresh API + garde anti-race `_refreshRequestId`). |
-| `@MAXIT-SDK` | Utilise le SDK officiel Sonatel Max It (`@sonatel-os/maxit-mini-sdk`). |
-| `@COMPILER-SAFE` | Élimine les pièges compilateur (BOM UTF-8, @font-face 404, guards onLoad, retour intelligent). |
-| `@PAGE-ANIM` | Ajoute le feedback tactile au clic (`hover-class`) et les transitions de page fluides (courbe Apple). |
+| `@UI-MOCK` | Crée l'UI en mode Mock-First avec state machine (`uiState`), feedback tactile Apple Press (`hover-class="btn--pressed"`) et animations 60 FPS. Zéro appel API. |
+| `@SKELETON-UX` | Conçoit les skeletons shimmer wave (`components/ux/`), cartes fantômes, empty-states et error-boundaries. Isolation totale de `components/ui/`. |
+| `@RESPONSIVE-UI` | Dimensionnement iPhone physique : Safe Areas `env(safe-area-inset-bottom)`, suppression de `100vh` rigide, nav bar dynamique calculée sous l'encoche et custom tab bar officiel synchronisé. |
+| `@INTERACTIVE-UI` | Bottom-sheets avec backdrop blur et fermeture sécurisée (`catchtap="noop"`), et calendrier horizontal sans décalage de fuseau UTC avec gestion du délai `minDays`. |
+| `@IMAGE-MEDIA` | Composant image tout-terrain : auto-retry à 3 essais pour réseau 4G instable, cache local de timestamps, fallback d'erreur et zoom plein écran natif WeChat (`wx.previewImage`). |
+| `@STATE-ENGINE` | Gestion d'état industrielle : liaison déclarative sans fuite mémoire (`createPageHelpers`), Mixin `loadingBehavior` et cache Stale-While-Revalidate à 0 ms avec garde anti-race. |
+| `@SAFE-STORAGE` | Accès stockage sécurisé : contournement du piège natif de la chaîne vide WeChat, protection contre le dépassement du quota de 10 Mo et méthode atomique `getOrSet`. |
+| `@SAFE-NAV` | Sécurise la navigation contre le crash silencieux de la pile à 10 pages (`navigateToSafe`), anti-double clic (`withLock`) et retour intelligent vers Home si historique vide. |
+| `@API-CONNECT` | Connecte l'écran au backend via le workflow strict en 4 étapes (Endpoint, Schema json-sculpt, Méthode BackendAPI, UI), auth OAuth2 avec buffer de sécurité de 60s et erreurs typées. |
+| `@NATIVE-PAY` | Déploie le paiement marchand natif avec bouclier bancaire `_confirmedTxnid` (garantie 0% double débit), Smart Polling 4G et gestion des statuts incertains (`err.uncertain`). |
+| `@MAXIT-SDK` | Intègre le SDK officiel `@sonatel-os/maxit-mini-sdk` : profil sans écran de login (`user()`), contacts, scan caméra seule anti-fraude et protection anti-capture d'écran (`screen.protect`). |
+| `@ANALYTICS-TRACK` | Suivi d'audience et de conversion conforme Sonatel/Orange : traçage des écrans (`page_view`), clics CTA, tunnel de réservation et paiements avec file d'attente hors-ligne. |
+| `@COMPILER-SAFE` | Élimine les pièges de compilation fatals : zéro BOM UTF-8 (`\uFEFF`), zéro `@font-face` local, clauses de garde obligatoires dans `onLoad` avec retour automatique. |
 
 ---
 
@@ -172,7 +167,6 @@ async loadData() {
 JAMAIS de texte en dur dans `.wxml` ou `.js`.
 Toujours utiliser les clés de traduction : `{{ t('ma.cle') }}`
 
-
 ---
 
 ## RÈGLE 4 — Paiement Marchand Natif & Anti-Double Débit (`merchantPay`)
@@ -196,7 +190,6 @@ Toujours utiliser les clés de traduction : `{{ t('ma.cle') }}`
    }
    ```
 
-
 ---
 
 ## RÈGLE 6 — Navigation Sécurisée & Behaviors
@@ -204,7 +197,6 @@ Toujours utiliser les clés de traduction : `{{ t('ma.cle') }}`
 1. **Limite des 10 pages :** Utilise toujours `navigateToSafe()` pour basculer sur `redirectTo` dès que la pile atteint 10 pages.
 2. **Anti-Double Clic :** Verrouille la navigation pendant 500ms pour éviter les doubles ouvertures d'écran.
 3. **Behaviors :** Partage la logique asynchrone (`isLoading`, `hasError`, `withLoading`) via `Behavior({ ... })` au lieu de dupliquer du code.
-
 
 ---
 
@@ -215,7 +207,6 @@ Toujours utiliser les clés de traduction : `{{ t('ma.cle') }}`
 3. **Protection d'Écran Obligatoire :** Tout `miniSDK.screen.protect(true)` doit obligatoirement avoir son `miniSDK.screen.protect(false)` dans `onHide` et `onUnload`.
 4. **DevTools :** Configure `simulate: isDev` au démarrage dans `app.js`.
 
-
 ---
 
 ## RÈGLE 8 — Compilateur TCMPP & Robustesse
@@ -224,7 +215,6 @@ Toujours utiliser les clés de traduction : `{{ t('ma.cle') }}`
 2. **Pas de BOM UTF-8 :** Enregistre en UTF-8 sans BOM.
 3. **Retour Intelligent :** Toujours vérifier `getCurrentPages().length > 1` avant `navigateBack()`, sinon basculer vers `switchTab('/pages/home/home')`.
 4. **Guards d'arguments dans onLoad :** Vérifie toujours la présence de l'ID obligatoire.
-
 
 ---
 
