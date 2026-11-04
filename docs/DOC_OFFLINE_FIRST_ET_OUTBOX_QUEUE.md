@@ -49,3 +49,4 @@ Le vidage de la file d'attente s'active sur deux déclencheurs :
 - **Erreur 5xx / Timeout** : L'élément est conservé dans l'Outbox, son compteur `retryCount` est incrémenté, et une pause de 2 secondes est observée avant de retenter l'élément suivant.
 
 *(Consultez l'implémentation complète prête à l'emploi dans [DOC_RECETTES_COPIER_COLLER.md](DOC_RECETTES_COPIER_COLLER.md#recette-51--outbox-pattern--file-dattente-hors-ligne-avec-auto-replay-4g)).*
+

@@ -2846,6 +2846,113 @@ Page({
 });
 ```
 
+---
+
+## 🧪 Recette 52 : Harness de Test Unitaire Headless pour Machine à États uiState (CI Ready)
+
+**Quand l'utiliser ?** Dans vos tests automatisés (GitHub Actions / GitLab CI) pour valider qu'une page WeChat passe correctement par les états `loading` ➔ `success` ➔ `error` et libère ses ressources dans `onUnload()`, sans ouvrir WeChat DevTools.
+
+### 1. Le Module de Harnais Headless (`tests/harness.js`)
+```javascript
+// Mock des API globales WeChat indispensables
+global.wx = {
+  showToast: () => {},
+  hideToast: () => {},
+  showLoading: () => {},
+  hideLoading: () => {},
+  vibrateShort: () => {},
+  navigateTo: () => {},
+  redirectTo: () => {},
+  switchTab: () => {},
+  getStorageSync: () => '',
+  setStorageSync: () => {},
+  removeStorageSync: () => {}
+};
+
+/**
+ * Crée une instance contrôlable d'une page WeChat
+ */
+export function createPageHarness(pageDefinition) {
+  return {
+    ...pageDefinition,
+    data: JSON.parse(JSON.stringify(pageDefinition.data || {})),
+
+    setData(partial, callback) {
+      Object.keys(partial).forEach((key) => {
+        if (key.includes('.')) {
+          const parts = key.split('.');
+          let target = this.data;
+          for (let i = 0; i < parts.length - 1; i++) {
+            if (!target[parts[i]]) target[parts[i]] = {};
+            target = target[parts[i]];
+          }
+          target[parts[parts.length - 1]] = partial[key];
+        } else {
+          this.data[key] = partial[key];
+        }
+      });
+      if (typeof callback === 'function') callback();
+    },
+
+    async triggerLoad(options = {}) {
+      if (typeof this.onLoad === 'function') {
+        await this.onLoad(options);
+      }
+    },
+
+    async triggerUnload() {
+      if (typeof this.onUnload === 'function') {
+        await this.onUnload();
+      }
+    }
+  };
+}
+```
+
+### 2. Écriture d'un Test Unitaire de Page (`tests/pages/home.test.js`)
+```javascript
+import assert from 'node:assert';
+import { createPageHarness } from '../harness';
+
+// Import ou définition de la page à tester
+const homePage = {
+  data: {
+    uiState: 'loading',
+    balance: 0
+  },
+
+  async onLoad() {
+    this.setData({ uiState: 'loading' });
+    try {
+      // Simulation appel API Backend
+      const balance = await Promise.resolve(25000);
+      this.setData({
+        uiState: 'success',
+        balance
+      });
+    } catch (e) {
+      this.setData({ uiState: 'error' });
+    }
+  },
+
+  onUnload() {
+    this.setData({ uiState: 'destroyed' });
+  }
+};
+
+// 1. Test de l'état initial
+const harness = createPageHarness(homePage);
+assert.strictEqual(harness.data.uiState, 'loading', 'L\'état initial doit être loading');
+
+// 2. Test du chargement réussi
+harness.triggerLoad().then(() => {
+  assert.strictEqual(harness.data.uiState, 'success', 'L\'état après chargement doit être success');
+  assert.strictEqual(harness.data.balance, 25000, 'Le solde doit être injecté');
+  console.log('✅ Test Home Page (Success) validé avec succès !');
+});
+```
+
+
 
 
 
