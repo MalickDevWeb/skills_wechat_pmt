@@ -2,7 +2,7 @@
 
 /**
  * 🧪 TEST-GENERATORS — WeChat PMT
- * Teste automatiquement les générateurs create-page.js et create-component.js
+ * Teste automatiquement les générateurs create-page.js, create-component.js et create-api.js
  */
 
 const fs = require('fs');
@@ -82,8 +82,25 @@ try {
   });
   console.log('  ✅ create-component.js (--ux) fonctionne avec succès (4 fichiers valides).\n');
 
+  // 4. Test create-api.js
+  console.log('🔍 Test 4 : Génération de module API & Mapper (create-api.js)...');
+  execSync(`node "${path.join(SKILL_DIR, 'create-api.js')}" testorder --base-dir "${TEMP_DIR}"`, {
+    stdio: 'pipe',
+  });
+
+  const apiFile = path.join(TEMP_DIR, 'utils', 'apis', 'testorder.api.js');
+  const mapperFile = path.join(TEMP_DIR, 'utils', 'mappers', 'testorder.js');
+
+  if (!fs.existsSync(apiFile)) {
+    throw new Error('Fichier API manquant : utils/apis/testorder.api.js');
+  }
+  if (!fs.existsSync(mapperFile)) {
+    throw new Error('Fichier Mapper manquant : utils/mappers/testorder.js');
+  }
+  console.log('  ✅ create-api.js fonctionne avec succès (API service + json-sculpt mapper).\n');
+
   console.log('====================================================');
-  console.log('✨ TOUS LES GÉNÉRATEURS SONT OPÉRATIONNELS ET VALIDES !');
+  console.log('✨ TOUS LES 3 GÉNÉRATEURS SONT OPÉRATIONNELS ET VALIDES !');
   console.log('====================================================\n');
 } catch (err) {
   console.error(`\n❌ Échec du test des générateurs : ${err.message}`);

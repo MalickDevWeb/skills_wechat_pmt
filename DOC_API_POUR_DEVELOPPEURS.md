@@ -6,6 +6,10 @@
 
 Si vous lisez ceci, vous avez pour mission d'ajouter une nouvelle connexion au serveur (un "Endpoint"). Pas de panique. Considérez cela comme un jeu de Lego. Il y a 3 pièces à assembler, toujours dans le même ordre.
 
+> ⚡ **Génération instantanée en 1 commande CLI :**
+> `node create-api.js [mon-domaine]` (ex: `node create-api.js commande`)
+> *Génère automatiquement le service API et le schéma json-sculpt sans écrire de code à la main.*
+
 **La Règle d'or :** 
 - 🔒 **Ce qui est écrit normalement** = NE TOUCHEZ PAS (C'est le moteur de l'application).
 - ✏️ **Ce qui est entre `[CROCHETS]`** = REMPLACEZ-LE par vos mots.

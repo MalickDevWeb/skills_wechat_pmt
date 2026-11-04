@@ -47,6 +47,10 @@ node create-page.js pages/mon-panier --with-api
 node create-component.js components/ui/product-card
 # Mode UX / Skeletons Shimmer Wave & Empty State :
 node create-component.js components/ux/order-skeleton --ux
+
+# 4. Générer un module API & son Mappeur json-sculpt
+# Crée : utils/apis/commande.api.js et utils/mappers/commande.js
+node create-api.js commande
 ```
 
 ---
@@ -102,6 +106,7 @@ Toutes les compétences du kit sont organisées en **5 pôles d'excellence**, co
 * 🩺 **`skill-doctor.js`** : Outil d'audit automatique (zéro BOM UTF-8, syntaxe JSON, aucun nesting SCSS en WXSS, déclencheurs IA).
 * ⚡ **`create-page.js`** : Générateur de page boilerplate WeChat conforme (4 fichiers : .js, .wxml, .wxss, .json).
 * 🧩 **`create-component.js`** : Générateur de composant conforme (UI présentation ou UX skeleton shimmer avec `options: { addGlobalClass: true }`).
+* 🔌 **`create-api.js`** : Générateur de service API et schéma de données json-sculpt.
 * 🤖 **CI GitHub Actions** : `.github/workflows/ci.yml` pour valider automatiquement la conformité et zéro BOM sur chaque push.
 * ❓ **[`DOC_FAQ_ERREURS_FREQUENTES.md`](DOC_FAQ_ERREURS_FREQUENTES.md)** : 40+ questions/réponses de production.
 

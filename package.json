@@ -10,7 +10,8 @@
     "test:generators": "node test-generators.js",
     "test": "node skill-doctor.js && node test-generators.js",
     "create:page": "node create-page.js",
-    "create:component": "node create-component.js"
+    "create:component": "node create-component.js",
+    "create:api": "node create-api.js"
   },
   "keywords": [
     "wechat",
