@@ -131,6 +131,10 @@ Exécuter impérativement dans cet ordre :
 ### 3.3 Gestion des Erreurs Typées
 - Utiliser `handleAppError(error)` pour mapper `NetworkError`, `AuthorizationError`, `ValidationError` vers des messages utilisateur bienveillants.
 
+### 3.4 Data-Saver & Compression Côté Client
+- Toute image capturée doit être compressée via `wx.compressImage` (qualité 75) avant upload afin d'économiser 95% du forfait data de l'utilisateur.
+- Utiliser `NetworkMonitor` pour détecter les réseaux dégradés 2G/3G et adapter l'UI sans blocage.
+
 ---
 
 ## ⚙️ PÔLE 4 : INTÉGRATION HÔTE MAX IT, PAIEMENT & SÉCURITÉ

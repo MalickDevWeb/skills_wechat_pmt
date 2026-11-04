@@ -54,6 +54,7 @@ Chaque recette est une **solution complète et autonome**. Vous trouvez votre si
 | ⚡ [Recette 43](#-recette-43--cache-stale-while-revalidate-avec-garde-anti-race) | Affichage instantané 0ms et synchronisation silencieuse | Avancée |
 | 💾 [Recette 44](#-recette-44--stockage-local-résilient-anti-quota-10mo) | Wrapper storage avec getOrSet et protection contre chaîne vide | Facile |
 | 🌙 [Recette 45](#-recette-45--thème-sombre-dark-mode-avec-variables-css) | Support du mode sombre avec variables adaptatives et écoute à chaud | Moyenne |
+| 🌍 [Recette 46](#-recette-46--data-saver-compression-dimage-avant-upload--moniteur-3g) | Compression JPEG 75% client (gain 95% data) et détection 2G/3G | Moyenne |
 
 ---
 
@@ -1973,5 +1974,98 @@ Page({
       this.setData({ isDark: res.theme === 'dark' });
     });
   }
+});
+```
+
+---
+
+## 🌍 Recette 46 : Data-Saver (Compression d'Image avant Upload & Moniteur 3G)
+
+**Quand l'utiliser ?** Dès qu'un utilisateur choisit une photo (pièce d'identité, ticket, profil) pour l'envoyer au serveur, afin d'économiser son forfait internet et éviter les timeouts 3G.
+
+### 1. Le Helper de Compression (`utils/helpers/image.js`)
+```javascript
+/**
+ * Compresse une image avant envoi pour réduire son poids de 80% à 95%
+ */
+export async function compressImageSafe(tempFilePath, quality = 75) {
+  return new Promise((resolve) => {
+    wx.compressImage({
+      src: tempFilePath,
+      quality,
+      success: (res) => resolve(res.tempFilePath),
+      fail: () => resolve(tempFilePath), // Repli sans bloquer
+    });
+  });
+}
+```
+
+### 2. Le Contrôleur de Page (`pages/upload-justificatif/index.js`)
+```javascript
+import { compressImageSafe } from '../../utils/helpers/image.js';
+
+Page({
+  data: {
+    photoUrl: '',
+    uploadProgress: 0,
+    isUploading: false,
+    isLowNetwork: false,
+  },
+
+  onLoad() {
+    wx.getNetworkType({
+      success: (res) => {
+        this.setData({ isLowNetwork: ['2g', '3g'].includes(res.networkType) });
+      },
+    });
+  },
+
+  async handleChoosePhoto() {
+    try {
+      const media = await wx.chooseMedia({
+        count: 1,
+        mediaType: ['image'],
+        sourceType: ['album', 'camera'],
+      });
+
+      const rawPath = media.tempFiles[0].tempFilePath;
+
+      // 1. Compression côté client (passage de 8 Mo à ~300 Ko)
+      wx.showLoading({ title: 'Optimisation...' });
+      const optimizedPath = await compressImageSafe(rawPath, 75);
+      wx.hideLoading();
+
+      // 2. Upload avec barre de progression
+      this.uploadPhoto(optimizedPath);
+    } catch (err) {
+      console.warn('Sélection annulée ou échouée', err);
+    }
+  },
+
+  uploadPhoto(filePath) {
+    this.setData({ isUploading: true, uploadProgress: 0 });
+
+    const uploadTask = wx.uploadFile({
+      url: 'https://api.sonatel.sn/v1/documents/upload',
+      filePath,
+      name: 'document',
+      header: {
+        'Authorization': 'Bearer ' + wx.getStorageSync('token'),
+      },
+      success: (res) => {
+        const data = JSON.parse(res.data);
+        this.setData({ photoUrl: data.url, isUploading: false });
+        wx.showToast({ title: 'Document envoyé !', icon: 'success' });
+      },
+      fail: (err) => {
+        this.setData({ isUploading: false });
+        wx.showToast({ title: 'Échec de l\'envoi', icon: 'none' });
+      },
+    });
+
+    uploadTask.onProgressUpdate((res) => {
+      this.setData({ uploadProgress: res.progress });
+    });
+  },
 });
 ```

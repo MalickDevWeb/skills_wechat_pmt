@@ -171,3 +171,4 @@ npm run create:page -- flight-detail --subpackage booking
 # Avec pré-câblage API :
 npm run create:page -- flight-detail --subpackage booking --with-api
 ```
+

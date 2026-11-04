@@ -104,7 +104,7 @@ Toutes les compétences du kit sont organisées en **5 pôles d'excellence**, co
 * 📦 **[`DOC_ARCHITECTURE_SUBPACKAGES_TCMPP.md`](docs/DOC_ARCHITECTURE_SUBPACKAGES_TCMPP.md)** : Règle des 2 Mo, découpage en sous-paquets, préchargement `preloadRule` et option `--subpackage`.
 * 🛠️ **[`DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md`](docs/DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md)** : Résolution des erreurs fatales du compilateur (BOM UTF-8, erreur 404 sur les polices locales `@font-face`, clauses de garde dans `onLoad`).
 * 🤝 **Matrice d'Isolation Multi-Développeurs** : Attribution exclusive des dossiers pour faire collaborer 7 développeurs en simultané avec zéro conflit Git.
-* 📚 **[`DOC_RECETTES_COPIER_COLLER.md`](docs/DOC_RECETTES_COPIER_COLLER.md)** : 45 recettes de code complètes prêtes à copier.
+* 📚 **[`DOC_RECETTES_COPIER_COLLER.md`](docs/DOC_RECETTES_COPIER_COLLER.md)** : 46 recettes de code complètes prêtes à copier.
 * 🎛️ **[`DOC_GUIDE_DECLENCHEURS_IA.md`](docs/DOC_GUIDE_DECLENCHEURS_IA.md)** : Guide pratique complet des 14 déclencheurs maîtres IA avec cas d'usage et codes associés.
 * 🩺 **`skill-doctor.js`** : Outil d'audit automatique (zéro BOM UTF-8, syntaxe JSON, aucun nesting SCSS en WXSS, déclencheurs IA).
 * ⚡ **`create-page.js`** : Générateur de page boilerplate WeChat conforme (4 fichiers : .js, .wxml, .wxss, .json).
@@ -348,5 +348,5 @@ Si tu utilises Cursor, Copilot ou Gemini avec le fichier `.cursorrules` :
 - 🧭 **`DOC_NAVIGATION_BEHAVIORS_ET_METIER.md`** : Navigation sécurisée (pile 10 pages, anti-double clic), mixins officiels WeChat (Behaviors) et règles métier (annulation, favoris, buffer OAuth2).
 - 🛠️ **`DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md`** : Résolution des pièges fatals TCMPP (BOM UTF-8, @font-face 404, guards onLoad, retour intelligent, matrice d'isolation à 7 développeurs).
 - 🎬 **`DOC_FLUX_COMPLEXES_ANIMATIONS.md`** : Feedback tactile au clic (`hover-class` Apple Press), entrée de page fluide 60 FPS, micro-interactions (cœur pulsant) et séquences JS (`wx.createAnimation`).
-- 📚 **`DOC_RECETTES_COPIER_COLLER.md`** : 45 recettes prêtes à l'emploi (Liste, Formulaire, Upload, Paiement natif, Smart polling, Custom navbar, Custom tabbar, Store réactif, Navigation safe, Behaviors, SDK officiel Max It, Guards onLoad, Retour intelligent, withLock, handleAppError, Feedback tactile, Entrée de page, Séquence de succès).
+- 📚 **`DOC_RECETTES_COPIER_COLLER.md`** : 46 recettes prêtes à l'emploi (Liste, Formulaire, Upload, Paiement natif, Smart polling, Custom navbar, Custom tabbar, Store réactif, Navigation safe, Behaviors, SDK officiel Max It, Guards onLoad, Retour intelligent, withLock, handleAppError, Feedback tactile, Entrée de page, Séquence de succès).
 - ❓ **`DOC_FAQ_ERREURS_FREQUENTES.md`** : 40+ questions/réponses pour ne jamais faire d'erreur (UI, API, Paiement, iPhone, Git, Performance).
