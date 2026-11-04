@@ -74,7 +74,8 @@ Toutes les compétences du kit sont organisées en **5 pôles d'excellence**, co
 ### 🛠️ PÔLE 5 : Compilateur TCMPP & Qualité d'Équipe
 * 🛠️ **[`DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md`](DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md)** : Résolution des erreurs fatales du compilateur (BOM UTF-8, erreur 404 sur les polices locales `@font-face`, clauses de garde dans `onLoad`).
 * 🤝 **Matrice d'Isolation Multi-Développeurs** : Attribution exclusive des dossiers pour faire collaborer 7 développeurs en simultané avec zéro conflit Git.
-* 📚 **[`DOC_RECETTES_COPIER_COLLER.md`](DOC_RECETTES_COPIER_COLLER.md)** : 37 recettes de code complètes prêtes à copier.
+* 📚 **[`DOC_RECETTES_COPIER_COLLER.md`](DOC_RECETTES_COPIER_COLLER.md)** : 44 recettes de code complètes prêtes à copier.
+* 🎛️ **[`DOC_GUIDE_DECLENCHEURS_IA.md`](DOC_GUIDE_DECLENCHEURS_IA.md)** : Guide pratique complet des 18 déclencheurs IA avec cas d'usage et codes associés.
 * ❓ **[`DOC_FAQ_ERREURS_FREQUENTES.md`](DOC_FAQ_ERREURS_FREQUENTES.md)** : 40+ questions/réponses de production.
 
 ## 📐 Partie 1 — Créer une Interface UI

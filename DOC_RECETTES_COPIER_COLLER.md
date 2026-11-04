@@ -46,6 +46,13 @@ Chaque recette est une **solution complète et autonome**. Vous trouvez votre si
 | 👆 [Recette 35](#-recette-35--feedback-tactile-au-clic-hover-class) | Effet de pression "Apple Press" au clic sur boutons et cartes | Facile |
 | 🎬 [Recette 36](#-recette-36--animation-dentrée-de-page-fluide) | Transition d'entrée de page douce à 60 FPS avec cascade | Facile |
 | 🏆 [Recette 37](#-recette-37--animation-séquentielle-intro-success) | Séquence animée JS avec wx.createAnimation (zoom, rebond, docking) | Avancée |
+| 🖼️ [Recette 38](#-recette-38--image-résiliente-avec-retry-3x-et-zoom-plein-écran) | Composant image tout-terrain avec auto-retry 4G et preview natif | Facile |
+| 🪟 [Recette 39](#-recette-39--bottom-sheet-avec-safe-area-et-backdrop-blur) | Panneau bas responsive iPhone avec padding Home Indicator | Moyenne |
+| 📅 [Recette 40](#-recette-40--calendrier-horizontal-sans-décalage-utc) | Sélecteur de dates avec minDays, blocage et dates additionnelles | Moyenne |
+| 🧭 [Recette 41](#-recette-41--nav-bar-sur-mesure-avec-calcul-dynamique-dencoche) | Header custom aligné au pixel près sous la capsule WeChat | Moyenne |
+| 🔄 [Recette 42](#-recette-42--liaison-page-eventbus-sans-fuite-mémoire) | Gestionnaire createPageHelpers avec désinscription automatique | Facile |
+| ⚡ [Recette 43](#-recette-43--cache-stale-while-revalidate-avec-garde-anti-race) | Affichage instantané 0ms et synchronisation silencieuse | Avancée |
+| 💾 [Recette 44](#-recette-44--stockage-local-résilient-anti-quota-10mo) | Wrapper storage avec getOrSet et protection contre chaîne vide | Facile |
 
 ---
 
@@ -1685,4 +1692,222 @@ Page({
   transform: translate(-50%, 0) scale(0.7);
 }
 .masque { display: none; }
+```
+
+---
+
+## 🖼️ Recette 38 : Image Résiliente avec Retry 3x et Zoom Plein Écran
+
+**Quand l'utiliser ?** Vous affichez des images distantes provenant d'une API sur un réseau 3G/4G instable. Vous voulez éviter les rectangles blancs et offrir la prévisualisation plein écran WeChat.
+
+### Dans votre WXML
+```xml
+<app-image
+  src="{{ item.imageUrl }}"
+  fallbackSrc="/assets/images/default-card.png"
+  mode="aspectFill"
+  width="100%"
+  height="320rpx"
+  previewable="{{ true }}"
+  retryCount="{{ 3 }}"
+  retryDelay="{{ 1000 }}"
+  containerClass="card-cover-image"
+/>
+```
+
+---
+
+## 🪟 Recette 39 : Bottom-Sheet avec Safe Area et Backdrop Blur
+
+**Quand l'utiliser ?** Vous devez afficher un panneau d'action, des CGU ou un détail qui glisse depuis le bas sans être masqué par la barre blanche de l'iPhone.
+
+### Dans votre WXML
+```xml
+<app-modal
+  visible="{{ isBottomSheetOpen }}"
+  placement="bottom"
+  size="full"
+  hasHeader="{{ false }}"
+  hasContent="{{ true }}"
+  bind:close="closeBottomSheet"
+>
+  <view slot="content" class="bottom-sheet-container">
+    <view class="bottom-sheet-handle"></view>
+    <scroll-view scroll-y class="bottom-sheet-scroll">
+      <!-- Votre contenu ici -->
+    </scroll-view>
+  </view>
+</app-modal>
+```
+
+### Dans votre WXSS
+```css
+.bottom-sheet-container {
+  max-height: 85vh;
+  padding: 16rpx 32rpx calc(24rpx + env(safe-area-inset-bottom, 40rpx));
+  background: #ffffff;
+  border-top-left-radius: 32rpx;
+  border-top-right-radius: 32rpx;
+}
+.bottom-sheet-handle {
+  width: 80rpx;
+  height: 8rpx;
+  border-radius: 999rpx;
+  background: #E5E7EB;
+  margin: 0 auto 20rpx;
+}
+```
+
+---
+
+## 📅 Recette 40 : Calendrier Horizontal sans Décalage UTC
+
+**Quand l'utiliser ?** L'utilisateur doit choisir une date dans le futur en respectant un délai de prévenance (`minDays`).
+
+### Dans votre JS
+```javascript
+function generateBookingDates(minDays = 2, total = 14) {
+  const base = new Date();
+  base.setHours(0, 0, 0, 0);
+  base.setDate(base.getDate() + minDays);
+
+  return Array.from({ length: total }, (_, i) => {
+    const cur = new Date(base);
+    cur.setDate(cur.getDate() + i);
+    const isoDate = [
+      cur.getFullYear(),
+      String(cur.getMonth() + 1).padStart(2, '0'),
+      String(cur.getDate()).padStart(2, '0'),
+    ].join('-');
+    return {
+      day: ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'][cur.getDay()],
+      date: String(cur.getDate()),
+      month: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'][cur.getMonth()],
+      isoDate,
+    };
+  });
+}
+```
+
+---
+
+## 🧭 Recette 41 : Nav Bar sur Mesure avec Calcul Dynamique d'Encoche
+
+**Quand l'utiliser ?** Vous utilisez `navigationStyle: "custom"` et devez décaler votre contenu pour qu'il ne passe pas sous la Dynamic Island ou l'encoche iPhone.
+
+### Dans votre Composant / Page JS
+```javascript
+lifetimes: {
+  attached() {
+    const sys = wx.getSystemInfoSync();
+    const statusBarHeight = sys.statusBarHeight || 20;
+    const windowWidth = sys.windowWidth || 375;
+    const navPaddingBottomPx = Math.ceil(34 * windowWidth / 750);
+
+    this.setData({
+      navContentOffset: statusBarHeight + 44 + navPaddingBottomPx,
+    });
+  }
+}
+```
+
+---
+
+## 🔄 Recette 42 : Liaison Page <-> EventBus sans Fuite Mémoire
+
+**Quand l'utiliser ?** Votre page doit afficher le profil utilisateur ou un compteur partagé sans accumuler d'écouteurs à chaque navigation.
+
+### Dans votre Page JS
+```javascript
+import { createPageHelpers } from '../../utils/helpers/page';
+
+Page({
+  data: { user: null },
+
+  onLoad() {
+    this._helpers = createPageHelpers(this, {
+      user: 'user.data',
+    });
+    this._helpers.subscribe();
+    this._helpers.loadInitial();
+  },
+
+  onUnload() {
+    if (this._helpers) {
+      this._helpers.unsubscribe();
+    }
+  },
+});
+```
+
+---
+
+## ⚡ Recette 43 : Cache Stale-While-Revalidate avec Garde Anti-Race
+
+**Quand l'utiliser ?** Vous voulez afficher immédiatement une liste en 0 ms sans écran de chargement, puis la mettre à jour silencieusement depuis l'API.
+
+### Dans votre Page JS
+```javascript
+Page({
+  data: { items: [], loading: false },
+
+  async refreshList() {
+    const requestId = (this._reqId || 0) + 1;
+    this._reqId = requestId;
+
+    // 1. Rendu instantané depuis le cache local (0 ms)
+    const cached = wx.getStorageSync('cached_items');
+    if (cached && !this.data.items.length) {
+      this.setData({ items: cached, loading: false });
+    }
+
+    // 2. Requête API silencieuse en arrière-plan
+    try {
+      const fresh = await backendAPI.getItems();
+      if (requestId !== this._reqId) return; // Requête concurrente obsolète
+
+      wx.setStorageSync('cached_items', fresh);
+      this.setData({ items: fresh, loading: false });
+    } catch (err) {
+      if (requestId !== this._reqId) return;
+      if (!this.data.items.length) this.setData({ loading: false });
+    }
+  }
+});
+```
+
+---
+
+## 💾 Recette 44 : Stockage Local Résilient Anti-Quota (10 Mo)
+
+**Quand l'utiliser ?** Éviter les exceptions `QuotaExceededError` et traiter correctement les clés inexistantes WeChat (qui retournent `""`).
+
+### Dans votre Module Utilitaire
+```javascript
+export const safeStorage = {
+  get(key, fallback = null) {
+    try {
+      const val = wx.getStorageSync(key);
+      return val !== '' && val !== undefined ? val : fallback;
+    } catch (e) {
+      return fallback;
+    }
+  },
+  set(key, value) {
+    try {
+      wx.setStorageSync(key, value);
+      return true;
+    } catch (e) {
+      console.warn('[Storage] Échec écriture quota dépassé:', e.message);
+      return false;
+    }
+  },
+  getOrSet(key, factory) {
+    const existing = this.get(key);
+    if (existing !== null) return existing;
+    const computed = factory();
+    this.set(key, computed);
+    return computed;
+  }
+};
 ```
