@@ -66,3 +66,4 @@ Ce guide est le tableau de bord de secours pour résoudre en moins de **60 secon
 | 28 | `Date parsing returns NaN on iOS` | Format de date `YYYY-MM-DD HH:mm:ss` non supporté par le moteur JS iOS. | Remplacer les tirets par des slashes ou ajouter `T` : `new Date(dateStr.replace(/-/g, '/') + 'T00:00:00')`. |
 | 29 | `CDP_MSISDN_UNMASKED_AUDIT_FAIL` | Un numéro de téléphone client apparaît en clair (`771234567`) dans l'UI ou les logs. | Appliquer le helper réglementaire : `maskMsisdn(phone)` pour afficher strictement `77 *** ** 67`. |
 | 30 | `FOUC (Flash of Untranslated Content)` | Les traductions sont injectées via `setData`, provoquant un saut visuel. | Remplacer par le résolveur WXS pur ES5 : `<wxs src=".../i18n.wxs" module="i18n" />` et `{{ i18n.t('key', lang) }}` (0 ms). |
+
