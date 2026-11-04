@@ -21,6 +21,7 @@ Cherchez votre question dans la liste. La réponse vous dit exactement quoi fair
 - [🧭 Navigation & Behaviors WeChat](#-navigation--behaviors-wechat)
 - [📱 SDK Officiel Max It (@sonatel-os/maxit-mini-sdk)](#-sdk-officiel-max-it-sonatel-osmaxit-mini-sdk)
 - [🛠️ Pièges Compilateur & Robustesse](#-pièges-compilateur--robustesse)
+- [🚀 Patterns Avancés & Cache SWR](#-patterns-avancés--cache-swr)
 
 ---
 
@@ -528,3 +529,56 @@ Exemples :
 
 **Q : Pourquoi mon écran affiche brièvement "0 résultat" avant d'afficher la liste ?**
 > Vous avez initialisé votre variable dans `data` avec `'0 résultat'`. Initialisez-la toujours avec une chaîne vide `resultsLabel: ''`, et masquez le bandeau tant que `loading` est actif via `wx:if="{{ !loading && items.length > 0 }}"`.
+
+---
+
+## 🚀 Patterns Avancés & Cache SWR
+
+**Q : Pourquoi `new Date('2026-03-20')` affiche le 19 mars sur certains téléphones ? (Piège du fuseau UTC)**
+> En JavaScript, `new Date('YYYY-MM-DD')` est interprété comme minuit UTC. Sur un appareil physique dont le fuseau horaire applique un décalage négatif ou lors de conversions d'heures locales, minuit UTC devient 23h00 ou 22h00 la veille (ex: 19 mars).  
+> **Solution :** Toujours construire la date en forçant l'heure locale complète : `new Date(`${isoDate}T00:00:00`) ` ou instancier via `new Date(year, monthIndex, day)`.
+
+---
+
+**Q : Pourquoi `wx.getStorageSync('cle_inexistante')` me renvoie `""` au lieu de `null` ou `undefined` ? (Piège du Storage WeChat)**
+> C'est une particularité historique du moteur WeChat : l'appel natif `wx.getStorageSync` renvoie une chaîne vide `""` lorsqu'une clé n'existe pas, et non pas `null`.  
+> **Solution :** Ne testez jamais `if (val === null)`. Utilisez le wrapper `SafeStorage` (Recette 44) qui normalise automatiquement la valeur :  
+> ```javascript
+> const data = (raw === '' || raw === null || raw === undefined) ? defaultValue : raw;
+> ```
+
+---
+
+**Q : Pourquoi mes images réseau distantes échouent silencieusement sur le réseau mobile 4G ?**
+> Sur un réseau mobile instable, des micro-coupures peuvent interrompre le flux HTTP de l'image, déclenchant l'événement `binderror` sur la balise WeChat `<image>`.  
+> **Solution :** Utilisez le composant résilient (Recette 38) avec **auto-retry à 3 essais** et backoff progressif (500ms, 1s, 2s). Ajoutez un timestamp en paramètre d'URL (`url?_retry=16725312`) pour forcer WeChat à contourner le cache corrompu de l'image.
+
+---
+
+**Q : Comment éviter qu'une requête lente n'écrase des données fraîches lors d'un pull-to-refresh rapide ? (Garde anti-race condition)**
+> Si l'utilisateur tire l'écran vers le bas (pull-to-refresh) alors qu'une première requête est déjà en transit, la première requête (lente) risque de se résoudre APRÈS la seconde (rapide) et d'écraser les données fraîches avec d'anciennes données périmées.  
+> **Solution :** Scellez un identifiant séquentiel de requête d'instance :
+> ```javascript
+> this._refreshRequestId = (this._refreshRequestId || 0) + 1;
+> const currentId = this._refreshRequestId;
+> const res = await backendAPI.getItems();
+> if (currentId !== this._refreshRequestId) return; // Requête obsolète, ignorée silencieusement !
+> this.setData({ items: res });
+> ```
+
+---
+
+**Q : Pourquoi ma modale / Bottom-Sheet laisse défiler la page en arrière-plan quand l'utilisateur scrolle ?**
+> Par défaut dans WeChat, le geste de scroll traverse le calque d'arrière-plan semi-transparent.  
+> **Solution :** Posez impérativement `catchtouchmove="noop"` sur le masque noir d'arrière-plan, et `catchtap="noop"` sur le conteneur blanc de la modale pour éviter que le clic à l'intérieur ne ferme la fenêtre.
+
+---
+
+**Q : Comment générer instantanément une page, un composant ou un service API conforme en 1 ligne de commande ?**
+> Le kit intègre la trilogie complète des générateurs industriels automatisés via npm :
+> ```bash
+> npm run create:page -- pages/historique-commandes
+> npm run create:component -- components/ui/order-card
+> npm run create:component -- components/ux/order-skeleton --ux
+> npm run create:api -- commande
+> ```
