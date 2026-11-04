@@ -2,16 +2,16 @@
   "name": "wechat-pmt-skills",
   "version": "2.0.0",
   "description": "Le Référentiel Industriel & Kit d'Architecture pour WeChat Mini-Program (PMT / TCMPP)",
-  "main": "skill-doctor.js",
+  "main": "scripts/skill-doctor.js",
   "scripts": {
-    "lint": "node skill-doctor.js",
-    "doctor": "node skill-doctor.js",
-    "test:doctor": "node skill-doctor.js",
-    "test:generators": "node test-generators.js",
-    "test": "node skill-doctor.js && node test-generators.js",
-    "create:page": "node create-page.js",
-    "create:component": "node create-component.js",
-    "create:api": "node create-api.js"
+    "lint": "node scripts/skill-doctor.js",
+    "doctor": "node scripts/skill-doctor.js",
+    "test:doctor": "node scripts/skill-doctor.js",
+    "test:generators": "node scripts/test-generators.js",
+    "test": "node scripts/skill-doctor.js && node scripts/test-generators.js",
+    "create:page": "node scripts/create-page.js",
+    "create:component": "node scripts/create-component.js",
+    "create:api": "node scripts/create-api.js"
   },
   "keywords": [
     "wechat",

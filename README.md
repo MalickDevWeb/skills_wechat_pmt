@@ -22,7 +22,7 @@ Ce kit te donne **le seul workflow à connaître** pour coder une interface WeCh
 cp .cursorrules ./ton-projet/
 
 # Copie les guides dans ton dossier docs
-cp DOC_*.md ./ton-projet/docs/
+cp -r docs/ ./ton-projet/docs/
 ```
 
 ---
@@ -38,19 +38,19 @@ npm test                  # Lance l'audit complet (5 tests de santé + 3 tests g
 
 # 2. Générer instantanément une page complète (Règle des 4 fichiers)
 # Crée : index.js (State Machine), index.wxml (Safe Area & Shimmer), index.wxss (BEM Apple Press), index.json
-node create-page.js pages/ma-nouvelle-page
+node scripts/create-page.js pages/ma-nouvelle-page
 # Optionnel : pré-câbler l'appel API avec BackendAPI
-node create-page.js pages/mon-panier --with-api
+node scripts/create-page.js pages/mon-panier --with-api
 
 # 3. Générer un composant réutilisable (Component, lifetimes, triggerEvent, BEM)
 # Mode UI Présentation :
-node create-component.js components/ui/product-card
+node scripts/create-component.js components/ui/product-card
 # Mode UX / Skeletons Shimmer Wave & Empty State :
-node create-component.js components/ux/order-skeleton --ux
+node scripts/create-component.js components/ux/order-skeleton --ux
 
 # 4. Générer un module API & son Mappeur json-sculpt
 # Crée : utils/apis/commande.api.js et utils/mappers/commande.js
-node create-api.js commande
+node scripts/create-api.js commande
 ```
 
 ---
@@ -74,41 +74,41 @@ Toutes les compétences du kit sont organisées en **5 pôles d'excellence**, co
 ```
 
 ### 🎨 PÔLE 1 : UI, Skeletons Shimmer, Animations & Responsive
-* 💀 **[`DOC_SKELETONS_ET_ETATS_UX.md`](DOC_SKELETONS_ET_ETATS_UX.md)** : Skeletons shimmer wave (.shimmer à 60 FPS), cartes fantômes, empty states, error fallbacks, isolation `components/ux/`.
-* 📱 **[`DOC_RESPONSIVE_IPHONE_ET_CUSTOM_TABBAR.md`](DOC_RESPONSIVE_IPHONE_ET_CUSTOM_TABBAR.md)** : Responsive iPhone physique, Safe Areas (`env(safe-area-inset-bottom)`), capsule WeChat et Custom TabBar officiel sans scintillement.
-* 🌙 **[`DOC_DARK_MODE_ET_ACCESSIBILITE.md`](DOC_DARK_MODE_ET_ACCESSIBILITE.md)** : Support du mode sombre natif WeChat (`theme.json`), variables CSS adaptatives et contrastes WCAG AA.
-* 🎬 **[`DOC_FLUX_COMPLEXES_ANIMATIONS.md`](DOC_FLUX_COMPLEXES_ANIMATIONS.md)** : Feedback tactile au toucher (`hover-class="btn--pressed"` Apple Press), entrée de page fluide et séquences JS (`wx.createAnimation`).
-* 🎨 **[`DOC_UI_POUR_DEVELOPPEURS.md`](DOC_UI_POUR_DEVELOPPEURS.md)** : La règle des 4 fichiers, machine à états (`uiState`), mise en page BEM et formatage WXS pur ES5.
+* 💀 **[`DOC_SKELETONS_ET_ETATS_UX.md`](docs/DOC_SKELETONS_ET_ETATS_UX.md)** : Skeletons shimmer wave (.shimmer à 60 FPS), cartes fantômes, empty states, error fallbacks, isolation `components/ux/`.
+* 📱 **[`DOC_RESPONSIVE_IPHONE_ET_CUSTOM_TABBAR.md`](docs/DOC_RESPONSIVE_IPHONE_ET_CUSTOM_TABBAR.md)** : Responsive iPhone physique, Safe Areas (`env(safe-area-inset-bottom)`), capsule WeChat et Custom TabBar officiel sans scintillement.
+* 🌙 **[`DOC_DARK_MODE_ET_ACCESSIBILITE.md`](docs/DOC_DARK_MODE_ET_ACCESSIBILITE.md)** : Support du mode sombre natif WeChat (`theme.json`), variables CSS adaptatives et contrastes WCAG AA.
+* 🎬 **[`DOC_FLUX_COMPLEXES_ANIMATIONS.md`](docs/DOC_FLUX_COMPLEXES_ANIMATIONS.md)** : Feedback tactile au toucher (`hover-class="btn--pressed"` Apple Press), entrée de page fluide et séquences JS (`wx.createAnimation`).
+* 🎨 **[`DOC_UI_POUR_DEVELOPPEURS.md`](docs/DOC_UI_POUR_DEVELOPPEURS.md)** : La règle des 4 fichiers, machine à états (`uiState`), mise en page BEM et formatage WXS pur ES5.
 
 ### 🧠 PÔLE 2 : Logique Métier, Navigation & Behaviors
-* 🚀 **[`DOC_PATTERNS_AVANCES_ATS.md`](DOC_PATTERNS_AVANCES_ATS.md)** : Analyse exhaustive page par page (9 pages), machine à états, boucliers réseau, tarification par paliers et cache SWR.
-* 🧭 **[`DOC_NAVIGATION_BEHAVIORS_ET_METIER.md`](DOC_NAVIGATION_BEHAVIORS_ET_METIER.md)** : Protection contre le crash de la pile à 10 pages (`navigateToSafe`), anti-double clic (`withLock`), retour intelligent.
+* 🚀 **[`DOC_PATTERNS_AVANCES_ATS.md`](docs/DOC_PATTERNS_AVANCES_ATS.md)** : Analyse exhaustive page par page (9 pages), machine à états, boucliers réseau, tarification par paliers et cache SWR.
+* 🧭 **[`DOC_NAVIGATION_BEHAVIORS_ET_METIER.md`](docs/DOC_NAVIGATION_BEHAVIORS_ET_METIER.md)** : Protection contre le crash de la pile à 10 pages (`navigateToSafe`), anti-double clic (`withLock`), retour intelligent.
 * 🧩 **WeChat Behaviors Natifs** : Partage d'état et de chargement sans héritage (`loadingBehavior` avec `withLoading`).
 * 📊 **Calculs Métier & Favoris** : Barèmes d'annulation/pénalités par paliers de dates, et favoris optimistes bi-niveaux (mémoire 0ms + stockage local).
-* 🚌 **[`DOC_COMMUNICATION_EVENEMENTS.md`](DOC_COMMUNICATION_EVENEMENTS.md)** : Quand utiliser `this.triggerEvent`, `Bus.emit` ou `Bus.setState`.
+* 🚌 **[`DOC_COMMUNICATION_EVENEMENTS.md`](docs/DOC_COMMUNICATION_EVENEMENTS.md)** : Quand utiliser `this.triggerEvent`, `Bus.emit` ou `Bus.setState`.
 
 ### 🔌 PÔLE 3 : Consommation API & Gestion des Données
-* 🔌 **[`DOC_API_POUR_DEVELOPPEURS.md`](DOC_API_POUR_DEVELOPPEURS.md)** : Le workflow strict en 4 étapes (Endpoint -> json-sculpt schema -> Méthode BackendAPI -> Appel Page).
+* 🔌 **[`DOC_API_POUR_DEVELOPPEURS.md`](docs/DOC_API_POUR_DEVELOPPEURS.md)** : Le workflow strict en 4 étapes (Endpoint -> json-sculpt schema -> Méthode BackendAPI -> Appel Page).
 * 🛡️ **OAuth2 & Buffer de Sécurité** : Renouvellement automatique avec marge de 60s (`REFRESH_BUFFER_MS`) pour éliminer tout rejet 401.
 * 🗄️ **Mappers & Formatters** : Isolation totale de la donnée brute avec `json-sculpt` et formateurs de prix multi-devises (XOF, FCFA, EUR).
 
 ### ⚙️ PÔLE 4 : Intégration Hôte Max It, Paiement & Sécurité
-* 📱 **[`DOC_MAXIT_MINI_SDK_SONATEL.md`](DOC_MAXIT_MINI_SDK_SONATEL.md)** : Guide officiel du SDK Sonatel (`@sonatel-os/maxit-mini-sdk`), identité sans écran de login (`user()`), contacts, scan caméra seule anti-fraude et simulation sous DevTools.
-* 💳 **[`DOC_PAIEMENT_NATIVE_MAXIT_ET_RESILIENCE.md`](DOC_PAIEMENT_NATIVE_MAXIT_ET_RESILIENCE.md)** : Bouclier bancaire (`_confirmedTxnid`) garantissant 0 % de double débit, Smart Polling 4G à 3 essais et gestion des erreurs incertaines (`err.uncertain`).
+* 📱 **[`DOC_MAXIT_MINI_SDK_SONATEL.md`](docs/DOC_MAXIT_MINI_SDK_SONATEL.md)** : Guide officiel du SDK Sonatel (`@sonatel-os/maxit-mini-sdk`), identité sans écran de login (`user()`), contacts, scan caméra seule anti-fraude et simulation sous DevTools.
+* 💳 **[`DOC_PAIEMENT_NATIVE_MAXIT_ET_RESILIENCE.md`](docs/DOC_PAIEMENT_NATIVE_MAXIT_ET_RESILIENCE.md)** : Bouclier bancaire (`_confirmedTxnid`) garantissant 0 % de double débit, Smart Polling 4G à 3 essais et gestion des erreurs incertaines (`err.uncertain`).
 * 🛡️ **Sécurité Écran** : Verrouillage anti-capture d'écran sur les billets QR (`screen.protect(true)` puis obligatoirement `protect(false)`).
-* 📊 **[`DOC_TAGGAGE_EVENEMENTS_ET_ANALYTICS.md`](DOC_TAGGAGE_EVENEMENTS_ET_ANALYTICS.md)** : Télémétrie et suivi des conversions conforme Orange/Sonatel avec file d'attente hors-ligne.
+* 📊 **[`DOC_TAGGAGE_EVENEMENTS_ET_ANALYTICS.md`](docs/DOC_TAGGAGE_EVENEMENTS_ET_ANALYTICS.md)** : Télémétrie et suivi des conversions conforme Orange/Sonatel avec file d'attente hors-ligne.
 
 ### 🛠️ PÔLE 5 : Compilateur TCMPP & Qualité d'Équipe
-* 🛠️ **[`DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md`](DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md)** : Résolution des erreurs fatales du compilateur (BOM UTF-8, erreur 404 sur les polices locales `@font-face`, clauses de garde dans `onLoad`).
+* 🛠️ **[`DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md`](docs/DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md)** : Résolution des erreurs fatales du compilateur (BOM UTF-8, erreur 404 sur les polices locales `@font-face`, clauses de garde dans `onLoad`).
 * 🤝 **Matrice d'Isolation Multi-Développeurs** : Attribution exclusive des dossiers pour faire collaborer 7 développeurs en simultané avec zéro conflit Git.
-* 📚 **[`DOC_RECETTES_COPIER_COLLER.md`](DOC_RECETTES_COPIER_COLLER.md)** : 45 recettes de code complètes prêtes à copier.
-* 🎛️ **[`DOC_GUIDE_DECLENCHEURS_IA.md`](DOC_GUIDE_DECLENCHEURS_IA.md)** : Guide pratique complet des 14 déclencheurs maîtres IA avec cas d'usage et codes associés.
+* 📚 **[`DOC_RECETTES_COPIER_COLLER.md`](docs/DOC_RECETTES_COPIER_COLLER.md)** : 45 recettes de code complètes prêtes à copier.
+* 🎛️ **[`DOC_GUIDE_DECLENCHEURS_IA.md`](docs/DOC_GUIDE_DECLENCHEURS_IA.md)** : Guide pratique complet des 14 déclencheurs maîtres IA avec cas d'usage et codes associés.
 * 🩺 **`skill-doctor.js`** : Outil d'audit automatique (zéro BOM UTF-8, syntaxe JSON, aucun nesting SCSS en WXSS, déclencheurs IA).
 * ⚡ **`create-page.js`** : Générateur de page boilerplate WeChat conforme (4 fichiers : .js, .wxml, .wxss, .json).
 * 🧩 **`create-component.js`** : Générateur de composant conforme (UI présentation ou UX skeleton shimmer avec `options: { addGlobalClass: true }`).
 * 🔌 **`create-api.js`** : Générateur de service API et schéma de données json-sculpt.
 * 🤖 **CI GitHub Actions** : `.github/workflows/ci.yml` pour valider automatiquement la conformité et zéro BOM sur chaque push.
-* ❓ **[`DOC_FAQ_ERREURS_FREQUENTES.md`](DOC_FAQ_ERREURS_FREQUENTES.md)** : 40+ questions/réponses de production.
+* ❓ **[`DOC_FAQ_ERREURS_FREQUENTES.md`](docs/DOC_FAQ_ERREURS_FREQUENTES.md)** : 40+ questions/réponses de production.
 
 ## 📐 Partie 1 — Créer une Interface UI
 

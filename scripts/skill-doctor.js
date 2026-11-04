@@ -15,7 +15,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const SKILL_DIR = __dirname;
+const SKILL_DIR = path.resolve(__dirname, '..');
 let hasError = false;
 
 console.log('====================================================');
@@ -160,7 +160,6 @@ let brokenLinksCount = 0;
 mdFiles.forEach((file) => {
   let content = fs.readFileSync(file, 'utf8');
   content = content.replace(/```[\s\S]*?```/g, ''); // Ignorer les blocs de code
-  content = content.replace(/`[^`]*`/g, '');         // Ignorer le code inline
 
   let match;
   while ((match = linkRegex.exec(content)) !== null) {

@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const SKILL_DIR = __dirname;
+const SKILL_DIR = path.resolve(__dirname, '..');
 const TEMP_DIR = path.join(SKILL_DIR, '.tmp-test-scaffold');
 
 console.log('====================================================');
@@ -25,7 +25,7 @@ try {
   // 1. Test create-page.js
   console.log('🔍 Test 1 : Génération de page (create-page.js)...');
   const pageTarget = path.join(TEMP_DIR, 'pages', 'test-order');
-  execSync(`node "${path.join(SKILL_DIR, 'create-page.js')}" "${pageTarget}" --with-api`, {
+  execSync(`node "${path.join(__dirname, 'create-page.js')}" "${pageTarget}" --with-api`, {
     stdio: 'pipe',
   });
 
@@ -50,7 +50,7 @@ try {
   // 2. Test create-component.js (Mode UI)
   console.log('🔍 Test 2 : Génération de composant UI (create-component.js)...');
   const compTarget = path.join(TEMP_DIR, 'components', 'ui', 'user-card');
-  execSync(`node "${path.join(SKILL_DIR, 'create-component.js')}" "${compTarget}"`, {
+  execSync(`node "${path.join(__dirname, 'create-component.js')}" "${compTarget}"`, {
     stdio: 'pipe',
   });
 
@@ -70,7 +70,7 @@ try {
   // 3. Test create-component.js (Mode UX)
   console.log('🔍 Test 3 : Génération de composant UX (create-component.js --ux)...');
   const uxTarget = path.join(TEMP_DIR, 'components', 'ux', 'card-skeleton');
-  execSync(`node "${path.join(SKILL_DIR, 'create-component.js')}" "${uxTarget}" --ux`, {
+  execSync(`node "${path.join(__dirname, 'create-component.js')}" "${uxTarget}" --ux`, {
     stdio: 'pipe',
   });
 
@@ -84,7 +84,7 @@ try {
 
   // 4. Test create-api.js
   console.log('🔍 Test 4 : Génération de module API & Mapper (create-api.js)...');
-  execSync(`node "${path.join(SKILL_DIR, 'create-api.js')}" testorder --base-dir "${TEMP_DIR}"`, {
+  execSync(`node "${path.join(__dirname, 'create-api.js')}" testorder --base-dir "${TEMP_DIR}"`, {
     stdio: 'pipe',
   });
 
