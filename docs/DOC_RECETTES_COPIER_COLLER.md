@@ -2490,4 +2490,163 @@ Page({
 });
 ```
 
+---
+
+## 🇸🇳 Recette 50 : Moteur i18n Haute Performance Wolof / Français / Anglais (WXS 0 ms)
+
+**Quand l'utiliser ?** Dans tout mini-programme ciblant le Sénégal ou la sous-région pour offrir une bascule instantanée entre le Français, le Wolof et l'Anglais sans latence de rendu, sans flash de contenu (FOUC) et sans saturer le thread JS de `setData`.
+
+### 1. Le Moteur WXS Direct (`utils/i18n/i18n.wxs`)
+```javascript
+var locales = {
+  fr: {
+    'btn.confirm': 'Confirmer',
+    'btn.cancel': 'Annuler',
+    'btn.pay': 'Payer',
+    'btn.topup': 'Recharger',
+    'label.balance': 'Solde disponible',
+    'label.welcome': 'Bienvenue, {name}',
+    'status.loading': 'Chargement...'
+  },
+  wo: {
+    'btn.confirm': 'Dëggal',
+    'btn.cancel': 'Neenal',
+    'btn.pay': 'Feye',
+    'btn.topup': 'Doolil',
+    'label.balance': 'Khaloiss bi am',
+    'label.welcome': 'Dalal ak jamm, {name}',
+    'status.loading': 'Xaaral tuti...'
+  },
+  en: {
+    'btn.confirm': 'Confirm',
+    'btn.cancel': 'Cancel',
+    'btn.pay': 'Pay',
+    'btn.topup': 'Top up',
+    'label.balance': 'Available balance',
+    'label.welcome': 'Welcome, {name}',
+    'status.loading': 'Loading...'
+  }
+};
+
+function t(key, lang, params) {
+  var activeLang = lang || 'fr';
+  var dict = locales[activeLang] || locales['fr'];
+  var text = dict[key] || locales['fr'][key] || key;
+
+  if (params) {
+    for (var k in params) {
+      if (params.hasOwnProperty(k)) {
+        text = text.split('{' + k + '}').join(params[k]);
+      }
+    }
+  }
+
+  return text;
+}
+
+module.exports = {
+  t: t
+};
+```
+
+### 2. Le Gestionnaire Réactif de Langue (`utils/i18n/manager.js`)
+```javascript
+import { Bus } from '../bus/index';
+
+const STORAGE_KEY = 'user_pref_lang';
+const DEFAULT_LANG = 'fr';
+const SUPPORTED_LANGS = ['fr', 'wo', 'en'];
+
+/**
+ * Récupère la langue active (depuis le stockage local ou système)
+ */
+export function getLang() {
+  try {
+    const saved = wx.getStorageSync(STORAGE_KEY);
+    if (saved && SUPPORTED_LANGS.includes(saved)) {
+      return saved;
+    }
+  } catch (e) {}
+  return DEFAULT_LANG;
+}
+
+/**
+ * Définit la nouvelle langue et notifie toute l'application
+ */
+export function setLang(newLang) {
+  if (!SUPPORTED_LANGS.includes(newLang)) return;
+  try {
+    wx.setStorageSync(STORAGE_KEY, newLang);
+  } catch (e) {}
+
+  // Notification globale via EventBus
+  Bus.emit('LANG_CHANGED', newLang);
+}
+
+/**
+ * Abonnement réactif au changement de langue
+ */
+export function onLangChange(callback) {
+  return Bus.on('LANG_CHANGED', callback);
+}
+```
+
+### 3. Utilisation dans un Template WXML (`pages/home/index.wxml`)
+```xml
+<wxs src="../../utils/i18n/i18n.wxs" module="i18n" />
+
+<view class="home-container">
+  <!-- Salutation avec paramètre dynamique -->
+  <text class="greeting">{{ i18n.t('label.welcome', lang, { name: userName }) }}</text>
+
+  <!-- Solde & Bouton Paiement instantanément traduits -->
+  <view class="balance-card">
+    <text class="balance-title">{{ i18n.t('label.balance', lang) }}</text>
+    <button class="ods-btn ods-btn--primary">
+      {{ i18n.t('btn.pay', lang) }}
+    </button>
+  </view>
+
+  <!-- Sélecteur rapide de langue en 1 clic -->
+  <view class="lang-switch">
+    <view class="lang-btn {{ lang === 'fr' ? 'active' : '' }}" bindtap="changeLang" data-lang="fr">FR</view>
+    <view class="lang-btn {{ lang === 'wo' ? 'active' : '' }}" bindtap="changeLang" data-lang="wo">Wolof</view>
+    <view class="lang-btn {{ lang === 'en' ? 'active' : '' }}" bindtap="changeLang" data-lang="en">EN</view>
+  </view>
+</view>
+```
+
+### 4. Contrôleur de Page (`pages/home/index.js`)
+```javascript
+import { getLang, setLang, onLangChange } from '../../utils/i18n/manager';
+
+Page({
+  data: {
+    lang: 'fr',
+    userName: 'Amadou'
+  },
+
+  onLoad() {
+    this.setData({ lang: getLang() });
+
+    // Réception du changement de langue sans recharger la page
+    this._unsubLang = onLangChange((newLang) => {
+      this.setData({ lang: newLang });
+    });
+  },
+
+  changeLang(e) {
+    const lang = e.currentTarget.dataset.lang;
+    setLang(lang);
+  },
+
+  onUnload() {
+    if (this._unsubLang) {
+      this._unsubLang();
+    }
+  }
+});
+```
+
+
 

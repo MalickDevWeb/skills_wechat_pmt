@@ -85,6 +85,11 @@ pages/ma-page/
 - Support des dates additionnelles choisies via picker natif avec flag `isAdditional: true`.
 - Comparaisons de dates strictes au format ISO `YYYY-MM-DD` à minuit local (`T00:00:00`).
 
+### 1.9 Moteur i18n Régional (Wolof / Français / Anglais) à 0 ms
+- Résolution directe des libellés dans le template via WXS ES5 pur (`i18n.t(key, lang, params)`) sans surcharge de `setData`.
+- Dictionnaire régional officiel Sonatel Max It (Wolof, Français, Anglais) et bascule réactive 1 tap via `Bus.emit('LANG_CHANGED')`.
+- *Référentiel détaillé : [docs/DOC_INTERNATIONALISATION_I18N_WOLOF.md](docs/DOC_INTERNATIONALISATION_I18N_WOLOF.md).*
+
 ---
 
 ## 🧠 PÔLE 2 : LOGIQUE MÉTIER, NAVIGATION, STOCKAGE & BEHAVIORS

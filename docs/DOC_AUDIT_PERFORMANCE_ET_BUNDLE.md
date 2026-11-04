@@ -116,3 +116,4 @@ Page({
 1. **Icônes et Pictogrammes** : Privilégier les SVG WXML natifs ou les icônes vectorielles.
 2. **Photos de Produits & Bannières** : Héberger sur le CDN Sonatel avec URL absolue HTTPS, ou compresser côté client via `wx.compressImage` (qualité 75).
 3. **Zéro Police Locale** : Ne jamais intégrer de `.ttf` ou `.woff` en local dans le mini-programme.
+
