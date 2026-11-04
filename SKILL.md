@@ -153,6 +153,11 @@ Exécuter impérativement dans cet ordre :
 - Verrouiller la capture d'écran sur les billets QR via `miniSDK.screen.protect(true)`.
 - **Règle vitale** : Toujours appeler `miniSDK.screen.protect(false)` dans `onHide()` et `onUnload()`.
 
+### 4.4 Homologation & Conformité CDP Sénégal
+- Masquage obligatoire des numéros MSISDN (`77 *** ** 12`) sur tout affichage ou log client (`maskMsisdn`).
+- Purge systématique des tokens et identifiants sensibles lors de la déconnexion (`clearSessionSafe`).
+- Déclaration stricte des domaines réseaux en HTTPS (TLS 1.2+) sur la Console TCMPP avant mise en production.
+
 ---
 
 ## 🛠️ PÔLE 5 : COMPILATEUR TCMPP & QUALITÉ D'ÉQUIPE

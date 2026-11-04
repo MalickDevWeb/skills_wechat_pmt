@@ -97,6 +97,7 @@ Toutes les compétences du kit sont organisées en **5 pôles d'excellence**, co
 ### ⚙️ PÔLE 4 : Intégration Hôte Max It, Paiement & Sécurité
 * 📱 **[`DOC_MAXIT_MINI_SDK_SONATEL.md`](docs/DOC_MAXIT_MINI_SDK_SONATEL.md)** : Guide officiel du SDK Sonatel (`@sonatel-os/maxit-mini-sdk`), identité sans écran de login (`user()`), contacts, scan caméra seule anti-fraude et simulation sous DevTools.
 * 💳 **[`DOC_PAIEMENT_NATIVE_MAXIT_ET_RESILIENCE.md`](docs/DOC_PAIEMENT_NATIVE_MAXIT_ET_RESILIENCE.md)** : Bouclier bancaire (`_confirmedTxnid`) garantissant 0 % de double débit, Smart Polling 4G à 3 essais et gestion des erreurs incertaines (`err.uncertain`).
+* 🛡️ **[`DOC_HOMOLOGATION_ET_SECURITE_SONATEL.md`](docs/DOC_HOMOLOGATION_ET_SECURITE_SONATEL.md)** : Grille des 10 portes d'homologation, conformité CDP Sénégal (masquage MSISDN `77 *** ** 12`), purge de session et whitelist domaines TCMPP.
 * 🛡️ **Sécurité Écran** : Verrouillage anti-capture d'écran sur les billets QR (`screen.protect(true)` puis obligatoirement `protect(false)`).
 * 📊 **[`DOC_TAGGAGE_EVENEMENTS_ET_ANALYTICS.md`](docs/DOC_TAGGAGE_EVENEMENTS_ET_ANALYTICS.md)** : Télémétrie et suivi des conversions conforme Orange/Sonatel avec file d'attente hors-ligne.
 
@@ -104,7 +105,7 @@ Toutes les compétences du kit sont organisées en **5 pôles d'excellence**, co
 * 📦 **[`DOC_ARCHITECTURE_SUBPACKAGES_TCMPP.md`](docs/DOC_ARCHITECTURE_SUBPACKAGES_TCMPP.md)** : Règle des 2 Mo, découpage en sous-paquets, préchargement `preloadRule` et option `--subpackage`.
 * 🛠️ **[`DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md`](docs/DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md)** : Résolution des erreurs fatales du compilateur (BOM UTF-8, erreur 404 sur les polices locales `@font-face`, clauses de garde dans `onLoad`).
 * 🤝 **Matrice d'Isolation Multi-Développeurs** : Attribution exclusive des dossiers pour faire collaborer 7 développeurs en simultané avec zéro conflit Git.
-* 📚 **[`DOC_RECETTES_COPIER_COLLER.md`](docs/DOC_RECETTES_COPIER_COLLER.md)** : 46 recettes de code complètes prêtes à copier.
+* 📚 **[`DOC_RECETTES_COPIER_COLLER.md`](docs/DOC_RECETTES_COPIER_COLLER.md)** : 47 recettes de code complètes prêtes à copier.
 * 🎛️ **[`DOC_GUIDE_DECLENCHEURS_IA.md`](docs/DOC_GUIDE_DECLENCHEURS_IA.md)** : Guide pratique complet des 14 déclencheurs maîtres IA avec cas d'usage et codes associés.
 * 🩺 **`skill-doctor.js`** : Outil d'audit automatique (zéro BOM UTF-8, syntaxe JSON, aucun nesting SCSS en WXSS, déclencheurs IA).
 * ⚡ **`create-page.js`** : Générateur de page boilerplate WeChat conforme (4 fichiers : .js, .wxml, .wxss, .json).
@@ -348,5 +349,5 @@ Si tu utilises Cursor, Copilot ou Gemini avec le fichier `.cursorrules` :
 - 🧭 **`DOC_NAVIGATION_BEHAVIORS_ET_METIER.md`** : Navigation sécurisée (pile 10 pages, anti-double clic), mixins officiels WeChat (Behaviors) et règles métier (annulation, favoris, buffer OAuth2).
 - 🛠️ **`DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md`** : Résolution des pièges fatals TCMPP (BOM UTF-8, @font-face 404, guards onLoad, retour intelligent, matrice d'isolation à 7 développeurs).
 - 🎬 **`DOC_FLUX_COMPLEXES_ANIMATIONS.md`** : Feedback tactile au clic (`hover-class` Apple Press), entrée de page fluide 60 FPS, micro-interactions (cœur pulsant) et séquences JS (`wx.createAnimation`).
-- 📚 **`DOC_RECETTES_COPIER_COLLER.md`** : 46 recettes prêtes à l'emploi (Liste, Formulaire, Upload, Paiement natif, Smart polling, Custom navbar, Custom tabbar, Store réactif, Navigation safe, Behaviors, SDK officiel Max It, Guards onLoad, Retour intelligent, withLock, handleAppError, Feedback tactile, Entrée de page, Séquence de succès).
+- 📚 **`DOC_RECETTES_COPIER_COLLER.md`** : 47 recettes prêtes à l'emploi (Liste, Formulaire, Upload, Paiement natif, Smart polling, Custom navbar, Custom tabbar, Store réactif, Navigation safe, Behaviors, SDK officiel Max It, Guards onLoad, Retour intelligent, withLock, handleAppError, Feedback tactile, Entrée de page, Séquence de succès).
 - ❓ **`DOC_FAQ_ERREURS_FREQUENTES.md`** : 40+ questions/réponses pour ne jamais faire d'erreur (UI, API, Paiement, iPhone, Git, Performance).

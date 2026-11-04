@@ -55,6 +55,7 @@ Chaque recette est une **solution complète et autonome**. Vous trouvez votre si
 | 💾 [Recette 44](#-recette-44--stockage-local-résilient-anti-quota-10mo) | Wrapper storage avec getOrSet et protection contre chaîne vide | Facile |
 | 🌙 [Recette 45](#-recette-45--thème-sombre-dark-mode-avec-variables-css) | Support du mode sombre avec variables adaptatives et écoute à chaud | Moyenne |
 | 🌍 [Recette 46](#-recette-46--data-saver-compression-dimage-avant-upload--moniteur-3g) | Compression JPEG 75% client (gain 95% data) et détection 2G/3G | Moyenne |
+| 🛡️ [Recette 47](#-recette-47--conformité-cdp-masquage-msisdn-et-purge-sécurisée) | Masquage légal numéro de téléphone et purge de session | Facile |
 
 ---
 
@@ -2068,4 +2069,68 @@ Page({
     });
   },
 });
+```
+
+---
+
+## 🛡️ Recette 47 : Conformité CDP (Masquage MSISDN et Purge Sécurisée)
+
+**Quand l'utiliser ?** Sur tout écran affichant un numéro de téléphone client ou lors de la déconnexion, afin de respecter les audits de sécurité et la réglementation sur les données personnelles.
+
+### 1. Le Helper de Masquage & Sécurité (`utils/helpers/security.js`)
+```javascript
+/**
+ * Masque un numéro de téléphone selon les normes CDP (ex: 77 *** ** 67)
+ */
+export function maskMsisdn(msisdn) {
+  if (!msisdn || typeof msisdn !== 'string') return '';
+  const cleaned = msisdn.replace(/\s+/g, '').replace(/^\+221/, '');
+  if (cleaned.length < 9) return '***';
+
+  const prefix = cleaned.slice(0, 2);
+  const suffix = cleaned.slice(-2);
+  return `${prefix} *** ** ${suffix}`;
+}
+
+/**
+ * Purge immédiatement tous les identifiants de session et tokens sensibles
+ */
+export function clearSessionSafe() {
+  const SENSITIVE_KEYS = ['auth_token', 'token_expiry', 'user_msisdn', 'refresh_token'];
+  SENSITIVE_KEYS.forEach((key) => {
+    try {
+      wx.removeStorageSync(key);
+    } catch (e) {
+      console.warn('[Security] Erreur purge :', key, e);
+    }
+  });
+}
+```
+
+### 2. Le Filtre WXS pour l'Affichage WXML (`utils/wxs/filters.wxs`)
+```javascript
+// À ajouter dans votre fichier WXS
+function maskPhone(val) {
+  if (!val) return '';
+  var str = '' + val;
+  if (str.length < 9) return '***';
+  var prefix = str.substring(0, 2);
+  var suffix = str.substring(str.length - 2);
+  return prefix + ' *** ** ' + suffix;
+}
+
+module.exports = {
+  maskPhone: maskPhone
+};
+```
+
+### 3. Utilisation dans la Page (`pages/profil/index.wxml`)
+```xml
+<wxs src="../../utils/wxs/filters.wxs" module="f" />
+
+<view class="profile-card">
+  <text class="label">Numéro de téléphone :</text>
+  <!-- Le numéro est masqué directement à l'affichage -->
+  <text class="value">{{ f.maskPhone(user.phone) }}</text>
+</view>
 ```
