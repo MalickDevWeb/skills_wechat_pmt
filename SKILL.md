@@ -161,3 +161,7 @@ Exécuter impérativement dans cet ordre :
 ### 5.2 Collaboration Multi-Développeurs (Zéro Conflit Git)
 - Chaque développeur est propriétaire d'un sous-dossier exclusif.
 - Les fichiers partagés (`app.js`, `app.wxss`, `utils/`) ne sont modifiés qu'avec l'accord explicite du Tech Lead.
+
+### 5.3 Outillage & Automatisation CLI
+- **`node skill-doctor.js`** : Valide l'intégrité globale du skill (détection de BOM UTF-8 `\uFEFF`, validation JSON, vérification de l'absence de nesting SCSS en WXSS, exhaustivité des déclencheurs IA).
+- **`node create-page.js <dossier> [--with-api]`** : Échafaude immédiatement les 4 fichiers d'une nouvelle page (`.js`, `.wxml`, `.wxss`, `.json`) avec machine à états `uiState`, Safe Area iPhone, classes `hover-class` Apple Press et câblage optionnel `backendAPI`.

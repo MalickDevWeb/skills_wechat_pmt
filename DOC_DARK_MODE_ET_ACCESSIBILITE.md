@@ -181,3 +181,4 @@ page {
      this.setData({ isDark: res.theme === 'dark' });
    });
    ```
+
