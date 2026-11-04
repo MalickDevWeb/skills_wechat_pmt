@@ -180,6 +180,7 @@ Exécuter impérativement dans cet ordre :
 
 ### 5.3 Outillage & Automatisation CLI
 - **`node scripts/skill-doctor.js`** : Valide l'intégrité globale du skill (détection de BOM UTF-8 `\uFEFF`, validation JSON, vérification de l'absence de nesting SCSS en WXSS, exhaustivité des déclencheurs IA).
+- **`node scripts/bundle-doctor.js [dossier]` (`npm run analyze`)** : Analyseur statique de performance et bundle (plafond strict des 2 Mo par sous-paquet, détection d'assets locaux > 100 Ko, détection de fuites mémoire et boucles bloquantes). Voir [docs/DOC_AUDIT_PERFORMANCE_ET_BUNDLE.md](docs/DOC_AUDIT_PERFORMANCE_ET_BUNDLE.md).
 - **`node scripts/create-page.js <dossier> [--subpackage <nom>] [--with-api]`** : Échafaude immédiatement les 4 fichiers d'une nouvelle page (`.js`, `.wxml`, `.wxss`, `.json`) avec machine à états `uiState`, Safe Area iPhone, classes `hover-class` Apple Press, calcul dynamique des chemins relatifs et câblage optionnel `backendAPI`.
 - **`node scripts/create-component.js <dossier> [--ux]`** : Échafaude les 4 fichiers d'un composant (`Component()`, lifetimes strictes, `triggerEvent`, BEM, Safe Areas) en mode présentation ou UX skeleton shimmer.
 - **`node scripts/create-api.js <domaine>`** : Échafaude le service API (`utils/apis/<domaine>.api.js`) et son mappeur `json-sculpt` (`utils/mappers/<domaine>.js`) avec endpoints, méthodes CRUD et gestion d'erreurs typées.

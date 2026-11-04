@@ -130,3 +130,4 @@ Avant de soumettre votre version à Sonatel, validez chaque porte :
 [ ] Porte 9  : Aucun caractère BOM UTF-8 (\uFEFF) dans aucun fichier source (npm test valide).
 [ ] Porte 10 : Zéro plantage de navigation sur pile saturée (navigateToSafe utilisé partout).
 ```
+

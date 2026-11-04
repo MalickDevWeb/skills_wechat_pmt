@@ -2376,3 +2376,118 @@ Component({
 }
 ```
 
+---
+
+## ⚡ Recette 49 : Throttler & Debouncer Haute Performance pour Scroll et setData (60 FPS)
+
+**Quand l'utiliser ?** Dans `onPageScroll`, lors de la frappe dans un champ de recherche en direct (`bindinput`), ou sur tout événement à haute fréquence pour éliminer les chutes de FPS et les blocages du thread de rendu WeChat.
+
+### 1. Le Module d'Optimisation Temporelle (`utils/helpers/timing.js`)
+```javascript
+/**
+ * Limite l'exécution d'une fonction à un appel toutes les `wait` millisecondes (60 FPS)
+ * @param {Function} fn - Fonction à exécuter
+ * @param {number} wait - Intervalle minimal en ms (ex: 80ms pour scroll)
+ * @returns {Function}
+ */
+export function throttle(fn, wait = 80) {
+  let lastTime = 0;
+  let timer = null;
+
+  return function (...args) {
+    const now = Date.now();
+    const remaining = wait - (now - lastTime);
+
+    if (remaining <= 0 || remaining > wait) {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      lastTime = now;
+      fn.apply(this, args);
+    } else if (!timer) {
+      timer = setTimeout(() => {
+        lastTime = Date.now();
+        timer = null;
+        fn.apply(this, args);
+      }, remaining);
+    }
+  };
+}
+
+/**
+ * Reporte l'exécution d'une fonction après un délai d'inactivité (ex: recherche en direct)
+ * @param {Function} fn - Fonction à exécuter
+ * @param {number} delay - Délai en ms (ex: 300ms pour saisie clavier)
+ * @returns {Function}
+ */
+export function debounce(fn, delay = 300) {
+  let timer = null;
+
+  const debounced = function (...args) {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      fn.apply(this, args);
+      timer = null;
+    }, delay);
+  };
+
+  debounced.cancel = function () {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+  };
+
+  return debounced;
+}
+```
+
+### 2. Utilisation dans une Page WeChat (`pages/catalogue/index.js`)
+```javascript
+import { throttle, debounce } from '../../utils/helpers/timing';
+
+Page({
+  data: {
+    isScrolled: false,
+    searchQuery: '',
+    results: []
+  },
+
+  onLoad() {
+    // Création de la recherche debouncée
+    this.handleSearch = debounce((query) => {
+      this.executeApiSearch(query);
+    }, 350);
+  },
+
+  // 1. Throttling du Scroll à 60 FPS (évite 60 setData par seconde)
+  onPageScroll: throttle(function (e) {
+    const isScrolled = e.scrollTop > 100;
+    if (this.data.isScrolled !== isScrolled) {
+      this.setData({ isScrolled });
+    }
+  }, 80),
+
+  // 2. Recherche en direct debouncée
+  onSearchInput(e) {
+    const query = e.detail.value.trim();
+    this.setData({ searchQuery: query });
+    this.handleSearch(query);
+  },
+
+  executeApiSearch(query) {
+    console.log('[Search] Lancement de la requête API pour :', query);
+    // Appel API BackendAPI...
+  },
+
+  onUnload() {
+    // Nettoyage impératif
+    if (this.handleSearch && this.handleSearch.cancel) {
+      this.handleSearch.cancel();
+    }
+  }
+});
+```
+
+
