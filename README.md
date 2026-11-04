@@ -34,7 +34,7 @@ Des scripts Node.js et commandes npm automatisent le respect des standards sur v
 ```bash
 # 1. Scanner et valider l'intégrité du skill ou de votre mini-programme
 # (Vérifie : 0 BOM UTF-8, syntaxe JSON, aucun nesting SCSS en WXSS, cohérence IA)
-npm test                  # ou: node skill-doctor.js
+npm test                  # Lance l'audit complet (5 tests de santé + 3 tests générateurs)
 
 # 2. Générer instantanément une page complète (Règle des 4 fichiers)
 # Crée : index.js (State Machine), index.wxml (Safe Area & Shimmer), index.wxss (BEM Apple Press), index.json

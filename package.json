@@ -5,8 +5,10 @@
   "main": "skill-doctor.js",
   "scripts": {
     "lint": "node skill-doctor.js",
-    "test": "node skill-doctor.js",
     "doctor": "node skill-doctor.js",
+    "test:doctor": "node skill-doctor.js",
+    "test:generators": "node test-generators.js",
+    "test": "node skill-doctor.js && node test-generators.js",
     "create:page": "node create-page.js",
     "create:component": "node create-component.js"
   },
@@ -26,4 +28,3 @@
     "url": "git+https://github.com/MalickDevWeb/skills_wechat_pmt.git"
   }
 }
-

@@ -8,7 +8,7 @@ on:
 
 jobs:
   validate:
-    name: Audit de Santé & Zéro BOM
+    name: Audit de Santé, Zéro BOM & Test des Générateurs
     runs-on: ubuntu-latest
 
     steps:
@@ -20,6 +20,5 @@ jobs:
         with:
           node-version: 20
 
-      - name: Exécution du Skill Doctor
-        run: node skill-doctor.js
-
+      - name: Exécution des Tests Automatiques
+        run: npm test
