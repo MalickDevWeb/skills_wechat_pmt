@@ -36,7 +36,13 @@ Ce skill impose les règles strictes d'ingénierie logicielle pour concevoir, st
 
 ## 🏛️ PÔLE 1 : UI, SKELETONS SHIMMER, ANIMATIONS & RESPONSIVE
 
-### 1.1 Règle des 4 Fichiers & Isolation
+### 1.1 Orange Design System (ODS) & Tokens Sonatel
+- **Palette Officielle Sonatel** : Orange 500 (`#F16E00`), Orange Vibrant (`#FF7900`), Anthracite (`#1A1A1A`), Fond Max It (`#F6F6F6`), Blanc (`#FFFFFF`).
+- **Bouton CTA Principal** : `height: 96rpx; border-radius: 9999rpx; background: #F16E00;` avec feedback tactile obligatoire `hover-class="ods-btn--pressed"` (`transform: scale(0.98); opacity: 0.9;`).
+- **Composant Signature** : Le Solde Orange Money `om-balance-pill` avec masquage en 1 clic (`•••••• FCFA` vs `45 250 FCFA`) et rafraîchissement haptique.
+- *Référentiel détaillé : [docs/DOC_DESIGN_SYSTEM_ORANGE_SONATEL.md](docs/DOC_DESIGN_SYSTEM_ORANGE_SONATEL.md).*
+
+### 1.2 Règle des 4 Fichiers & Isolation
 Chaque page ou composant vit strictement dans son propre dossier avec 4 fichiers :
 ```
 pages/ma-page/
@@ -46,34 +52,34 @@ pages/ma-page/
   └── index.json    ← Configuration WeChat
 ```
 
-### 1.2 Skeletons Shimmer & Séparation UI vs UX
+### 1.3 Skeletons Shimmer & Séparation UI vs UX
 - **`components/ui/`** : Composants de présentation purs. Ne portent AUCUN état asynchrone ni skeleton.
 - **`components/ux/`** : Composants d'état et d'attente (Skeletons, Empty-states, Error-boundaries).
 - **Animation Shimmer Universelle** : Utiliser la classe `.shimmer` avec dégradé fluide à 60 FPS sans bloquer le thread principal.
 
-### 1.3 Feedback Tactile au Clic (`hover-class`)
+### 1.4 Feedback Tactile au Clic (`hover-class`)
 - Bannir le CSS `:active` web. Toujours utiliser `hover-class="btn--pressed"` avec `hover-start-time="20"` et `hover-stay-time="100"` (`transform: scale(0.96); opacity: 0.85;`).
 
-### 1.4 Responsive iPhone Réel & Safe Areas
+### 1.5 Responsive iPhone Réel & Safe Areas
 - Tout élément fixé en bas (`position: fixed; bottom: 0;`) DOIT inclure : `padding-bottom: calc(XXrpx + env(safe-area-inset-bottom));`.
 - Bannir `height: 100vh; overflow: hidden;`. Utiliser `min-height: 100vh;` pour laisser scroller les écrans à encoche et Dynamic Island.
 - Remplacer les dimensions fractionnaires issues de Figma (`31.98rpx` → `32rpx`) pour éviter les gaps de sous-pixels sur écrans Retina.
 - Bannir le nesting CSS non supporté en WXSS natif.
 - Synchroniser l'index du Custom TabBar dans `onShow()` via `this.getTabBar().setData({ selected: INDEX })`.
 
-### 1.5 Composant Image Industriel (`@IMAGE-MEDIA`)
+### 1.6 Composant Image Industriel (`@IMAGE-MEDIA`)
 - Utiliser `osn-image` avec `virtualHost: true`, `lazy-load` natif et auto-retry à 3 tentatives (délai exponentiel).
 - Gérer l'état de chargement et le fallback d'erreur sans casser la grille de layout.
 - Supporter le mode `previewable` avec `wx.previewImage` pour affichage plein écran natif WeChat.
 - Mettre en cache local les timestamps de chargement pour éliminer les requêtes redondantes.
 
-### 1.6 Bottom Sheets & Modales Responsives (`@MODAL-SHEET`)
+### 1.7 Bottom Sheets & Modales Responsives (`@MODAL-SHEET`)
 - Utiliser `app-modal` avec slots multiples (`header`, `content`, `footer`) et `styleIsolation: 'apply-shared'`.
 - Placements supportés : `'bottom'` (bottom sheet) et `'center'`.
 - Pour les bottom-sheets : toujours inclure `max-height: 85vh; padding: 12rpx 32rpx env(safe-area-inset-bottom, 40rpx);`.
 - Conversion automatique hex to RGBA dynamique avec backdrop blur et fermeture sur tap de l'overlay (`catchtap="noop"` sur le conteneur interne pour bloquer la propagation).
 
-### 1.7 Sélecteurs Temporels & Calendrier Horizontal (`@DATE-PICKER`)
+### 1.8 Sélecteurs Temporels & Calendrier Horizontal (`@DATE-PICKER`)
 - Implémenter le sélecteur horizontal de dates avec calcul dynamique à partir de `minDays` (délai de prévenance).
 - Détecter et signaler les dates bloquées via trigger d'événement `blocked`.
 - Support des dates additionnelles choisies via picker natif avec flag `isAdditional: true`.

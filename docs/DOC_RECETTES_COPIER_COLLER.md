@@ -2134,3 +2134,245 @@ module.exports = {
   <text class="value">{{ f.maskPhone(user.phone) }}</text>
 </view>
 ```
+
+---
+
+## 🟠 Recette 48 : Composant Signature Solde Orange Money (ODS Sonatel avec Masquage & Tokens Pulse)
+
+**Quand l'utiliser ?** Dans l'en-tête de votre page d'accueil ou de votre tunnel de paiement pour afficher le solde Orange Money du client en respectant scrupuleusement la charte Sonatel Max It, avec protection de la vie privée (masquage en 1 clic) et micro-animation de rafraîchissement.
+
+### 1. Configuration (`components/ui/om-balance-pill/index.json`)
+```json
+{
+  "component": true
+}
+```
+
+### 2. Logique du Composant (`components/ui/om-balance-pill/index.js`)
+```javascript
+Component({
+  properties: {
+    balance: {
+      type: Number,
+      value: 0
+    },
+    currency: {
+      type: String,
+      value: 'FCFA'
+    },
+    initialMasked: {
+      type: Boolean,
+      value: false
+    }
+  },
+
+  data: {
+    isMasked: false,
+    isRefreshing: false
+  },
+
+  lifetimes: {
+    attached() {
+      this.setData({
+        isMasked: this.data.initialMasked
+      });
+    }
+  },
+
+  methods: {
+    toggleMask() {
+      try {
+        wx.vibrateShort({ type: 'light' });
+      } catch (e) {}
+      this.setData({
+        isMasked: !this.data.isMasked
+      });
+    },
+
+    onRefresh() {
+      if (this.data.isRefreshing) return;
+      try {
+        wx.vibrateShort({ type: 'light' });
+      } catch (e) {}
+
+      this.setData({ isRefreshing: true });
+      this.triggerEvent('refresh', {}, {});
+
+      // Arrêt automatique de l'animation après 1.2s
+      setTimeout(() => {
+        this.setData({ isRefreshing: false });
+      }, 1200);
+    },
+
+    onTopup() {
+      try {
+        wx.vibrateShort({ type: 'medium' });
+      } catch (e) {}
+      this.triggerEvent('topup', {}, {});
+    }
+  }
+});
+```
+
+### 3. Structure WXML (`components/ui/om-balance-pill/index.wxml`)
+```xml
+<view class="om-pill">
+  <!-- Marqueur Brand Sonatel -->
+  <view class="om-pill__brand">
+    <view class="om-pill__dot"></view>
+    <text class="om-pill__title">Orange Money</text>
+  </view>
+
+  <!-- Bloc Solde & Action Masquage -->
+  <view class="om-pill__body">
+    <view class="om-pill__amount-wrapper" bindtap="toggleMask">
+      <block wx:if="{{ isMasked }}">
+        <text class="om-pill__amount om-pill__amount--masked">•••••• {{ currency }}</text>
+      </block>
+      <block wx:else>
+        <text class="om-pill__amount">{{ balance }} {{ currency }}</text>
+      </block>
+      <!-- Bouton Oeil WXML -->
+      <view class="om-pill__eye-btn">
+        <text class="om-pill__eye-icon">{{ isMasked ? '👁️' : '🔒' }}</text>
+      </view>
+    </view>
+
+    <!-- Bouton Rafraîchir -->
+    <view
+      class="om-pill__refresh-btn {{ isRefreshing ? 'om-pill__refresh-btn--spinning' : '' }}"
+      bindtap="onRefresh"
+    >
+      <text class="om-pill__refresh-icon">🔄</text>
+    </view>
+  </view>
+
+  <!-- Bouton Rapide Recharger -->
+  <view class="om-pill__footer">
+    <button
+      class="om-pill__action-btn"
+      hover-class="om-pill__action-btn--pressed"
+      bindtap="onTopup"
+    >
+      Recharger
+    </button>
+  </view>
+</view>
+```
+
+### 4. Styles WXSS purs sans Nesting (`components/ui/om-balance-pill/index.wxss`)
+```css
+.om-pill {
+  display: flex;
+  flex-direction: column;
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 24rpx 32rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  border: 1rpx solid #EEEEEE;
+  box-sizing: border-box;
+}
+
+.om-pill__brand {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.om-pill__dot {
+  width: 14rpx;
+  height: 14rpx;
+  background-color: #F16E00;
+  border-radius: 9999rpx;
+  margin-right: 12rpx;
+}
+
+.om-pill__title {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #666666;
+  text-transform: uppercase;
+  letter-spacing: 1rpx;
+}
+
+.om-pill__body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.om-pill__amount-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.om-pill__amount {
+  font-size: 38rpx;
+  font-weight: 700;
+  color: #1A1A1A;
+  margin-right: 14rpx;
+}
+
+.om-pill__amount--masked {
+  letter-spacing: 2rpx;
+  color: #666666;
+}
+
+.om-pill__eye-btn {
+  padding: 4rpx 8rpx;
+  font-size: 24rpx;
+}
+
+.om-pill__refresh-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 9999rpx;
+  background-color: #F6F6F6;
+  transition: transform 0.3s ease;
+}
+
+.om-pill__refresh-btn--spinning {
+  animation: omSpin 0.8s linear infinite;
+}
+
+@keyframes omSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.om-pill__refresh-icon {
+  font-size: 24rpx;
+}
+
+.om-pill__footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.om-pill__action-btn {
+  margin: 0;
+  padding: 0 28rpx;
+  height: 52rpx;
+  line-height: 52rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  background-color: #FFF3E8;
+  color: #F16E00;
+  border-radius: 9999rpx;
+  border: none;
+}
+
+.om-pill__action-btn--pressed {
+  opacity: 0.8;
+  transform: scale(0.96);
+}
+```
+
