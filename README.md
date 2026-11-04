@@ -258,5 +258,6 @@ Si tu utilises Cursor, Copilot ou Gemini avec le fichier `.cursorrules` :
 
 - 💳 **`DOC_PAIEMENT_NATIVE_MAXIT_ET_RESILIENCE.md`** : Architecture complète paiement marchand Max It / TCMPP, bouclier anti-double débit (`_confirmedTxnid`), Smart Polling 4G et récupération hors-ligne.
 - 📱 **`DOC_RESPONSIVE_IPHONE_ET_CUSTOM_TABBAR.md`** : Rendu iPhone réel, Safe Areas, calcul de capsule WeChat et architecture officielle Custom TabBar.
-- 📚 **`DOC_RECETTES_COPIER_COLLER.md`** : 18 recettes prêtes à l'emploi (Liste, Formulaire, Upload, Pull-to-refresh, Paiement natif, Smart polling, Custom navbar, Custom tabbar, Store réactif).
+- 🧭 **`DOC_NAVIGATION_BEHAVIORS_ET_METIER.md`** : Navigation sécurisée (pile 10 pages, anti-double clic), mixins officiels WeChat (Behaviors) et règles métier (annulation, favoris, buffer OAuth2).
+- 📚 **`DOC_RECETTES_COPIER_COLLER.md`** : 22 recettes prêtes à l'emploi (Liste, Formulaire, Upload, Pull-to-refresh, Paiement natif, Smart polling, Custom navbar, Custom tabbar, Store réactif, Navigation safe, Behaviors, Favoris optimistes, Calcul de pénalités).
 - ❓ **`DOC_FAQ_ERREURS_FREQUENTES.md`** : 35+ questions/réponses pour ne jamais faire d'erreur (UI, API, Paiement, iPhone, Git, Performance).

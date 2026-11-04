@@ -17,6 +17,8 @@ If the user's prompt includes any of these keywords, you MUST activate specific 
 - **`@NATIVE-PAY`**: Strictly apply the TCMPP/Max It Native Payment architecture with the `_confirmedTxnid` bank shield (0% double debit) and Smart Polling.
 - **`@RESPONSIVE-UI`**: Apply strict physical iPhone rules: dynamic safe areas, `min-height`, capsule geometry calculation, and anti-clipping.
 - **`@CUSTOM-TABBAR`**: Implement or maintain the official WeChat custom tab bar without flickering using `this.getTabBar().setData({ selected })` in `onShow`.
+- **`@SAFE-NAV`**: Use `navigateToSafe` and navigation lock to avoid the 10-page stack limit crash and double-tap duplicate page pushes.
+- **`@BEHAVIOR-MIXIN`**: Share state and asynchronous loading/error logic across pages/components using native WeChat Behaviors (`loadingBehavior`).
 
 ## 0. CRITICAL: MODULARITY & ANTI-CONFLICT RULES
 You are working in a collaborative environment. Modifying shared files unnecessarily will cause merge conflicts.
@@ -107,3 +109,10 @@ When integrating mobile payments (Orange Money / Max It via `wx.invokeNativePlug
 - **Safe Area Inset:** ALWAYS add `padding-bottom: calc(XXrpx + env(safe-area-inset-bottom));` to fixed bottom bars, modals, and sticky action buttons.
 - **No Rigid `100vh`:** Use `min-height: 100vh;` instead of `height: 100vh; overflow: hidden;` to prevent clipped forms on real devices with notches or Dynamic Island.
 - **Custom TabBar Sync:** On tab pages, ALWAYS call `this.getTabBar().setData({ selected: INDEX })` in `onShow()` to eliminate flicker and tab state mismatch.
+
+
+## 8. SAFE NAVIGATION & WECHAT BEHAVIORS
+
+- **10-Page Stack Guard:** Never blindly call `wx.navigateTo` across deep flows. Use `navigateToSafe()` which gracefully falls back to `wx.redirectTo` when `getCurrentPages().length >= 10`.
+- **Navigation Lock:** Prevent rapid double taps from opening duplicate screens with `navigateWithLock()`.
+- **Behaviors for Shared Logic:** Prefer WeChat `Behavior({ data, methods })` over copying `isLoading`, `hasError`, and `withLoading()` across pages.

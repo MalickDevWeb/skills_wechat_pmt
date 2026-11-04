@@ -273,3 +273,4 @@ Que se passe-t-il si le smartphone s'éteint ou si l'utilisateur quitte brusquem
 - [ ] **Dialogue de secours explicite :** Si le réseau meurt après débit, le bouton "Réessayer" appelle la validation backend sans repasser par Orange Money.
 - [ ] **Persistance locale :** Enregistrement de `PENDING_TXNID` dès l'obtention du `txnid` et suppression après succès backend.
 - [ ] **Montants entiers :** Vérifier que les montants envoyés au plugin natif sont des entiers (pas de centimes flottants comme `1500.500000002`).
+

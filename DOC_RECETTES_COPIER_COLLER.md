@@ -1,4 +1,4 @@
-> 🔗 **Navigation :** [UI](DOC_UI_POUR_DEVELOPPEURS.md) | [API](DOC_API_POUR_DEVELOPPEURS.md) | [Paiement & Résilience](DOC_PAIEMENT_NATIVE_MAXIT_ET_RESILIENCE.md) | [Responsive & TabBar](DOC_RESPONSIVE_IPHONE_ET_CUSTOM_TABBAR.md) | [Animations](DOC_FLUX_COMPLEXES_ANIMATIONS.md) | [Communication](DOC_COMMUNICATION_EVENEMENTS.md) | [Données](DOC_DONNEES_MAPPERS_HELPERS.md) | [Recettes](DOC_RECETTES_COPIER_COLLER.md) | [Debug](DOC_DEBUG_ET_NOUVELLES_RECETTES.md) | [Checklist](DOC_CHECKLIST_AVANT_DE_CODER.md) | [FAQ](DOC_FAQ_ERREURS_FREQUENTES.md)
+> 🔗 **Navigation :** [UI](DOC_UI_POUR_DEVELOPPEURS.md) | [API](DOC_API_POUR_DEVELOPPEURS.md) | [Paiement & Résilience](DOC_PAIEMENT_NATIVE_MAXIT_ET_RESILIENCE.md) | [Responsive & TabBar](DOC_RESPONSIVE_IPHONE_ET_CUSTOM_TABBAR.md) | [Navigation & Behaviors](DOC_NAVIGATION_BEHAVIORS_ET_METIER.md) | [Animations](DOC_FLUX_COMPLEXES_ANIMATIONS.md) | [Communication](DOC_COMMUNICATION_EVENEMENTS.md) | [Données](DOC_DONNEES_MAPPERS_HELPERS.md) | [Recettes](DOC_RECETTES_COPIER_COLLER.md) | [Debug](DOC_DEBUG_ET_NOUVELLES_RECETTES.md) | [Checklist](DOC_CHECKLIST_AVANT_DE_CODER.md) | [FAQ](DOC_FAQ_ERREURS_FREQUENTES.md)
 
 ---
 
@@ -27,6 +27,10 @@ Chaque recette est une **solution complète et autonome**. Vous trouvez votre si
 | 📱 [Recette 16](#-recette-16--barre-de-navigation-custom--capsule-wechat) | En-tête sur mesure aligné au pixel près sur la capsule WeChat | Moyenne |
 | 📱 [Recette 17](#-recette-17--custom-tabbar-wechat-sans-scintillement) | Barre d'onglets personnalisée officielle WeChat avec badges | Avancée |
 | ⚡ [Recette 18](#-recette-18--store-réactif-léger-avec-cache-stale-while-revalidate) | Partage d'état global sans bibliothèque externe avec cache TTL | Avancée |
+| 🚦 [Recette 19](#-recette-19--navigation-sécurisée-anti-crash-pile-10-pages) | Protection contre le blocage des 10 pages WeChat + Anti-Double Tap | Facile |
+| 🧩 [Recette 20](#-recette-20--wechat-behavior-partagé-loadingbehavior) | Mixin officiel WeChat pour gérer isLoading et erreurs sans duplication | Moyenne |
+| ❤️ [Recette 21](#-recette-21--favoris-instantanés-double-cache-mémoire--disque) | Gestion optimiste des favoris à 0ms de latence avec persistance | Moyenne |
+| 📊 [Recette 22](#-recette-22--calculateur-de-délais--barèmes-dannulation) | Calcul des jours restants et pourcentages de remboursement sans bug UTC | Moyenne |
 
 ---
 
@@ -1033,4 +1037,138 @@ Page({
     }
   }
 });
+```
+
+
+---
+
+## 🚦 Recette 19 : Navigation Sécurisée Anti-Crash (Pile 10 Pages)
+
+**Quand l'utiliser ?** Dès que vous naviguez entre plusieurs pages pour éviter que l'application ne freeze silencieusement quand l'utilisateur a ouvert 10 pages d'affilée, ou clique trop vite deux fois.
+
+### Le Helper (`utils/helpers/navigation.js`)
+```javascript
+export function navigateToSafe(url) {
+  return new Promise((resolve, reject) => {
+    if (getCurrentPages().length >= 10) {
+      wx.redirectTo({ url, success: resolve, fail: reject });
+    } else {
+      wx.navigateTo({
+        url,
+        success: resolve,
+        fail: () => wx.redirectTo({ url, success: resolve, fail: reject })
+      });
+    }
+  });
+}
+
+export function withNavLock(pageInstance, action) {
+  if (pageInstance._navLocked) return;
+  pageInstance._navLocked = true;
+  try {
+    action();
+  } finally {
+    setTimeout(() => { pageInstance._navLocked = false; }, 500);
+  }
+}
+```
+
+---
+
+## 🧩 Recette 20 : WeChat Behavior Partagé (`loadingBehavior`)
+
+**Quand l'utiliser ?** Vous avez 10 pages ou composants qui font des appels API et vous en avez assez de réécrire `isLoading: true`, `try/catch`, `wx.showLoading` et `this.setData({ isLoading: false })`.
+
+### Le Mixin (`utils/behaviors/loading.js`)
+```javascript
+export const loadingBehavior = Behavior({
+  data: { isLoading: false, hasError: false, errorMessage: '' },
+  methods: {
+    async withLoading(asyncFn, loadingTitle = 'Chargement...') {
+      this.setData({ isLoading: true, hasError: false, errorMessage: '' });
+      if (loadingTitle) wx.showLoading({ title: loadingTitle, mask: true });
+      try {
+        return await asyncFn();
+      } catch (err) {
+        this.setData({ hasError: true, errorMessage: err.message || 'Erreur' });
+        throw err;
+      } finally {
+        if (loadingTitle) wx.hideLoading();
+        this.setData({ isLoading: false });
+      }
+    }
+  }
+});
+```
+
+### Utilisation dans votre Page
+```javascript
+import { loadingBehavior } from '../../utils/behaviors/loading.js';
+
+Page({
+  behaviors: [loadingBehavior],
+  async onLoad() {
+    await this.withLoading(async () => {
+      const data = await monAPI.getProduits();
+      this.setData({ produits: data });
+    });
+  }
+});
+```
+
+---
+
+## ❤️ Recette 21 : Favoris Instantanés (Double Cache Mémoire + Disque)
+
+**Quand l'utiliser ?** L'utilisateur clique sur le cœur d'une carte dans une liste. Le cœur doit changer de couleur immédiatement (0ms) et rester synchronisé partout.
+
+### Le Service (`utils/helpers/favorites.js`)
+```javascript
+const STORAGE_KEY = 'mes_favoris_ids';
+let cache = null;
+
+function loadIds() {
+  if (cache === null) {
+    try { cache = wx.getStorageSync(STORAGE_KEY) || []; } catch { cache = []; }
+  }
+  return cache;
+}
+
+export const Favorites = {
+  isFav(id) { return loadIds().includes(String(id)); },
+  toggle(id) {
+    const ids = loadIds();
+    const str = String(id);
+    cache = ids.includes(str) ? ids.filter(i => i !== str) : [...ids, str];
+    wx.setStorage({ key: STORAGE_KEY, data: cache });
+    return cache.includes(str);
+  }
+};
+```
+
+---
+
+## 📊 Recette 22 : Calculateur de Délais & Barèmes d'Annulation
+
+**Quand l'utiliser ?** Calculer les pénalités et les montants remboursables en fonction de la date du voyage sans subir les bugs de décalage horaire UTC/local.
+
+### Le Helper (`utils/helpers/cancellation.js`)
+```javascript
+export function calculateRefund(dateStr, montantTotal) {
+  if (!dateStr || !montantTotal) return null;
+  const departure = new Date(`${dateStr}T00:00:00`);
+  const days = Math.floor((departure.getTime() - Date.now()) / (24 * 3600 * 1000));
+
+  let refundPercent = 0;
+  if (days >= 30) refundPercent = 100;
+  else if (days >= 10) refundPercent = 90;
+  else if (days >= 7) refundPercent = 70;
+  else if (days >= 3) refundPercent = 50;
+  else refundPercent = 0;
+
+  const feeAmount = Math.round(montantTotal * ((100 - refundPercent) / 100));
+  const refundAmount = montantTotal - feeAmount;
+
+  return { days, refundPercent, feeAmount, refundAmount };
+}
 ```

@@ -343,3 +343,4 @@ Page({
 - [ ] Les hauteurs de cartes et listes utilisent `min-height` au lieu de `height` strict.
 - [ ] Les valeurs fractionnaires en `rpx` (ex: `31.98rpx`) sont arrondies à des entiers (`32rpx`).
 - [ ] Les pages de la barre d'onglets appellent `this.getTabBar().setData({ selected: X })` dans leur `onShow`.
+

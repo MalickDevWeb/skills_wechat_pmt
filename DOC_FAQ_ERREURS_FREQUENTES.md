@@ -18,6 +18,7 @@ Cherchez votre question dans la liste. La réponse vous dit exactement quoi fair
 - [🤝 Travail en Équipe & Git](#-travail-en-équipe--git)
 - [💳 Paiement Marchand & Résilience Réseau](#-paiement-marchand--résilience-réseau)
 - [📱 Responsive iPhone Réel & Custom TabBar](#-responsive-iphone-réel--custom-tabbar)
+- [🧭 Navigation & Behaviors WeChat](#-navigation--behaviors-wechat)
 
 ---
 
@@ -451,3 +452,26 @@ Exemples :
 
 **Q : Pourquoi ma page est coupée en bas et ne scrolle pas sur iPhone alors que le simulateur était parfait ?**
 > Vous avez probablement mis `height: 100vh; overflow: hidden;`. Sur un appareil réel avec encoche ou Dynamic Island, la hauteur utile est inférieure à `100vh`. Remplacez toujours `height: 100vh` par `min-height: 100vh;` et laissez le flux de document s'exprimer naturellement.
+
+
+---
+
+## 🧭 Navigation & Behaviors WeChat
+
+**Q : Mon `wx.navigateTo` ne fonctionne plus après avoir cliqué sur plusieurs liens. Aucun message d'erreur. Pourquoi ?**
+> Vous avez atteint la limite fatidique imposée par WeChat : **10 pages maximum sur la stack de navigation** (`getCurrentPages().length >= 10`). Au-delà, WeChat ignore l'appel. Utilisez le helper `navigateToSafe(url)` qui bascule automatiquement sur `wx.redirectTo` lorsque la pile atteint 10 pages.
+
+---
+
+**Q : L'utilisateur double-clique sur un bouton et la même page s'ouvre 2 fois. Comment l'empêcher ?**
+> Utilisez un verrou de navigation avec cooldown (`navigateWithLock`) ou un drapeau d'instance `this._isNavigating = true` déverrouillé au bout de 500ms.
+
+---
+
+**Q : Comment partager du code (méthodes et variables de data) entre plusieurs composants sans héritage ?**
+> Utilisez les **Behaviors** natifs de WeChat via `Behavior({ data, methods, lifetimes })`. Dans votre composant ou page, ajoutez simplement `behaviors: [monBehavior]`. C'est le standard officiel recommandé par WeChat.
+
+---
+
+**Q : Pourquoi mon token OAuth2 expire pendant l'envoi d'une requête et renvoie 401 ?**
+> Si vous vérifiez seulement `tokenExpiry > Date.now()`, un token qui expire dans 2 secondes sera jugé valide, mais expirera pendant la transmission réseau de 3 secondes. Utilisez un **Buffer de rafraîchissement d'au moins 60 secondes** : le token n'est considéré valide que si `Date.now() < (tokenExpiry - 60000)`.

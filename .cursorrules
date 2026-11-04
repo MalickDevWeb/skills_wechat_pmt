@@ -17,6 +17,8 @@ You MUST follow ALL rules in this document for every code change.
 | `@NATIVE-PAY` | Déploie le paiement marchand natif (Max It / TCMPP) avec bouclier bancaire `_confirmedTxnid` (0% double débit) et smart polling. |
 | `@RESPONSIVE-UI` | Adapte l'interface aux contraintes physiques iPhone (Safe Area, Home Indicator, pas de `100vh` rigide, capsule WeChat). |
 | `@CUSTOM-TABBAR` | Implémente ou synchronise le custom tab bar officiel WeChat sans aucun clignotement. |
+| `@SAFE-NAV` | Sécurise la navigation contre la limite des 10 pages et le double-tap. |
+| `@BEHAVIOR-MIXIN` | Factorise le code récurrent (loading, state) via les Behaviors natifs WeChat. |
 
 ---
 
@@ -183,3 +185,12 @@ Toujours utiliser les clés de traduction : `{{ t('ma.cle') }}`
      this.getTabBar().setData({ selected: MON_INDEX });
    }
    ```
+
+
+---
+
+## RÈGLE 6 — Navigation Sécurisée & Behaviors
+
+1. **Limite des 10 pages :** Utilise toujours `navigateToSafe()` pour basculer sur `redirectTo` dès que la pile atteint 10 pages.
+2. **Anti-Double Clic :** Verrouille la navigation pendant 500ms pour éviter les doubles ouvertures d'écran.
+3. **Behaviors :** Partage la logique asynchrone (`isLoading`, `hasError`, `withLoading`) via `Behavior({ ... })` au lieu de dupliquer du code.
