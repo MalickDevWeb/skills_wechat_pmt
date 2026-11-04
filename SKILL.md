@@ -3,142 +3,120 @@ name: wechat-pmt
 description: >-
   Expertise complète pour WeChat Mini-Program (PMT / TCMPP) : architecture modulaire anti-conflits,
   intégration API avec json-sculpt mappers, client HTTP BackendAPI, EventBus (Bus), gestion d'erreurs typées,
-  bonnes pratiques UI WeChat (WXS ES5, setData optimisé, safe areas env(safe-area-inset-bottom), lifetimes composants).
+  bonnes pratiques UI WeChat (WXS ES5, setData optimisé, safe areas env(safe-area-inset-bottom), lifetimes composants),
+  skeletons shimmer UX, SDK officiel Sonatel Max It, bouclier anti-double débit Orange Money et animations 60 FPS.
 ---
 
-# Frontend API & Architecture Guidelines (Modular / Anti-Conflict)
+# ⚡ WeChat PMT : Référentiel d'Architecture & Standards de Production
 
-This skill provides the strict rules for consuming APIs and writing frontend code in this repository.
-
-## 🎯 TRIGGER KEYWORDS (HOW TO ACTIVATE THIS SKILL)
-If the user's prompt includes any of these keywords, you MUST activate specific behaviors:
-- **`@API-CONNECT`**: Strictly apply this entire skill to connect an existing UI component to the backend.
-- **`@FULL-FEATURE`**: Combine this skill with the UI skill. Build the view AND connect it directly to the backend API simultaneously (Skip the "Mock-First" rule from the UI skill).
-- **`@NATIVE-PAY`**: Strictly apply the TCMPP/Max It Native Payment architecture with the `_confirmedTxnid` bank shield (0% double debit) and Smart Polling.
-- **`@RESPONSIVE-UI`**: Apply strict physical iPhone rules: dynamic safe areas, `min-height`, capsule geometry calculation, and anti-clipping.
-- **`@CUSTOM-TABBAR`**: Implement or maintain the official WeChat custom tab bar without flickering using `this.getTabBar().setData({ selected })` in `onShow`.
-- **`@SAFE-NAV`**: Use `navigateToSafe` and navigation lock to avoid the 10-page stack limit crash and double-tap duplicate page pushes.
-- **`@BEHAVIOR-MIXIN`**: Share state and asynchronous loading/error logic across pages/components using native WeChat Behaviors (`loadingBehavior`).
-- **`@MAXIT-SDK`**: Implement or migrate host features to `@sonatel-os/maxit-mini-sdk` (user identity, pay, contacts, camera scan, screen protection, simulate).
-- **`@COMPILER-SAFE`**: Eliminate compiler traps (UTF-8 BOM, local @font-face 404, argument guards in onLoad, smart back button fallback).
-- **`@PAGE-ANIM`**: Add tactile click feedback (`hover-class` Apple Press) and 60 FPS smooth page entry transitions (`cubic-bezier(0.22, 1, 0.36, 1)`).
-
-## 0. CRITICAL: MODULARITY & ANTI-CONFLICT RULES
-You are working in a collaborative environment. Modifying shared files unnecessarily will cause merge conflicts.
-- **Stay in Your Lane:** ONLY modify the files inside the specific module, page, or component folder you were asked to work on.
-- **No Unsolicited Refactoring:** DO NOT reformat, refactor, or "clean up" shared files (e.g., `app.js`, shared `utils/`, shared `components/`) unless the user explicitly requests it.
-- **Scoping:** When creating a new page or component, encapsulate its logic, styles, and templates strictly within its own directory.
+Ce skill impose les règles strictes d'ingénierie logicielle pour concevoir, structurer et déployer des mini-programmes WeChat et TCMPP (Max It / Orange Money) à l'échelle industrielle.
 
 ---
 
-## STANDARD OPERATING PROCEDURE (SOP): CONSUMING A NEW API
+## 🎯 DÉCLENCHEURS IA (MOTS-CLÉS D'ACTIVATION)
 
-When asked to consume a new API endpoint, follow this exact sequence:
-
-### Phase 1: Information Gathering
-If the user hasn't provided them, you MUST ask for:
-1. **Method & Path:** (e.g., `POST /api/v2/orders`).
-2. **Expected Response JSON:** A sample of the backend response is REQUIRED to build the `json-sculpt` mapping schema.
-3. **Payload/Query parameters:** Expected input.
-4. **Auth context:** Does it require the OAuth2 token or is it public?
-
-### Phase 2: Execution Steps (Module by Module)
-Execute the integration in this EXACT order:
-1. **Routing:** Add the endpoint path to `ENDPOINTS` in `utils/apis/index.js`.
-2. **Schema Definition:** Create a schema in `utils/mappers/index.js` using `json-sculpt` to extract ONLY what the UI needs from the raw JSON.
-3. **Service Method:** Create the method in `BackendAPI` (`utils/apis/index.js`). It must call `await authenticate()`, make the HTTP call via `this.#client`, check `!res.success`, and return `sculpt.data()`.
-4. **UI Integration:** Implement the call strictly within the requested Page/Component folder.
+| Mot-Clé | Domaine d'Application |
+|---|---|
+| **`@UI-MOCK`** | Crée l'UI en mode Mock-First avec state machine (`uiState`) sans appel réseau. |
+| **`@SKELETON-UX`** | Conçoit les skeletons shimmer wave (`components/ux/`), empty-states et error-boundaries. |
+| **`@PAGE-ANIM`** | Ajoute le feedback tactile (`hover-class` Apple Press) et les transitions de page 60 FPS. |
+| **`@RESPONSIVE-UI`** | Dimensionnement iPhone réel (Safe Area, suppression de `100vh` rigide, capsule WeChat). |
+| **`@CUSTOM-TABBAR`** | Implémente ou synchronise le custom tab bar officiel WeChat sans aucun clignotement. |
+| **`@SAFE-NAV`** | Sécurise la navigation (pile de 10 pages, anti-double tap lock `withLock`, retour intelligent). |
+| **`@BEHAVIOR-MIXIN`** | Factorise l'état et le chargement asynchrone avec les Behaviors natifs (`loadingBehavior`). |
+| **`@API-CONNECT`** | Connecte un écran existant au backend via le workflow strict en 4 étapes (Endpoint, Schema, Service, UI). |
+| **`@FULL-FEATURE`** | Construit la vue UI et la connecte directement à l'API en une seule passe. |
+| **`@MAXIT-SDK`** | Utilise la façade officielle `@sonatel-os/maxit-mini-sdk` (identité, login, contacts, scan, protect). |
+| **`@NATIVE-PAY`** | Déploie le flux de paiement marchand Orange Money avec bouclier bancaire `_confirmedTxnid` (0% double débit). |
+| **`@COMPILER-SAFE`** | Élimine les pièges de compilation TCMPP (BOM UTF-8, @font-face 404, guards `onLoad`). |
 
 ---
 
-## 1. FRONTEND & UI STANDARDS
+## 🏛️ PÔLE 1 : UI, SKELETONS SHIMMER, ANIMATIONS & RESPONSIVE
 
-When working on Pages, Components, or Views (e.g., `.wxml`, `.js`):
-
-- **No Hardcoded Texts (i18n):** NEVER hardcode user-facing text (English or French) in the HTML or JS. You MUST use the internationalization system (e.g., `t('key.name')`). If a key doesn't exist, tell the user to add it to the translation files, or add it if instructed.
-- **User Feedback:** When an API call fails or succeeds, you must inform the user visually. Use standard UI patterns (e.g., `wx.showToast`, custom alerts) in the `catch` block. Do not just `console.log` errors.
-- **View-Layer Formatting (WXS):** Do not pollute JS logic with complex string or date formatting if it can be avoided. Use WXS (WeChat Scripts) filters in the view layer for rendering formats.
-- **Loading States:** Always manage loading states (e.g., `this.setData({ isLoading: true })` in `try` and `false` in `finally`) to prevent double-clicks.
-
-## 2. HTTP CLIENT & API LAYER
-
-The application wraps requests in a custom HTTP client (`HttpClient`).
-**CRITICAL RULE:** NEVER use `wx.request` directly. ALWAYS use the `BackendAPI` singleton.
-
-```javascript
-// Correct BackendAPI Method implementation
-async getMyFeature(params) {
-  await authenticate(); // Handles OAuth2 token caching/refresh automatically
-  const res = await this.#client.get(ENDPOINTS.MY_NEW_FEATURE, { query: params });
-  
-  if (!res.success) {
-    // Rely on the structured error handling
-    throw new Error(res.error?.message || "Failed to fetch feature");
-  }
-  
-  return sculpt.data({ data: res.data, to: MyFeatureSchema });
-}
+### 1.1 Règle des 4 Fichiers & Isolation
+Chaque page ou composant vit strictement dans son propre dossier avec 4 fichiers :
+```
+pages/ma-page/
+  ├── index.js      ← Logique & Machine à États (uiState)
+  ├── index.wxml    ← Structure & Filtres WXS
+  ├── index.wxss    ← Styles scopés BEM & Safe Area
+  └── index.json    ← Configuration WeChat
 ```
 
-## 3. ERROR HANDLING & CONSTANTS
+### 1.2 Skeletons Shimmer & Séparation UI vs UX
+- **`components/ui/`** : Composants de présentation purs. Ne portent AUCUN état asynchrone ni skeleton.
+- **`components/ux/`** : Composants d'état et d'attente (Skeletons, Empty-states, Error-boundaries).
+- **Animation Shimmer Universelle** : Utiliser la classe `.shimmer` avec dégradé fluide à 60 FPS sans bloquer le thread principal.
 
-- **Custom Errors:** When writing business logic, throw specific custom errors from `utils/errors/index.js` (e.g., `ValidationError`, `NetworkError`) rather than generic `Error` objects.
-- **Constants:** NEVER hardcode magic strings, status codes, or storage keys in your components. Reference them from `utils/constants/index.js`. Configuration (URLs) belongs in `utils/config.js`.
+### 1.3 Feedback Tactile au Clic (`hover-class`)
+- Bannir le CSS `:active` web. Toujours utiliser `hover-class="btn--pressed"` avec `hover-start-time="20"` et `hover-stay-time="100"` (`transform: scale(0.96); opacity: 0.85;`).
 
-## 4. STATE MANAGEMENT (`utils/event/index.js`)
+### 1.4 Responsive iPhone Réel & Safe Areas
+- Tout élément fixé en bas (`position: fixed; bottom: 0;`) DOIT inclure : `padding-bottom: calc(XXrpx + env(safe-area-inset-bottom));`.
+- Bannir `height: 100vh; overflow: hidden;`. Utiliser `min-height: 100vh;` pour laisser scroller les écrans à encoche et Dynamic Island.
+- Synchroniser l'index du Custom TabBar dans `onShow()` via `this.getTabBar().setData({ selected: INDEX })`.
 
-The app uses an advanced `EventBus` (`Bus`) for global state and events.
-- **Mutate State:** `Bus.setState('key', data)`
-- **Listen to State:** `Bus.onState('key', callback)`
-- **Events:** `Bus.emit('event', data)` and `Bus.on('event', callback)`
-- **Rule:** DO NOT mutate `app.globalData` manually for state that UI components depend on.
+---
 
-## 5. STORAGE (`utils/storage.js`)
+## 🧠 PÔLE 2 : LOGIQUE MÉTIER, NAVIGATION & BEHAVIORS
 
-NEVER use `wx.getStorageSync` or `wx.setStorageSync` directly (they throw on quota limits).
-- Use the provided wrapper: `storage.set('KEY', value)` and `storage.get('KEY', defaultValue)`.
+### 2.1 Navigation Sécurisée (Limite des 10 Pages)
+- Ne jamais appeler `wx.navigateTo` à l'aveugle. Utiliser `navigateToSafe()` qui bascule automatiquement sur `wx.redirectTo` quand `getCurrentPages().length >= 10`.
+- Retour Intelligent : Si `getCurrentPages().length === 1` (accès direct via deep link ou SMS), basculer sur `wx.switchTab({ url: '/pages/home/home' })` au lieu de bloquer.
+- Anti-double tap : Verrouiller toute navigation ou action sensible avec `withLock(fn, 500)`.
 
+### 2.2 WeChat Behaviors (Mixins Officiels)
+- Factoriser `isLoading`, `hasError`, `errorMessage` et la méthode `withLoading(asyncFn)` via `loadingBehavior` au lieu de dupliquer du code sur 20 pages.
 
+### 2.3 Logique Métier & Favoris
+- Traiter les dates sans décalage UTC (`new Date(`${dateStr}T00:00:00`)`).
+- Favoris réactifs : Double cache (mémoire synchrone à 0 ms de latence + persistance locale asynchrone).
 
-## 6. NATIVE PAYMENT & DOUBLE-DEBIT SHIELD (`merchantPay`)
+---
 
-When integrating mobile payments (Orange Money / Max It via `wx.invokeNativePlugin`):
-- **Bank Shield (`this._confirmedTxnid`):** As soon as the native payment succeeds, seal the `txnid` in the page instance. If backend confirmation fails, retrying MUST bypass the native payment completely. Zero duplicate debits.
-- **No Artificial JS Timeout:** NEVER use `Promise.race` or a 30s timeout on the native plugin call. Let the host app / PIN container handle its own lifecycle.
-- **Smart Polling (3 Attempts):** Use progressive backoff (0s, 2s, 4s) for backend confirmation before asking the user to manually retry.
+## 🔌 PÔLE 3 : CONSOMMATION API & GESTION DES DONNÉES
 
-## 7. PHYSICAL IPHONE RESPONSIVENESS & SAFE AREAS
+### 3.1 Workflow Strict d'Intégration API (SOP)
+Exécuter impérativement dans cet ordre :
+1. **Routing** : Ajouter l'endpoint dans `ENDPOINTS` de `utils/apis/`.
+2. **Schema** : Définir la structure stricte dans `utils/mappers/` avec `json-sculpt`.
+3. **Service** : Créer la méthode dans `BackendAPI` (`await authenticate()`, appel `this.#client`, sculpteur de données).
+4. **UI** : Consommer dans la page à l'intérieur d'un bloc `try/catch/finally`.
 
-- **Safe Area Inset:** ALWAYS add `padding-bottom: calc(XXrpx + env(safe-area-inset-bottom));` to fixed bottom bars, modals, and sticky action buttons.
-- **No Rigid `100vh`:** Use `min-height: 100vh;` instead of `height: 100vh; overflow: hidden;` to prevent clipped forms on real devices with notches or Dynamic Island.
-- **Custom TabBar Sync:** On tab pages, ALWAYS call `this.getTabBar().setData({ selected: INDEX })` in `onShow()` to eliminate flicker and tab state mismatch.
+### 3.2 Authentification OAuth2 avec Marge de Sécurité (Buffer 60s)
+- Le token n'est considéré valide que si `Date.now() < (expiry - 60000)`. Cela élimine 100 % des erreurs 401 en cours de transit mobile.
 
+### 3.3 Gestion des Erreurs Typées
+- Utiliser `handleAppError(error)` pour mapper `NetworkError`, `AuthorizationError`, `ValidationError` vers des messages utilisateur bienveillants.
 
-## 8. SAFE NAVIGATION & WECHAT BEHAVIORS
+---
 
-- **10-Page Stack Guard:** Never blindly call `wx.navigateTo` across deep flows. Use `navigateToSafe()` which gracefully falls back to `wx.redirectTo` when `getCurrentPages().length >= 10`.
-- **Navigation Lock:** Prevent rapid double taps from opening duplicate screens with `navigateWithLock()`.
-- **Behaviors for Shared Logic:** Prefer WeChat `Behavior({ data, methods })` over copying `isLoading`, `hasError`, and `withLoading()` across pages.
+## ⚙️ PÔLE 4 : INTÉGRATION HÔTE MAX IT, PAIEMENT & SÉCURITÉ
 
+### 4.1 Façade Officielle `@sonatel-os/maxit-mini-sdk`
+- Privilégier `miniSDK` pour l'identité (`miniSDK.user()`), le login (`miniSDK.login()`), le paiement et les contacts.
+- Activer `simulate: true` sous WeChat DevTools pour tester les fixtures sans terminal physique.
 
-## 9. OFFICIAL MAX IT SDK (`@sonatel-os/maxit-mini-sdk`)
+### 4.2 Bouclier Anti-Double Débit Orange Money
+- Dès que le plugin natif confirme le débit, sceller immédiatement `this._confirmedTxnid = txnid`.
+- En cas de coupure réseau 4G pendant la confirmation backend, le bouton "Réessayer" court-circuite complètement le débit bancaire (0 franc prélevé en plus).
+- Utiliser le Smart Polling à 3 essais avec backoff progressif (0s, 2s, 4s).
+- Si `err.uncertain === true`, NE JAMAIS redemander de payer immédiatement.
 
-When building for Sonatel Max It / Orange Money, prefer the official `miniSDK` facade:
-- **Zero Raw Plugin Traps:** Do not parse host envelopes manually. Use `miniSDK.user()`, `miniSDK.pay()`, `miniSDK.login()`.
-- **Screen Protection Protocol:** Whenever calling `miniSDK.screen.protect(true)` on sensitive views (paid QR), ALWAYS call `miniSDK.screen.protect(false)` in both `onHide()` and `onUnload()`.
-- **Uncertain Payment Guard:** If `err.uncertain === true`, money may have left the account. NEVER prompt the user to re-pay immediately; trigger backend verification.
-- **DevTools Simulation:** Turn on `simulate: true` in `app.js` when running under WeChat DevTools.
+### 4.3 Sécurité des Écrans Sensibles
+- Verrouiller la capture d'écran sur les billets QR via `miniSDK.screen.protect(true)`.
+- **Règle vitale** : Toujours appeler `miniSDK.screen.protect(false)` dans `onHide()` et `onUnload()`.
 
+---
 
-## 10. COMPILER & PRODUCTION ROBUSTNESS
+## 🛠️ PÔLE 5 : COMPILATEUR TCMPP & QUALITÉ D'ÉQUIPE
 
-- **No Local @font-face:** NEVER use local `.ttf` or `.woff` in WXSS; it produces fatal 404 errors with `-do-not-use-local-path-`. Use system font stacks.
-- **No UTF-8 BOM:** Save all files in pure UTF-8 without BOM (`\uFEFF`) to avoid compiler syntax crashes.
-- **Smart Back Navigation:** In back button handlers, verify `getCurrentPages().length > 1` before calling `wx.navigateBack()`; fallback to `wx.switchTab({ url: '/pages/home/home' })` if the user landed via deep link.
-- **Page Argument Guards:** Always validate required query params in `onLoad(options)`; if missing, show a toast and `wx.navigateBack()`.
+### 5.1 Pièges Fatals de Compilation
+- **Zéro BOM UTF-8** : Tout fichier doit être sauvegardé en UTF-8 sans BOM (`\uFEFF`) sous peine de crash syntaxique.
+- **Zéro @font-face local** : Ne jamais charger de `.ttf` locaux dans les WXSS (erreur 404 avec `-do-not-use-local-path-`).
+- **Guards dans onLoad** : Valider tout paramètre requis dès l'entrée avec toast d'alerte et retour automatique.
 
-
-## 11. CLICK FEEDBACK & PAGE TRANSITION ANIMATIONS
-
-- **Apple Press on Tap:** Always set `hover-class="card--pressed"` with `scale(0.96)` on interactive cards and buttons.
-- **Smooth Page Transitions:** Wrap new pages in a `.page-enter` class animating from `translateY(20rpx)` to `0` with opacity 0 to 1.
+### 5.2 Collaboration Multi-Développeurs (Zéro Conflit Git)
+- Chaque développeur est propriétaire d'un sous-dossier exclusif.
+- Les fichiers partagés (`app.js`, `app.wxss`, `utils/`) ne sont modifiés qu'avec l'accord explicite du Tech Lead.

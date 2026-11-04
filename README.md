@@ -27,6 +27,55 @@ cp DOC_*.md ./ton-projet/docs/
 
 ---
 
+
+
+---
+
+## 🗺️ Cartographie Complète : Les 5 Pôles de Compétences
+
+Toutes les compétences du kit sont organisées en **5 pôles d'excellence**, couvrant 100 % des besoins d'un mini-programme professionnel :
+
+```
+                                  SKILLS WECHAT PMT
+                                         │
+    ┌──────────────┬─────────────────────┼─────────────────────┬──────────────┐
+    ▼              ▼                     ▼                     ▼              ▼
+┌───────────┐ ┌───────────┐       ┌───────────┐       ┌───────────┐ ┌───────────┐
+│  PÔLE 1   │ │  PÔLE 2   │       │  PÔLE 3   │       │  PÔLE 4   │ │  PÔLE 5   │
+│   UI/UX   │ │  LOGIQUE  │       │  API/DATA │       │  MAX IT   │ │  PROD/GIT │
+│ Skeletons │ │  Routage  │       │  Mappers  │       │ Paiement  │ │ Compilate.│
+│Animation  │ │ Behaviors │       │  OAuth2   │       │ Sécurité  │ │ Isolation │
+└───────────┘ └───────────┘       └───────────┘       └───────────┘ └───────────┘
+```
+
+### 🎨 PÔLE 1 : UI, Skeletons Shimmer, Animations & Responsive
+* 💀 **[`DOC_SKELETONS_ET_ETATS_UX.md`](DOC_SKELETONS_ET_ETATS_UX.md)** : Skeletons shimmer wave (.shimmer à 60 FPS), cartes fantômes, empty states, error fallbacks, isolation `components/ux/`.
+* 📱 **[`DOC_RESPONSIVE_IPHONE_ET_CUSTOM_TABBAR.md`](DOC_RESPONSIVE_IPHONE_ET_CUSTOM_TABBAR.md)** : Responsive iPhone physique, Safe Areas (`env(safe-area-inset-bottom)`), capsule WeChat et Custom TabBar officiel sans scintillement.
+* 🎬 **[`DOC_FLUX_COMPLEXES_ANIMATIONS.md`](DOC_FLUX_COMPLEXES_ANIMATIONS.md)** : Feedback tactile au toucher (`hover-class="btn--pressed"` Apple Press), entrée de page fluide et séquences JS (`wx.createAnimation`).
+* 🎨 **[`DOC_UI_POUR_DEVELOPPEURS.md`](DOC_UI_POUR_DEVELOPPEURS.md)** : La règle des 4 fichiers, machine à états (`uiState`), mise en page BEM et formatage WXS pur ES5.
+
+### 🧠 PÔLE 2 : Logique Métier, Navigation & Behaviors
+* 🧭 **[`DOC_NAVIGATION_BEHAVIORS_ET_METIER.md`](DOC_NAVIGATION_BEHAVIORS_ET_METIER.md)** : Protection contre le crash de la pile à 10 pages (`navigateToSafe`), anti-double clic (`withLock`), retour intelligent.
+* 🧩 **WeChat Behaviors Natifs** : Partage d'état et de chargement sans héritage (`loadingBehavior` avec `withLoading`).
+* 📊 **Calculs Métier & Favoris** : Barèmes d'annulation/pénalités par paliers de dates, et favoris optimistes bi-niveaux (mémoire 0ms + stockage local).
+* 🚌 **[`DOC_COMMUNICATION_EVENEMENTS.md`](DOC_COMMUNICATION_EVENEMENTS.md)** : Quand utiliser `this.triggerEvent`, `Bus.emit` ou `Bus.setState`.
+
+### 🔌 PÔLE 3 : Consommation API & Gestion des Données
+* 🔌 **[`DOC_API_POUR_DEVELOPPEURS.md`](DOC_API_POUR_DEVELOPPEURS.md)** : Le workflow strict en 4 étapes (Endpoint -> json-sculpt schema -> Méthode BackendAPI -> Appel Page).
+* 🛡️ **OAuth2 & Buffer de Sécurité** : Renouvellement automatique avec marge de 60s (`REFRESH_BUFFER_MS`) pour éliminer tout rejet 401.
+* 🗄️ **Mappers & Formatters** : Isolation totale de la donnée brute avec `json-sculpt` et formateurs de prix multi-devises (XOF, FCFA, EUR).
+
+### ⚙️ PÔLE 4 : Intégration Hôte Max It, Paiement & Sécurité
+* 📱 **[`DOC_MAXIT_MINI_SDK_SONATEL.md`](DOC_MAXIT_MINI_SDK_SONATEL.md)** : Guide officiel du SDK Sonatel (`@sonatel-os/maxit-mini-sdk`), identité sans écran de login (`user()`), contacts, scan caméra seule anti-fraude et simulation sous DevTools.
+* 💳 **[`DOC_PAIEMENT_NATIVE_MAXIT_ET_RESILIENCE.md`](DOC_PAIEMENT_NATIVE_MAXIT_ET_RESILIENCE.md)** : Bouclier bancaire (`_confirmedTxnid`) garantissant 0 % de double débit, Smart Polling 4G à 3 essais et gestion des erreurs incertaines (`err.uncertain`).
+* 🛡️ **Sécurité Écran** : Verrouillage anti-capture d'écran sur les billets QR (`screen.protect(true)` puis obligatoirement `protect(false)`).
+
+### 🛠️ PÔLE 5 : Compilateur TCMPP & Qualité d'Équipe
+* 🛠️ **[`DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md`](DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md)** : Résolution des erreurs fatales du compilateur (BOM UTF-8, erreur 404 sur les polices locales `@font-face`, clauses de garde dans `onLoad`).
+* 🤝 **Matrice d'Isolation Multi-Développeurs** : Attribution exclusive des dossiers pour faire collaborer 7 développeurs en simultané avec zéro conflit Git.
+* 📚 **[`DOC_RECETTES_COPIER_COLLER.md`](DOC_RECETTES_COPIER_COLLER.md)** : 37 recettes de code complètes prêtes à copier.
+* ❓ **[`DOC_FAQ_ERREURS_FREQUENTES.md`](DOC_FAQ_ERREURS_FREQUENTES.md)** : 40+ questions/réponses de production.
+
 ## 📐 Partie 1 — Créer une Interface UI
 
 ### La Règle des 4 Fichiers
