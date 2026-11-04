@@ -51,6 +51,7 @@ Toutes les compétences du kit sont organisées en **5 pôles d'excellence**, co
 ### 🎨 PÔLE 1 : UI, Skeletons Shimmer, Animations & Responsive
 * 💀 **[`DOC_SKELETONS_ET_ETATS_UX.md`](DOC_SKELETONS_ET_ETATS_UX.md)** : Skeletons shimmer wave (.shimmer à 60 FPS), cartes fantômes, empty states, error fallbacks, isolation `components/ux/`.
 * 📱 **[`DOC_RESPONSIVE_IPHONE_ET_CUSTOM_TABBAR.md`](DOC_RESPONSIVE_IPHONE_ET_CUSTOM_TABBAR.md)** : Responsive iPhone physique, Safe Areas (`env(safe-area-inset-bottom)`), capsule WeChat et Custom TabBar officiel sans scintillement.
+* 🌙 **[`DOC_DARK_MODE_ET_ACCESSIBILITE.md`](DOC_DARK_MODE_ET_ACCESSIBILITE.md)** : Support du mode sombre natif WeChat (`theme.json`), variables CSS adaptatives et contrastes WCAG AA.
 * 🎬 **[`DOC_FLUX_COMPLEXES_ANIMATIONS.md`](DOC_FLUX_COMPLEXES_ANIMATIONS.md)** : Feedback tactile au toucher (`hover-class="btn--pressed"` Apple Press), entrée de page fluide et séquences JS (`wx.createAnimation`).
 * 🎨 **[`DOC_UI_POUR_DEVELOPPEURS.md`](DOC_UI_POUR_DEVELOPPEURS.md)** : La règle des 4 fichiers, machine à états (`uiState`), mise en page BEM et formatage WXS pur ES5.
 
@@ -75,7 +76,7 @@ Toutes les compétences du kit sont organisées en **5 pôles d'excellence**, co
 ### 🛠️ PÔLE 5 : Compilateur TCMPP & Qualité d'Équipe
 * 🛠️ **[`DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md`](DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md)** : Résolution des erreurs fatales du compilateur (BOM UTF-8, erreur 404 sur les polices locales `@font-face`, clauses de garde dans `onLoad`).
 * 🤝 **Matrice d'Isolation Multi-Développeurs** : Attribution exclusive des dossiers pour faire collaborer 7 développeurs en simultané avec zéro conflit Git.
-* 📚 **[`DOC_RECETTES_COPIER_COLLER.md`](DOC_RECETTES_COPIER_COLLER.md)** : 44 recettes de code complètes prêtes à copier.
+* 📚 **[`DOC_RECETTES_COPIER_COLLER.md`](DOC_RECETTES_COPIER_COLLER.md)** : 45 recettes de code complètes prêtes à copier.
 * 🎛️ **[`DOC_GUIDE_DECLENCHEURS_IA.md`](DOC_GUIDE_DECLENCHEURS_IA.md)** : Guide pratique complet des 18 déclencheurs IA avec cas d'usage et codes associés.
 * ❓ **[`DOC_FAQ_ERREURS_FREQUENTES.md`](DOC_FAQ_ERREURS_FREQUENTES.md)** : 40+ questions/réponses de production.
 

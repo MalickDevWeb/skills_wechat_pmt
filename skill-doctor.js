@@ -130,6 +130,7 @@ if (fs.existsSync(skillMdPath)) {
     '@NATIVE-PAY',
     '@MAXIT-SDK',
     '@ANALYTICS-TRACK',
+    '@DARK-MODE',
     '@COMPILER-SAFE',
   ];
 

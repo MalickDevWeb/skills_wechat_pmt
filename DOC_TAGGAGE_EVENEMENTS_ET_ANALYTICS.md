@@ -202,3 +202,4 @@ tracker.track('payment_failed', {
 1. **Zéro Donnée Personnelle en Clair** : Ne JAMAIS loguer de numéro de téléphone en clair (`msisdn`). Toujours masquer : `77***1234`.
 2. **Non-Bloquant** : Une erreur du serveur analytics ne doit **JAMAIS** bloquer un parcours utilisateur ou faire échouer une réservation.
 3. **Persistance Hors-Ligne** : Tous les tags sont d'abord ajoutés à la file locale pour résister aux zones blanches et tunnels.
+

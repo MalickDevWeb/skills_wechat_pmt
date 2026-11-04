@@ -53,6 +53,7 @@ Chaque recette est une **solution complète et autonome**. Vous trouvez votre si
 | 🔄 [Recette 42](#-recette-42--liaison-page-eventbus-sans-fuite-mémoire) | Gestionnaire createPageHelpers avec désinscription automatique | Facile |
 | ⚡ [Recette 43](#-recette-43--cache-stale-while-revalidate-avec-garde-anti-race) | Affichage instantané 0ms et synchronisation silencieuse | Avancée |
 | 💾 [Recette 44](#-recette-44--stockage-local-résilient-anti-quota-10mo) | Wrapper storage avec getOrSet et protection contre chaîne vide | Facile |
+| 🌙 [Recette 45](#-recette-45--thème-sombre-dark-mode-avec-variables-css) | Support du mode sombre avec variables adaptatives et écoute à chaud | Moyenne |
 
 ---
 
@@ -1910,4 +1911,67 @@ export const safeStorage = {
     return computed;
   }
 };
+```
+
+---
+
+## 🌙 Recette 45 : Thème Sombre (Dark Mode) avec Variables CSS
+
+**Quand l'utiliser ?** Votre application doit s'adapter automatiquement au mode sombre du système de l'utilisateur (iOS / Android) sans texte blanc sur fond blanc et en préservant l'identité Orange.
+
+### 1. Dans `app.wxss` (Variables CSS globales)
+```css
+page {
+  --bg-page: #F8F9FA;
+  --bg-card: #FFFFFF;
+  --text-main: #111827;
+  --text-secondary: #4B5563;
+  --border-color: #E5E7EB;
+  --color-primary: #F16E00;
+}
+
+@media (prefers-color-scheme: dark) {
+  page {
+    --bg-page: #121212;
+    --bg-card: #1E1E1E;
+    --text-main: #F9FAFB;
+    --text-secondary: #D1D5DB;
+    --border-color: #374151;
+    --color-primary: #FF7900;
+  }
+}
+```
+
+### 2. Dans votre Page WXSS
+```css
+.card {
+  background-color: var(--bg-card);
+  border: 1rpx solid var(--border-color);
+  color: var(--text-main);
+  border-radius: 20rpx;
+  padding: 24rpx;
+}
+.card__title {
+  color: var(--text-main);
+}
+.card__subtitle {
+  color: var(--text-secondary);
+}
+```
+
+### 3. Dans votre Page JS (si détection dynamique requise)
+```javascript
+Page({
+  data: { isDark: false },
+
+  onLoad() {
+    const sys = wx.getSystemInfoSync();
+    this.setData({ isDark: sys.theme === 'dark' });
+
+    // Écoute du basculement à chaud sans recharger l'app
+    wx.onThemeChange((res) => {
+      this.setData({ isDark: res.theme === 'dark' });
+    });
+  }
+});
 ```
