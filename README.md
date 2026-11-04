@@ -27,21 +27,26 @@ cp DOC_*.md ./ton-projet/docs/
 
 ---
 
-## 🛠️ Outillage CLI Intégré
+## 🛠️ Outillage CLI & Scripts npm
 
-Deux scripts Node.js automatisent le respect des standards sur votre poste ou en CI :
+Des scripts Node.js et commandes npm automatisent le respect des standards sur votre poste ou en CI :
 
 ```bash
 # 1. Scanner et valider l'intégrité du skill ou de votre mini-programme
 # (Vérifie : 0 BOM UTF-8, syntaxe JSON, aucun nesting SCSS en WXSS, cohérence IA)
-node skill-doctor.js
+npm test                  # ou: node skill-doctor.js
 
 # 2. Générer instantanément une page complète (Règle des 4 fichiers)
 # Crée : index.js (State Machine), index.wxml (Safe Area & Shimmer), index.wxss (BEM Apple Press), index.json
 node create-page.js pages/ma-nouvelle-page
-
 # Optionnel : pré-câbler l'appel API avec BackendAPI
 node create-page.js pages/mon-panier --with-api
+
+# 3. Générer un composant réutilisable (Component, lifetimes, triggerEvent, BEM)
+# Mode UI Présentation :
+node create-component.js components/ui/product-card
+# Mode UX / Skeletons Shimmer Wave & Empty State :
+node create-component.js components/ux/order-skeleton --ux
 ```
 
 ---
@@ -96,6 +101,8 @@ Toutes les compétences du kit sont organisées en **5 pôles d'excellence**, co
 * 🎛️ **[`DOC_GUIDE_DECLENCHEURS_IA.md`](DOC_GUIDE_DECLENCHEURS_IA.md)** : Guide pratique complet des 14 déclencheurs maîtres IA avec cas d'usage et codes associés.
 * 🩺 **`skill-doctor.js`** : Outil d'audit automatique (zéro BOM UTF-8, syntaxe JSON, aucun nesting SCSS en WXSS, déclencheurs IA).
 * ⚡ **`create-page.js`** : Générateur de page boilerplate WeChat conforme (4 fichiers : .js, .wxml, .wxss, .json).
+* 🧩 **`create-component.js`** : Générateur de composant conforme (UI présentation ou UX skeleton shimmer avec `options: { addGlobalClass: true }`).
+* 🤖 **CI GitHub Actions** : `.github/workflows/ci.yml` pour valider automatiquement la conformité et zéro BOM sur chaque push.
 * ❓ **[`DOC_FAQ_ERREURS_FREQUENTES.md`](DOC_FAQ_ERREURS_FREQUENTES.md)** : 40+ questions/réponses de production.
 
 ## 📐 Partie 1 — Créer une Interface UI
