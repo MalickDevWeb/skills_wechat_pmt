@@ -55,6 +55,7 @@ Toutes les compétences du kit sont organisées en **5 pôles d'excellence**, co
 * 🎨 **[`DOC_UI_POUR_DEVELOPPEURS.md`](DOC_UI_POUR_DEVELOPPEURS.md)** : La règle des 4 fichiers, machine à états (`uiState`), mise en page BEM et formatage WXS pur ES5.
 
 ### 🧠 PÔLE 2 : Logique Métier, Navigation & Behaviors
+* 🚀 **[`DOC_PATTERNS_AVANCES_ATS.md`](DOC_PATTERNS_AVANCES_ATS.md)** : Analyse exhaustive page par page (9 pages), machine à états, boucliers réseau, tarification par paliers et cache SWR.
 * 🧭 **[`DOC_NAVIGATION_BEHAVIORS_ET_METIER.md`](DOC_NAVIGATION_BEHAVIORS_ET_METIER.md)** : Protection contre le crash de la pile à 10 pages (`navigateToSafe`), anti-double clic (`withLock`), retour intelligent.
 * 🧩 **WeChat Behaviors Natifs** : Partage d'état et de chargement sans héritage (`loadingBehavior` avec `withLoading`).
 * 📊 **Calculs Métier & Favoris** : Barèmes d'annulation/pénalités par paliers de dates, et favoris optimistes bi-niveaux (mémoire 0ms + stockage local).

@@ -22,8 +22,15 @@ Ce skill impose les règles strictes d'ingénierie logicielle pour concevoir, st
 | **`@PAGE-ANIM`** | Ajoute le feedback tactile (`hover-class` Apple Press) et les transitions de page 60 FPS. |
 | **`@RESPONSIVE-UI`** | Dimensionnement iPhone réel (Safe Area, suppression de `100vh` rigide, capsule WeChat). |
 | **`@CUSTOM-TABBAR`** | Implémente ou synchronise le custom tab bar officiel WeChat sans aucun clignotement. |
+| **`@CUSTOM-NAVBAR`** | Barre de navigation custom dynamique (`statusBarHeight + 44px + offset`), retour intelligent et mode logo. |
 | **`@SAFE-NAV`** | Sécurise la navigation (pile de 10 pages, anti-double tap lock `withLock`, retour intelligent). |
 | **`@BEHAVIOR-MIXIN`** | Factorise l'état et le chargement asynchrone avec les Behaviors natifs (`loadingBehavior`). |
+| **`@IMAGE-MEDIA`** | Composant image résilient (auto-retry 3x, cache timestamps, previewable plein écran, fallback). |
+| **`@MODAL-SHEET`** | Bottom-sheets et modales responsives (placement center/bottom, hexToRGBA, blur, safe-area). |
+| **`@DATE-PICKER`** | Calendrier horizontal custom (chips scrollables, dates bloquées, dates additionnelles, ISO strict). |
+| **`@SAFE-STORAGE`** | Persistance protégée quota 10 MB WeChat (gestion chaîne vide, fallback par défaut, `getOrSet`). |
+| **`@PAGE-BINDINGS`** | Bind déclaratif Page <-> EventBus avec auto-subscribe/unsubscribe prévenant toute fuite mémoire. |
+| **`@STALE-REVALIDATE`** | Pattern SWR (cache instantané L1/L2 + background refresh API + garde anti-race `_refreshRequestId`). |
 | **`@API-CONNECT`** | Connecte un écran existant au backend via le workflow strict en 4 étapes (Endpoint, Schema, Service, UI). |
 | **`@FULL-FEATURE`** | Construit la vue UI et la connecte directement à l'API en une seule passe. |
 | **`@MAXIT-SDK`** | Utilise la façade officielle `@sonatel-os/maxit-mini-sdk` (identité, login, contacts, scan, protect). |
@@ -55,21 +62,60 @@ pages/ma-page/
 ### 1.4 Responsive iPhone Réel & Safe Areas
 - Tout élément fixé en bas (`position: fixed; bottom: 0;`) DOIT inclure : `padding-bottom: calc(XXrpx + env(safe-area-inset-bottom));`.
 - Bannir `height: 100vh; overflow: hidden;`. Utiliser `min-height: 100vh;` pour laisser scroller les écrans à encoche et Dynamic Island.
+- Remplacer les dimensions fractionnaires issues de Figma (`31.98rpx` → `32rpx`) pour éviter les gaps de sous-pixels sur écrans Retina.
+- Bannir le nesting CSS non supporté en WXSS natif.
 - Synchroniser l'index du Custom TabBar dans `onShow()` via `this.getTabBar().setData({ selected: INDEX })`.
+
+### 1.5 Composant Image Industriel (`@IMAGE-MEDIA`)
+- Utiliser `osn-image` avec `virtualHost: true`, `lazy-load` natif et auto-retry à 3 tentatives (délai exponentiel).
+- Gérer l'état de chargement et le fallback d'erreur sans casser la grille de layout.
+- Supporter le mode `previewable` avec `wx.previewImage` pour affichage plein écran natif WeChat.
+- Mettre en cache local les timestamps de chargement pour éliminer les requêtes redondantes.
+
+### 1.6 Bottom Sheets & Modales Responsives (`@MODAL-SHEET`)
+- Utiliser `app-modal` avec slots multiples (`header`, `content`, `footer`) et `styleIsolation: 'apply-shared'`.
+- Placements supportés : `'bottom'` (bottom sheet) et `'center'`.
+- Pour les bottom-sheets : toujours inclure `max-height: 85vh; padding: 12rpx 32rpx env(safe-area-inset-bottom, 40rpx);`.
+- Conversion automatique hex to RGBA dynamique avec backdrop blur et fermeture sur tap de l'overlay (`catchtap="noop"` sur le conteneur interne pour bloquer la propagation).
+
+### 1.7 Sélecteurs Temporels & Calendrier Horizontal (`@DATE-PICKER`)
+- Implémenter le sélecteur horizontal de dates avec calcul dynamique à partir de `minDays` (délai de prévenance).
+- Détecter et signaler les dates bloquées via trigger d'événement `blocked`.
+- Support des dates additionnelles choisies via picker natif avec flag `isAdditional: true`.
+- Comparaisons de dates strictes au format ISO `YYYY-MM-DD` à minuit local (`T00:00:00`).
 
 ---
 
-## 🧠 PÔLE 2 : LOGIQUE MÉTIER, NAVIGATION & BEHAVIORS
+## 🧠 PÔLE 2 : LOGIQUE MÉTIER, NAVIGATION, STOCKAGE & BEHAVIORS
 
 ### 2.1 Navigation Sécurisée (Limite des 10 Pages)
 - Ne jamais appeler `wx.navigateTo` à l'aveugle. Utiliser `navigateToSafe()` qui bascule automatiquement sur `wx.redirectTo` quand `getCurrentPages().length >= 10`.
 - Retour Intelligent : Si `getCurrentPages().length === 1` (accès direct via deep link ou SMS), basculer sur `wx.switchTab({ url: '/pages/home/home' })` au lieu de bloquer.
 - Anti-double tap : Verrouiller toute navigation ou action sensible avec `withLock(fn, 500)`.
 
-### 2.2 WeChat Behaviors (Mixins Officiels)
+### 2.2 Barre de Navigation Custom & Offset Écran (`@CUSTOM-NAVBAR`)
+- Calculer dynamiquement le décalage sous la nav bar : `navContentOffset = statusBarHeight + 44 + Math.ceil(34 * windowWidth / 750)`.
+- Mode logo centré vs mode titre avec flèche retour via observer de props (`showLogo, logoSrc`).
+- Historique de navigation avec fallback vers `app.globalData.navHistory` et redirection vers les pages tabbar via `wx.switchTab`.
+
+### 2.3 WeChat Behaviors (Mixins Officiels)
 - Factoriser `isLoading`, `hasError`, `errorMessage` et la méthode `withLoading(asyncFn)` via `loadingBehavior` au lieu de dupliquer du code sur 20 pages.
 
-### 2.3 Logique Métier & Favoris
+### 2.4 Liaison Déclarative Page <-> EventBus (`@PAGE-BINDINGS`)
+- Utiliser `createPageHelpers(this, stateBindings)` pour mapper automatiquement les clés d'état du Bus vers le `data` de la page.
+- Exécuter `subscribe()` et `loadInitial()` dans `onLoad()`, et `unsubscribe()` impérativement dans `onUnload()` pour garantir zéro fuite mémoire.
+- Encapsuler les appels critiques avec `retryAsync(fn, { maxRetries, delayMs, page })` pour refléter la progression du retry directement dans l'UI.
+
+### 2.5 Cache Stale-While-Revalidate & Garde Anti-Race (`@STALE-REVALIDATE`)
+- Stratégie SWR : afficher immédiatement les données du cache local (TTL 3 à 15 min), puis lancer la synchronisation API en arrière-plan sans bloquer l'interface.
+- Bouclier anti-race condition : incrémenter un `_refreshRequestId` à chaque rafraîchissement et rejeter les réponses dont l'ID ne correspond plus à la dernière requête émise.
+
+### 2.6 Persistance Locale Résiliente (`@SAFE-STORAGE`)
+- Ne jamais appeler `wx.getStorageSync` directement sans wrapper : WeChat renvoie une chaîne vide `''` pour les clés absentes.
+- Protéger les opérations contre le dépassement du quota local de 10 MB.
+- Utiliser `storage.getOrSet(key, factory)` pour calculer et mettre en cache paresseusement les données lourdes.
+
+### 2.7 Logique Métier & Favoris
 - Traiter les dates sans décalage UTC (`new Date(`${dateStr}T00:00:00`)`).
 - Favoris réactifs : Double cache (mémoire synchrone à 0 ms de latence + persistance locale asynchrone).
 

@@ -299,3 +299,4 @@ Quand une recherche ne donne aucun résultat ou qu'il n'y a pas encore de favori
   <app-ux-error-state message="{{ errorMessage }}" bindretry="recharger" />
 </block>
 ```
+

@@ -17,8 +17,15 @@ You MUST follow ALL rules in this document for every code change.
 | `@NATIVE-PAY` | Déploie le paiement marchand natif (Max It / TCMPP) avec bouclier bancaire `_confirmedTxnid` (0% double débit) et smart polling. |
 | `@RESPONSIVE-UI` | Adapte l'interface aux contraintes physiques iPhone (Safe Area, Home Indicator, pas de `100vh` rigide, capsule WeChat). |
 | `@CUSTOM-TABBAR` | Implémente ou synchronise le custom tab bar officiel WeChat sans aucun clignotement. |
+| `@CUSTOM-NAVBAR` | Barre de navigation custom dynamique (`statusBarHeight + 44px + offset`), retour intelligent et mode logo. |
 | `@SAFE-NAV` | Sécurise la navigation contre la limite des 10 pages et le double-tap. |
 | `@BEHAVIOR-MIXIN` | Factorise le code récurrent (loading, state) via les Behaviors natifs WeChat. |
+| `@IMAGE-MEDIA` | Composant image résilient (auto-retry 3x, cache timestamps, previewable plein écran, fallback). |
+| `@MODAL-SHEET` | Bottom-sheets et modales responsives (placement center/bottom, hexToRGBA, blur, safe-area). |
+| `@DATE-PICKER` | Calendrier horizontal custom (chips scrollables, dates bloquées, dates additionnelles, ISO strict). |
+| `@SAFE-STORAGE` | Persistance protégée quota 10 MB WeChat (gestion chaîne vide, fallback par défaut, `getOrSet`). |
+| `@PAGE-BINDINGS` | Bind déclaratif Page <-> EventBus avec auto-subscribe/unsubscribe prévenant toute fuite mémoire. |
+| `@STALE-REVALIDATE` | Pattern SWR (cache instantané L1/L2 + background refresh API + garde anti-race `_refreshRequestId`). |
 | `@MAXIT-SDK` | Utilise le SDK officiel Sonatel Max It (`@sonatel-os/maxit-mini-sdk`). |
 | `@COMPILER-SAFE` | Élimine les pièges compilateur (BOM UTF-8, @font-face 404, guards onLoad, retour intelligent). |
 | `@PAGE-ANIM` | Ajoute le feedback tactile au clic (`hover-class`) et les transitions de page fluides (courbe Apple). |
