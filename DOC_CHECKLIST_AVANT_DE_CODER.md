@@ -15,8 +15,9 @@ Chaque réponse vous dit exactement quoi faire et quel guide ouvrir.
 
 | Je crée... | Réponse | Fichier à créer dans... |
 |---|---|---|
-| Un écran complet (Accueil, Profil, Panier...) | 📄 **Page** | `pages/[mon-ecran]/` |
-| Un élément réutilisable (Bouton, Carte, Modal...) | 🧩 **Composant** | `components/[mon-element]/` |
+| Un écran complet (Accueil, Profil, Panier...) | 📄 **Page** | `pages/[mon-ecran]/` | `node create-page.js pages/[mon-ecran]` |
+| Un composant de présentation réutilisable | 🧩 **Composant UI** | `components/ui/[element]/` | `node create-component.js components/ui/[element]` |
+| Une attente visuelle (Skeleton, Shimmer, Empty) | 💀 **Composant UX** | `components/ux/[element]/` | `node create-component.js components/ux/[element] --ux` |
 
 **➡️ Guide à ouvrir :** [`DOC_UI_POUR_DEVELOPPEURS.md`](DOC_UI_POUR_DEVELOPPEURS.md) → Option A (Page) ou Option B (Composant)
 
@@ -74,6 +75,14 @@ NON → Je travaille avec des données Mock (fausses données locales)
 | Bouton "Envoyer à un ami" | Recette 11 (Partage WeChat) |
 | Menu à onglets | Recette 12 (Tabs) |
 | Afficher sans réseau | Recette 13 (Cache Local) |
+| Afficher une image résiliente (auto-retry 3x, cache) | Recette 38 (Image résiliente) |
+| Tiroir modal bas avec Safe Area iPhone | Recette 39 (Bottom Sheet Safe-Area) |
+| Calendrier / Dates sans décalage UTC | Recette 40 (Calendrier UTC-Safe) |
+| Barre de navigation sous l'encoche | Recette 41 (Navbar Encoche) |
+| Lier l'état sans fuite mémoire | Recette 42 (createPageHelpers) |
+| Affichage instantané 0ms & refresh arrière-plan | Recette 43 (Cache SWR) |
+| Sauvegarder dans wxStorage sans piège de chaîne vide | Recette 44 (SafeStorage) |
+| Supporter le mode sombre natif WeChat | Recette 45 (Dark Mode Adaptatif) |
 
 **➡️ Guide à ouvrir :** [`DOC_RECETTES_COPIER_COLLER.md`](DOC_RECETTES_COPIER_COLLER.md)
 
@@ -176,13 +185,13 @@ Quelque chose ATTEND (chargement) ?
 
 ```
 1. ANALYSER   → Répondre aux 8 questions (5 minutes)
-2. TROUVER    → Copier la recette qui correspond
-3. CRÉER      → Créer les 4 fichiers (.js .wxml .wxss .json)
-4. MOCKER     → Fausses données + tous les uiState définis
-5. CONSTRUIRE → WXML + CSS + animations
-6. CONNECTER  → Brancher l'API quand le design est validé
-7. TESTER     → dd() + Remontée de Chaîne si bug
-8. LIVRER     → git add / commit / push
+2. TROUVER    → Identifier la recette (1 à 45) dans DOC_RECETTES_COPIER_COLLER.md
+3. ÉCHAFAUDER → node create-page.js ou node create-component.js (4 fichiers conformes instantanés)
+4. MOCKER     → Fausses données + tous les uiState définis ('loading' | 'content' | 'empty' | 'error')
+5. CONSTRUIRE → WXML + CSS (Safe Area & BEM) + animations 60 FPS
+6. CONNECTER  → Brancher l'API (BackendAPI + json-sculpt) quand le design est validé
+7. TESTER     → npm test (skill-doctor valide 0 BOM, syntaxe JSON, WXSS nesting, liens Markdown)
+8. LIVRER     → git add / commit / push (Zéro conflit Git)
 ```
 
 ---
@@ -221,7 +230,7 @@ Lis le .cursorrules de ce projet et génère-moi le code. Voici mes réponses :
    - Autorisation : [listez les dossiers que vous pouvez modifier]
    - Interdit : [listez les fichiers partagés à ne PAS toucher]
 
-@UI-MOCK [OU @API-CONNECT OU @FULL-FEATURE]
+@UI-MOCK [OU l'un des 14 déclencheurs maîtres : @API-CONNECT, @SKELETON-UX, @RESPONSIVE-UI, @IMAGE-MEDIA, @STATE-ENGINE, @SAFE-STORAGE, @DARK-MODE, etc. Voir DOC_GUIDE_DECLENCHEURS_IA.md]
 ```
 
 **Exemple concret prêt à copier et adapter :**

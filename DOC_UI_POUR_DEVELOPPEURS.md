@@ -1,4 +1,4 @@
-> 🔗 **Navigation :** [Guide UI (Pages & Composants)](DOC_UI_POUR_DEVELOPPEURS.md) | [Guide API (Réseau)](DOC_API_POUR_DEVELOPPEURS.md) | [Guide Animations](DOC_FLUX_COMPLEXES_ANIMATIONS.md) | [Guide Communication](DOC_COMMUNICATION_EVENEMENTS.md) | [Guide Données](DOC_DONNEES_MAPPERS_HELPERS.md) | [Recettes Situations](DOC_RECETTES_COPIER_COLLER.md) & Flux](DOC_FLUX_COMPLEXES_ANIMATIONS.md)
+> 🔗 **Navigation :** [Guide UI](DOC_UI_POUR_DEVELOPPEURS.md) | [Guide API](DOC_API_POUR_DEVELOPPEURS.md) | [Animations](DOC_FLUX_COMPLEXES_ANIMATIONS.md) | [Communication](DOC_COMMUNICATION_EVENEMENTS.md) | [Données](DOC_DONNEES_MAPPERS_HELPERS.md) | [Recettes](DOC_RECETTES_COPIER_COLLER.md) | [Checklist](DOC_CHECKLIST_AVANT_DE_CODER.md) | [FAQ](DOC_FAQ_ERREURS_FREQUENTES.md)
 
 ---
 
@@ -6,6 +6,11 @@
 
 Si vous lisez ceci, vous devez créer une nouvelle Page ou un nouveau Composant visuel. 
 **La règle d'or : On n'attend pas le Backend !** On construit l'interface avec de fausses données (Mock Data).
+
+> ⚡ **Génération instantanée en 1 commande CLI :**
+> - Pour une Page : `node create-page.js pages/[MA_PAGE]`
+> - Pour un Composant UI : `node create-component.js components/ui/[MON_COMPOSANT]`
+> - Pour un Composant UX (Skeleton Shimmer) : `node create-component.js components/ux/[MON_SKELETON] --ux`
 
 - 🔒 **Ce qui est écrit normalement** = NE TOUCHEZ PAS.
 - ✏️ **Ce qui est entre `[CROCHETS]`** = REMPLACEZ-LE.
@@ -47,7 +52,12 @@ Page({
 ### Option B : C'est un COMPOSANT RÉUTILISABLE (`components/[MON_COMPOSANT]/index.js`)
 ```javascript
 Component({
-  // ✏️ 1. Ce que le composant reçoit de l'extérieur
+  // 🔒 1. Autoriser les classes globales (app.wxss, btn--pressed, shimmer)
+  options: {
+    addGlobalClass: true
+  },
+
+  // ✏️ 2. Ce que le composant reçoit de l'extérieur
   properties: {
     [MA_PROPRIETE_RECUE]: {
       type: Object,
