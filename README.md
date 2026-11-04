@@ -27,6 +27,27 @@ cp -r docs/ ./ton-projet/docs/
 
 ---
 
+## 📱 Playground Démo Interactif (`playground/`)
+
+Un mini-programme WeChat complet et fonctionnel est inclus dans le dossier `playground/`.
+Il permet d'observer immédiatement tous les standards dans **WeChat DevTools** sans écrire une ligne de code :
+
+```bash
+# 1. Ouvrir WeChat DevTools
+# 2. Cliquer sur "Importer un projet" (Import Project)
+# 3. Sélectionner le dossier : ./playground/
+# 4. AppID de test : touristappid (mode invité sans compte requis)
+```
+
+**Fonctionnalités observables en direct dans le Playground :**
+- 🟠 **Orange Design System** : Tokens Sonatel (`#F16E00`), typographie et boutons Apple Press.
+- 💳 **Solde Orange Money** (`om-balance-pill`) : Masquage haptique (`•••••• FCFA` vs `45 250 FCFA`).
+- 🇸🇳 **Moteur i18n WXS (0 ms)** : Bascule dynamique Français / Wolof / Anglais en 1 tap.
+- 📴 **Outbox Pattern** : Enfilement d'actions hors-ligne et simulation de synchronisation 4G.
+- 💀 **Skeletons Shimmer Wave** : Démonstrateur interactif de machine à états `uiState`.
+
+---
+
 ## 🛠️ Outillage CLI & Scripts npm
 
 Des scripts Node.js et commandes npm automatisent le respect des standards sur votre poste ou en CI :

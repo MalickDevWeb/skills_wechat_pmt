@@ -158,10 +158,11 @@ function auditProject(projectDir) {
     }
 
     // Détection abonnement Bus.on ou listener sans unsubscribe
+    const isComponentOrPage = /Page\s*\(|Component\s*\(/.test(content);
     const hasBusOn = /Bus\s*\.\s*(?:on|subscribe)\s*\(/.test(content);
-    const hasBusOff = /Bus\s*\.\s*(?:off|unsubscribe)\s*\(|helpers\s*\.\s*unsubscribe\s*\(/.test(content);
+    const hasBusOff = /Bus\s*\.\s*(?:off|unsubscribe)\s*\(|helpers\s*\.\s*unsubscribe\s*\(|_?unsub\w*\s*\(/.test(content);
 
-    if (hasBusOn && (!hasUnload || !hasBusOff)) {
+    if (isComponentOrPage && hasBusOn && (!hasUnload || !hasBusOff)) {
       console.warn(`  ⚠️ Risque de Fuite EventBus : ${rel} s'abonne à un événement sans se désabonner dans onUnload.`);
       leakRiskCount++;
       warningCount++;

@@ -100,8 +100,10 @@ let nestingCount = 0;
 const nestingRegex = /\{[^{}]*\{[^{}]*\}/s;
 
 wxssFiles.forEach((file) => {
-  const content = fs.readFileSync(file, 'utf8');
-  if (nestingRegex.test(content)) {
+  let content = fs.readFileSync(file, 'utf8');
+  // Ignorer les blocs @keyframes légaux en CSS
+  const cleanedContent = content.replace(/@keyframes[\s\S]*?\}\s*\}/g, '');
+  if (nestingRegex.test(cleanedContent)) {
     console.warn(`  ⚠️ Risque de Nesting CSS détecté dans : ${path.relative(SKILL_DIR, file)}`);
     nestingCount++;
   }

@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "Sonatel Max It PMT",
+  "usingComponents": {
+    "om-balance-pill": "../../components/om-balance-pill/index"
+  }
+}
