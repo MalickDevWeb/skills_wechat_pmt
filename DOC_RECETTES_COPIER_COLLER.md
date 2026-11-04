@@ -1,4 +1,4 @@
-> 🔗 **Navigation :** [UI](DOC_UI_POUR_DEVELOPPEURS.md) | [API](DOC_API_POUR_DEVELOPPEURS.md) | [Paiement & Résilience](DOC_PAIEMENT_NATIVE_MAXIT_ET_RESILIENCE.md) | [Responsive & TabBar](DOC_RESPONSIVE_IPHONE_ET_CUSTOM_TABBAR.md) | [Navigation & Behaviors](DOC_NAVIGATION_BEHAVIORS_ET_METIER.md) | [Animations](DOC_FLUX_COMPLEXES_ANIMATIONS.md) | [Communication](DOC_COMMUNICATION_EVENEMENTS.md) | [Données](DOC_DONNEES_MAPPERS_HELPERS.md) | [Recettes](DOC_RECETTES_COPIER_COLLER.md) | [Debug](DOC_DEBUG_ET_NOUVELLES_RECETTES.md) | [Checklist](DOC_CHECKLIST_AVANT_DE_CODER.md) | [FAQ](DOC_FAQ_ERREURS_FREQUENTES.md)
+> 🔗 **Navigation :** [UI](DOC_UI_POUR_DEVELOPPEURS.md) | [API](DOC_API_POUR_DEVELOPPEURS.md) | [SDK Max It Sonatel](DOC_MAXIT_MINI_SDK_SONATEL.md) | [Paiement & Résilience](DOC_PAIEMENT_NATIVE_MAXIT_ET_RESILIENCE.md) | [Responsive & TabBar](DOC_RESPONSIVE_IPHONE_ET_CUSTOM_TABBAR.md) | [Navigation & Behaviors](DOC_NAVIGATION_BEHAVIORS_ET_METIER.md) | [Animations](DOC_FLUX_COMPLEXES_ANIMATIONS.md) | [Communication](DOC_COMMUNICATION_EVENEMENTS.md) | [Données](DOC_DONNEES_MAPPERS_HELPERS.md) | [Recettes](DOC_RECETTES_COPIER_COLLER.md) | [Debug](DOC_DEBUG_ET_NOUVELLES_RECETTES.md) | [Checklist](DOC_CHECKLIST_AVANT_DE_CODER.md) | [FAQ](DOC_FAQ_ERREURS_FREQUENTES.md)
 
 ---
 
@@ -31,6 +31,12 @@ Chaque recette est une **solution complète et autonome**. Vous trouvez votre si
 | 🧩 [Recette 20](#-recette-20--wechat-behavior-partagé-loadingbehavior) | Mixin officiel WeChat pour gérer isLoading et erreurs sans duplication | Moyenne |
 | ❤️ [Recette 21](#-recette-21--favoris-instantanés-double-cache-mémoire--disque) | Gestion optimiste des favoris à 0ms de latence avec persistance | Moyenne |
 | 📊 [Recette 22](#-recette-22--calculateur-de-délais--barèmes-dannulation) | Calcul des jours restants et pourcentages de remboursement sans bug UTC | Moyenne |
+| 📱 [Recette 23](#-recette-23--initialisation-du-sdk-officiel-max-it-dans-appjs) | Configuration du SDK officiel Max It avec simulation DevTools | Facile |
+| 👤 [Recette 24](#-recette-24--identité-utilisateur-sans-login-screen) | Récupération du profil et du code auth via miniSDK.user() & login() | Facile |
+| 💳 [Recette 25](#-recette-25--paiement-orange-money-officiel-avec-minisdkpay) | Paiement avec gestion automatique du doublon caction:'1' et uncertain | Critique |
+| 🛡️ [Recette 26](#-recette-26--protection-anti-screenshot-de-billet-qr) | Verrouillage capture d'écran sur billet avec déverrouillage obligatoire | Moyenne |
+| 📷 [Recette 27](#-recette-27--scanner-qr-caméra-seule-anti-fraude) | Lecture de QR code via caméra uniquement (sans accès galerie photo) | Facile |
+| 🔗 [Recette 28](#-recette-28--deep-linking-sans-boucle-onshow) | Traitement propre des liens d'ouverture sans redéclenchement au retour | Moyenne |
 
 ---
 
@@ -1171,4 +1177,199 @@ export function calculateRefund(dateStr, montantTotal) {
 
   return { days, refundPercent, feeAmount, refundAmount };
 }
+```
+
+
+---
+
+## 📱 Recette 23 : Initialisation du SDK Officiel Max It dans `app.js`
+
+**Quand l'utiliser ?** Dans chaque mini-programme Max It pour configurer l'accès à l'hôte et activer les simulations automatiques sous WeChat DevTools.
+
+### Dans `app.js`
+```javascript
+import { miniSDK } from './sdk/index.js';
+
+App({
+  onLaunch() {
+    // Mode simulation activé sous DevTools, vrai hôte sur mobile réel
+    const isDevTools = typeof __wxConfig !== 'undefined' && __wxConfig.envVersion === 'develop';
+
+    miniSDK.configure({
+      simulate: isDevTools,
+      log: (level, api, message, ctx) => {
+        if (isDevTools) console.log(`[SDK:${api}] ${message}`, ctx || '');
+      },
+      timeoutMs: 30000
+    });
+  }
+});
+```
+
+---
+
+## 👤 Recette 24 : Identité Utilisateur Sans Login Screen
+
+**Quand l'utiliser ?** Identifier l'utilisateur sans lui demander de mot de passe, et obtenir un jeton de session auprès de votre serveur.
+
+### Dans votre Page ou Service
+```javascript
+import { miniSDK } from '../../sdk/index.js';
+import { httpClient } from '../../utils/apis/index.js';
+
+Page({
+  data: { user: null },
+
+  async onLoad() {
+    try {
+      // 1. Récupérer l'identité déjà vérifiée par Max It (MSISDN 9 chiffres)
+      const user = await miniSDK.user();
+      this.setData({ user });
+
+      // 2. Obtenir un code à usage unique pour votre backend
+      const authCode = await miniSDK.login();
+      const session = await httpClient.post('/auth/session', { code: authCode });
+      console.log('Session établie :', session);
+
+    } catch (err) {
+      if (err.code === miniSDK.ERROR_CODES.UNAVAILABLE) {
+        wx.showModal({ title: 'Attention', content: 'Veuillez ouvrir cette app dans Max It.' });
+      }
+    }
+  }
+});
+```
+
+---
+
+## 💳 Recette 25 : Paiement Orange Money Officiel avec `miniSDK.pay()`
+
+**Quand l'utiliser ?** Déclencher un paiement marchand avec gestion native des doublons de 15 minutes (`caction: '1'`) et prise en compte de l'incertitude (`uncertain: true`).
+
+### Dans votre Page de Réservation
+```javascript
+import { miniSDK } from '../../sdk/index.js';
+
+Page({
+  data: { isPaying: false },
+
+  async handlePaiement() {
+    if (this.data.isPaying) return;
+    this.setData({ isPaying: true });
+
+    try {
+      const { txnid, confirmedIdentical } = await miniSDK.pay({
+        amount: 25000,
+        receiver: 467652, // Code Marchand officiel
+        receiverName: 'ATS Voyages',
+        orderId: 'CMD-88741',
+        description: 'Billet Dakar - Touba'
+      }, {
+        onIdentical: async (msg) => {
+          const res = await wx.showModal({
+            title: 'Paiement similaire',
+            content: msg || 'Une transaction identique existe. Poursuivre ?',
+            confirmText: 'Payer'
+          });
+          return res.confirm;
+        }
+      });
+
+      wx.redirectTo({ url: `/pages/confirmation/confirmation?txnid=${txnid}` });
+
+    } catch (err) {
+      if (err.uncertain) {
+        // ⚠️ CRITIQUE : Timeout ou erreur indéterminée -> Le compte a pu être débité !
+        // NE PAS REFAIRE PAYER. Valider avec le backend.
+        wx.showModal({
+          title: 'Vérification en cours',
+          content: 'Votre paiement est en cours de validation. Ne tentez pas de repayer.',
+          showCancel: false
+        });
+      } else if (err.code === miniSDK.ERROR_CODES.CANCELLED) {
+        wx.showToast({ title: 'Paiement annulé', icon: 'none' });
+      } else {
+        wx.showToast({ title: err.message, icon: 'none' });
+      }
+    } finally {
+      this.setData({ isPaying: false });
+    }
+  }
+});
+```
+
+---
+
+## 🛡️ Recette 26 : Protection Anti-Screenshot de Billet QR
+
+**Quand l'utiliser ?** Empêcher qu'un passager capture l'écran d'un QR code pour le dupliquer ou le revendre frauduleusement.
+
+### Dans votre Page de Billet (`pages/billet-detail/billet-detail.js`)
+```javascript
+import { miniSDK } from '../../sdk/index.js';
+
+Page({
+  async onShow() {
+    // 🔒 Masque l'écran contre les captures (Android FLAG_SECURE / iOS block_screen)
+    await miniSDK.screen.protect(true);
+  },
+
+  async onHide() {
+    // ⚠️ CRITIQUE : Toujours désactiver en quittant !
+    await miniSDK.screen.protect(false);
+  },
+
+  async onUnload() {
+    await miniSDK.screen.protect(false);
+  }
+});
+```
+
+---
+
+## 📷 Recette 27 : Scanner QR Caméra Seule (Anti-Fraude)
+
+**Quand l'utiliser ?** Dans une application de contrôle de billets pour obliger le contrôleur à viser un billet physique sans pouvoir choisir une photo trafiquée dans sa galerie.
+
+### Dans votre Page de Contrôle
+```javascript
+import { miniSDK } from '../../sdk/index.js';
+
+Page({
+  async handleScan() {
+    try {
+      const { code, albumAllowed } = await miniSDK.scan({ cameraOnly: true });
+      if (albumAllowed) {
+        console.warn('Attention : la caméra seule n'était pas disponible sur cet appareil.');
+      }
+      this.verifierBillet(code);
+    } catch (err) {
+      if (err.code !== miniSDK.ERROR_CODES.CANCELLED) {
+        wx.showToast({ title: err.message, icon: 'none' });
+      }
+    }
+  }
+});
+```
+
+---
+
+## 🔗 Recette 28 : Deep Linking Sans Boucle (`onShow`)
+
+**Quand l'utiliser ?** Ouvrir directement une page spécifique depuis une campagne SMS ou notification sans que l'application ne relance la navigation à chaque fois qu'elle revient au premier plan.
+
+### Dans `app.js` ou votre Page Principale
+```javascript
+import { miniSDK } from './sdk/index.js';
+
+App({
+  async onShow(options) {
+    // deeplink() avec { once: true } déduplique automatiquement les retours de veille
+    const params = await miniSDK.deeplink({ launch: options, once: true });
+
+    if (params && params.voyageid) {
+      wx.navigateTo({ url: `/pages/destination-detail/destination-detail?id=${params.voyageid}` });
+    }
+  }
+});
 ```

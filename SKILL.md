@@ -19,6 +19,7 @@ If the user's prompt includes any of these keywords, you MUST activate specific 
 - **`@CUSTOM-TABBAR`**: Implement or maintain the official WeChat custom tab bar without flickering using `this.getTabBar().setData({ selected })` in `onShow`.
 - **`@SAFE-NAV`**: Use `navigateToSafe` and navigation lock to avoid the 10-page stack limit crash and double-tap duplicate page pushes.
 - **`@BEHAVIOR-MIXIN`**: Share state and asynchronous loading/error logic across pages/components using native WeChat Behaviors (`loadingBehavior`).
+- **`@MAXIT-SDK`**: Implement or migrate host features to `@sonatel-os/maxit-mini-sdk` (user identity, pay, contacts, camera scan, screen protection, simulate).
 
 ## 0. CRITICAL: MODULARITY & ANTI-CONFLICT RULES
 You are working in a collaborative environment. Modifying shared files unnecessarily will cause merge conflicts.
@@ -116,3 +117,12 @@ When integrating mobile payments (Orange Money / Max It via `wx.invokeNativePlug
 - **10-Page Stack Guard:** Never blindly call `wx.navigateTo` across deep flows. Use `navigateToSafe()` which gracefully falls back to `wx.redirectTo` when `getCurrentPages().length >= 10`.
 - **Navigation Lock:** Prevent rapid double taps from opening duplicate screens with `navigateWithLock()`.
 - **Behaviors for Shared Logic:** Prefer WeChat `Behavior({ data, methods })` over copying `isLoading`, `hasError`, and `withLoading()` across pages.
+
+
+## 9. OFFICIAL MAX IT SDK (`@sonatel-os/maxit-mini-sdk`)
+
+When building for Sonatel Max It / Orange Money, prefer the official `miniSDK` facade:
+- **Zero Raw Plugin Traps:** Do not parse host envelopes manually. Use `miniSDK.user()`, `miniSDK.pay()`, `miniSDK.login()`.
+- **Screen Protection Protocol:** Whenever calling `miniSDK.screen.protect(true)` on sensitive views (paid QR), ALWAYS call `miniSDK.screen.protect(false)` in both `onHide()` and `onUnload()`.
+- **Uncertain Payment Guard:** If `err.uncertain === true`, money may have left the account. NEVER prompt the user to re-pay immediately; trigger backend verification.
+- **DevTools Simulation:** Turn on `simulate: true` in `app.js` when running under WeChat DevTools.

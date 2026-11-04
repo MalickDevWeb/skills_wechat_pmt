@@ -19,6 +19,7 @@ Cherchez votre question dans la liste. La réponse vous dit exactement quoi fair
 - [💳 Paiement Marchand & Résilience Réseau](#-paiement-marchand--résilience-réseau)
 - [📱 Responsive iPhone Réel & Custom TabBar](#-responsive-iphone-réel--custom-tabbar)
 - [🧭 Navigation & Behaviors WeChat](#-navigation--behaviors-wechat)
+- [📱 SDK Officiel Max It (@sonatel-os/maxit-mini-sdk)](#-sdk-officiel-max-it-sonatel-osmaxit-mini-sdk)
 
 ---
 
@@ -475,3 +476,31 @@ Exemples :
 
 **Q : Pourquoi mon token OAuth2 expire pendant l'envoi d'une requête et renvoie 401 ?**
 > Si vous vérifiez seulement `tokenExpiry > Date.now()`, un token qui expire dans 2 secondes sera jugé valide, mais expirera pendant la transmission réseau de 3 secondes. Utilisez un **Buffer de rafraîchissement d'au moins 60 secondes** : le token n'est considéré valide que si `Date.now() < (tokenExpiry - 60000)`.
+
+
+---
+
+## 📱 SDK Officiel Max It (@sonatel-os/maxit-mini-sdk)
+
+**Q : Pourquoi mon callback `success` de `wx.invokeNativePlugin` est appelé alors que l'opération a échoué ?**
+> C'est un comportement historique de l'hôte Max It : il enveloppe souvent l'erreur dans un objet `{ result: 'fail', message: '...' }` passé au callback `success`. Le SDK officiel traite cette anomalie nativement et la transforme en véritable rejet `HostError`.
+
+---
+
+**Q : Pourquoi mon deuxième paiement avec le même montant est bloqué pendant 15 minutes ?**
+> L'hôte Max It bloque automatiquement les doublons stricts pour protéger le client. Pour forcer la poursuite si l'utilisateur le confirme, l'hôte exige `caction: '1'` (impérativement sous forme de chaîne de caractères, un nombre `1` échouant au typage serveur). `miniSDK.pay()` s'en charge automatiquement via son handler `onIdentical`.
+
+---
+
+**Q : Après avoir fermé ma page de billet, tout le reste de l'application Max It reste noir / flouté. Pourquoi ?**
+> Vous avez activé `screen.protect(true)` (ou le plugin natif `block_screen`) sans le désactiver en partant ! La protection d'écran est globale à l'application hôte. Vous devez IMPÉRATIVEMENT appeler `await miniSDK.screen.protect(false)` dans les hooks `onHide()` et `onUnload()`.
+
+---
+
+**Q : Que signifie l'indicateur `err.uncertain === true` sur une erreur de paiement ?**
+> Cela signifie qu'un timeout ou une coupure réseau est survenue alors que la demande était déjà transmise à la banque. **L'argent a très bien pu être prélevé du compte Orange Money.** Ne proposez JAMAIS à l'utilisateur de cliquer à nouveau sur "Payer" sans avoir préalablement vérifié le statut de la commande côté backend.
+
+---
+
+**Q : Pourquoi `contactList` me renvoie une liste vide ?**
+> Si vous passez un champ `data: {}` à l'appel natif `contactList`, l'hôte plante silencieusement et renvoie un tableau vide. Le SDK officiel appelle le plugin avec un paramètre vide pour garantir le renvoi de la liste.

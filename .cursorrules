@@ -19,6 +19,7 @@ You MUST follow ALL rules in this document for every code change.
 | `@CUSTOM-TABBAR` | Implémente ou synchronise le custom tab bar officiel WeChat sans aucun clignotement. |
 | `@SAFE-NAV` | Sécurise la navigation contre la limite des 10 pages et le double-tap. |
 | `@BEHAVIOR-MIXIN` | Factorise le code récurrent (loading, state) via les Behaviors natifs WeChat. |
+| `@MAXIT-SDK` | Utilise le SDK officiel Sonatel Max It (`@sonatel-os/maxit-mini-sdk`). |
 
 ---
 
@@ -194,3 +195,13 @@ Toujours utiliser les clés de traduction : `{{ t('ma.cle') }}`
 1. **Limite des 10 pages :** Utilise toujours `navigateToSafe()` pour basculer sur `redirectTo` dès que la pile atteint 10 pages.
 2. **Anti-Double Clic :** Verrouille la navigation pendant 500ms pour éviter les doubles ouvertures d'écran.
 3. **Behaviors :** Partage la logique asynchrone (`isLoading`, `hasError`, `withLoading`) via `Behavior({ ... })` au lieu de dupliquer du code.
+
+
+---
+
+## RÈGLE 7 — SDK Officiel Max It (@sonatel-os/maxit-mini-sdk)
+
+1. **Façade Unique :** Privilégie `miniSDK` pour les interactions hôte (identité, login, paiement, contacts, scan, deeplink).
+2. **Paiement Incertain (`uncertain: true`) :** Si une erreur de paiement porte `err.uncertain === true`, l'argent a pu être prélevé. Ne redemande jamais de payer immédiatement.
+3. **Protection d'Écran Obligatoire :** Tout `miniSDK.screen.protect(true)` doit obligatoirement avoir son `miniSDK.screen.protect(false)` dans `onHide` et `onUnload`.
+4. **DevTools :** Configure `simulate: isDev` au démarrage dans `app.js`.
