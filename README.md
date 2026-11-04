@@ -57,6 +57,20 @@ node scripts/create-api.js commande
 
 ---
 
+### ⚡ Snippets IDE (VSCode & Cursor)
+
+Le fichier .vscode/wechat-pmt.code-snippets accélère la saisie avec auto-complétion instantanée :
+- pmt-page-js + Tab : Contrôleur WeChat avec machine à états uiState et cycle de vie sécurisé.
+- pmt-page-wxml + Tab : Structure WXML avec Skeletons Shimmer et Safe Area iPhone.
+- pmt-page-wxss + Tab : WXSS BEM avec tokens Orange Sonatel et animation 60 FPS.
+- pmt-om-pill + Tab : Composant signature Solde Orange Money avec masquage de confidentialité.
+- pmt-outbox + Tab : Bloc d'action résilient avec file d'attente hors-ligne.
+- pmt-i18n-wxs + Tab : Résolveur WXS multilingue (Wolof, Français, Anglais).
+- pmt-throttle-scroll + Tab : Écouteur de défilement d'écran bridé à 60 FPS.
+- pmt-msisdn-mask + Tab : Helper de masquage de téléphone conforme CDP Sénégal.
+
+---
+
 ## 🗺️ Cartographie Complète : Les 5 Pôles de Compétences
 
 Toutes les compétences du kit sont organisées en **5 pôles d'excellence**, couvrant 100 % des besoins d'un mini-programme professionnel :

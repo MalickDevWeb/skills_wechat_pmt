@@ -45,7 +45,7 @@ function getAllFiles(dir, extensions) {
 // TEST 1 : DÉTECTION DU BOM UTF-8 (\uFEFF)
 // -----------------------------------------------------------------------------
 console.log('🔍 Test 1 : Détection du BOM UTF-8...');
-const allFiles = getAllFiles(SKILL_DIR, ['.md', '.js', '.json', '.wxss', '.wxml', '.cursorrules']);
+const allFiles = getAllFiles(SKILL_DIR, ['.md', '.js', '.json', '.wxss', '.wxml', '.cursorrules', '.code-snippets']);
 let bomCount = 0;
 
 allFiles.forEach((file) => {
@@ -71,7 +71,7 @@ if (bomCount === 0) {
 // TEST 2 : VALIDITÉ DES JSON
 // -----------------------------------------------------------------------------
 console.log('🔍 Test 2 : Validité de la syntaxe JSON...');
-const jsonFiles = getAllFiles(SKILL_DIR, ['.json']);
+const jsonFiles = getAllFiles(SKILL_DIR, ['.json', '.code-snippets']);
 let jsonErrorCount = 0;
 
 jsonFiles.forEach((file) => {

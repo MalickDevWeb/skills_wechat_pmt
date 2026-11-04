@@ -78,3 +78,4 @@ npm test
 ```
 
 *(Retrouvez le code prêt à l'emploi dans [DOC_RECETTES_COPIER_COLLER.md](DOC_RECETTES_COPIER_COLLER.md#recette-52--harness-de-test-unitaire-headless-pour-machine-a-etats-uistate-ci-ready)).*
+
