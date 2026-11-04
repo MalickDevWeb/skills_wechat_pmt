@@ -331,3 +331,4 @@ fileNames.forEach((name, i) => {
 
 console.log(`\n🎉 Composant [${componentName}] créé avec succès (${isUx ? 'Mode UX / Skeleton' : 'Mode UI Présentation'}) !`);
 console.log(`👉 Déclarez-le dans le index.json de la page parente sous "usingComponents".`);
+

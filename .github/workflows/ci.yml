@@ -22,3 +22,4 @@ jobs:
 
       - name: Exécution du Skill Doctor
         run: node skill-doctor.js
+
