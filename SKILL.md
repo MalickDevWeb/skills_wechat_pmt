@@ -21,6 +21,7 @@ If the user's prompt includes any of these keywords, you MUST activate specific 
 - **`@BEHAVIOR-MIXIN`**: Share state and asynchronous loading/error logic across pages/components using native WeChat Behaviors (`loadingBehavior`).
 - **`@MAXIT-SDK`**: Implement or migrate host features to `@sonatel-os/maxit-mini-sdk` (user identity, pay, contacts, camera scan, screen protection, simulate).
 - **`@COMPILER-SAFE`**: Eliminate compiler traps (UTF-8 BOM, local @font-face 404, argument guards in onLoad, smart back button fallback).
+- **`@PAGE-ANIM`**: Add tactile click feedback (`hover-class` Apple Press) and 60 FPS smooth page entry transitions (`cubic-bezier(0.22, 1, 0.36, 1)`).
 
 ## 0. CRITICAL: MODULARITY & ANTI-CONFLICT RULES
 You are working in a collaborative environment. Modifying shared files unnecessarily will cause merge conflicts.
@@ -135,3 +136,9 @@ When building for Sonatel Max It / Orange Money, prefer the official `miniSDK` f
 - **No UTF-8 BOM:** Save all files in pure UTF-8 without BOM (`\uFEFF`) to avoid compiler syntax crashes.
 - **Smart Back Navigation:** In back button handlers, verify `getCurrentPages().length > 1` before calling `wx.navigateBack()`; fallback to `wx.switchTab({ url: '/pages/home/home' })` if the user landed via deep link.
 - **Page Argument Guards:** Always validate required query params in `onLoad(options)`; if missing, show a toast and `wx.navigateBack()`.
+
+
+## 11. CLICK FEEDBACK & PAGE TRANSITION ANIMATIONS
+
+- **Apple Press on Tap:** Always set `hover-class="card--pressed"` with `scale(0.96)` on interactive cards and buttons.
+- **Smooth Page Transitions:** Wrap new pages in a `.page-enter` class animating from `translateY(20rpx)` to `0` with opacity 0 to 1.

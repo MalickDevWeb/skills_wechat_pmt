@@ -195,3 +195,4 @@ Comment faire travailler **7 développeurs en même temps** sur le même mini-pr
    * Les branches core ou structurelles sont mergées en premier.
    * Tous les autres développeurs rebasent (`git pull origin develop`).
    * Le merge final s'effectue avec **zéro conflit**.
+

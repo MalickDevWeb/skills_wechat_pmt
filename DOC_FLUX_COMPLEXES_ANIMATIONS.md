@@ -200,3 +200,212 @@ Page({
   100% { transform: scale(1); opacity: 1; }
 }
 ```
+
+
+---
+
+## 👆 MODÈLE 4 : Le Feedback Tactile au Clic (`hover-class`)
+
+En WeChat Mini-Program, le CSS `:active` web classique est déconseillé car il interfère avec le défilement tactile (le scroll déclenche l'état actif par erreur).
+WeChat fournit un mécanisme natif ultra-optimisé : **l'attribut `hover-class`**.
+
+### 1. La Vue (`.wxml`)
+```xml
+<!-- Bouton avec effet de pression immédiat -->
+<view 
+  class="btn-primary" 
+  hover-class="btn-primary--pressed" 
+  hover-start-time="20" 
+  hover-stay-time="100"
+  bindtap="handleAction"
+>
+  Continuer
+</view>
+
+<!-- Carte de liste cliquable -->
+<view 
+  class="card-item" 
+  hover-class="card-item--pressed" 
+  hover-start-time="30"
+  bindtap="ouvrirDetail"
+>
+  <text>Voir les détails</text>
+</view>
+```
+
+### 2. Le Style (`.wxss`)
+```css
+/* Effet "Apple Press" : légère réduction d'échelle et transparence */
+.btn-primary {
+  transition: transform 0.12s cubic-bezier(0.2, 0, 0, 1), opacity 0.12s ease;
+  will-change: transform, opacity;
+}
+.btn-primary--pressed {
+  transform: scale(0.96);
+  opacity: 0.88;
+}
+
+/* Carte avec enfoncement 3D subtil */
+.card-item {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.card-item--pressed {
+  transform: scale(0.98);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+}
+```
+
+---
+
+## 🎬 MODÈLE 5 : L'Animation d'Entrée de Page (Page Transition)
+
+Pour donner une sensation d'application native fluide à 60/120 FPS quand une page s'ouvre :
+
+### Dans le conteneur principal de la page (`.wxml`)
+```xml
+<view class="page-container page-enter">
+  <!-- Contenu de la page -->
+</view>
+```
+
+### Le CSS de Transition (`.wxss`)
+```css
+.page-enter {
+  animation: pageFadeSlide 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes pageFadeSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(24rpx);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Apparition en cascade (Staggered reveal) pour les cartes */
+.list-item:nth-child(1) { animation: pageFadeSlide 0.35s 0.05s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.list-item:nth-child(2) { animation: pageFadeSlide 0.35s 0.10s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.list-item:nth-child(3) { animation: pageFadeSlide 0.35s 0.15s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.list-item:nth-child(4) { animation: pageFadeSlide 0.35s 0.20s cubic-bezier(0.22, 1, 0.36, 1) both; }
+```
+
+---
+
+## 🏆 MODÈLE 6 : Animation Séquentielle JavaScript (`wx.createAnimation`)
+
+*Pattern officiel éprouvé sur la page de confirmation de réservation ATS.*
+Une icône de validation apparaît au centre de l'écran, grossit avec rebond, puis se déplace vers le haut ("docking") pour révéler la carte de reçu.
+
+### Le Contrôleur (`.js`)
+```javascript
+function createScaleAnim(scale, opacity, duration, timing = 'ease-out') {
+  const anim = wx.createAnimation({
+    duration,
+    timingFunction: timing,
+    transformOrigin: '50% 50% 0'
+  });
+  anim.opacity(opacity).scale(scale).step();
+  return anim.export();
+}
+
+Page({
+  data: {
+    introAnimation: null,
+    introDocked: false,
+    contentVisible: false
+  },
+
+  onShow() {
+    if (this._hasAnimated) return;
+    this._hasAnimated = true;
+    this.lancerSequenceSucces();
+  },
+
+  lancerSequenceSucces() {
+    // Étape 1 : Pop initial avec zoom (au centre)
+    setTimeout(() => {
+      this.setData({
+        introAnimation: createScaleAnim(1.25, 1, 420, 'ease-out')
+      });
+    }, 50);
+
+    // Étape 2 : Rebond d'amorti à taille réelle
+    setTimeout(() => {
+      this.setData({
+        introAnimation: createScaleAnim(1, 1, 280, 'ease-in-out')
+      });
+    }, 500);
+
+    // Étape 3 : Montée en haut de page ("Docking")
+    setTimeout(() => {
+      this.setData({ introDocked: true });
+    }, 850);
+
+    // Étape 4 : Révélation progressive du reçu
+    setTimeout(() => {
+      this.setData({ contentVisible: true });
+    }, 1300);
+  }
+});
+```
+
+### La Vue (`.wxml`)
+```xml
+<!-- Badge animé -->
+<view class="intro-badge {{ introDocked ? 'intro-badge--docked' : '' }}" animation="{{ introAnimation }}">
+  <icon type="success" size="64" />
+</view>
+
+<!-- Contenu révélé -->
+<view class="receipt-content {{ contentVisible ? 'animate-fade-in' : 'hidden' }}">
+  <text>Votre réservation est confirmée !</text>
+</view>
+```
+
+### Le Style (`.wxss`)
+```css
+.intro-badge {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: top 560ms cubic-bezier(0.22, 1, 0.36, 1), transform 560ms cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 50;
+  will-change: top, transform;
+}
+
+.intro-badge--docked {
+  top: 140rpx;
+  transform: translate(-50%, 0) scale(0.7);
+}
+
+.hidden { display: none; }
+```
+
+---
+
+## ❤️ MODÈLE 7 : Micro-Interaction Cœur / Like (Heart Burst)
+
+L'effet de pulsation quand l'utilisateur met en favori :
+
+```css
+.btn-heart {
+  display: inline-block;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.btn-heart--liked {
+  animation: heartPulse 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  color: #E60000;
+}
+
+@keyframes heartPulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+```

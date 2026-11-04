@@ -66,3 +66,10 @@ WeChat has strict separation between Pages and Components. Do not mix them up:
 
 - **Loading States:** Always wrap interactive elements in loading states based on `this.data.isLoading`.
 - **Empty States:** If an array is empty, the UI MUST handle it gracefully (e.g., `<view wx:if="{{list.length === 0}}">No items</view>`).
+
+
+## 6. CLICK FEEDBACK & PAGE TRANSITIONS (NATIVE FEEL)
+
+- **Tactile Click Feedback (`hover-class`):** NEVER use CSS `:active` (it breaks on touch scroll). ALWAYS add `hover-class="btn--pressed"` with `hover-start-time="20"` and `hover-stay-time="100"` to clickable elements.
+- **Page Entry Animation (`.page-enter`):** Add a gentle fade-slide entrance animation (`cubic-bezier(0.22, 1, 0.36, 1)`) to the top-level container of new pages.
+- **Success Orchestration (`wx.createAnimation`):** For confirmation pages, sequence intro badge pop, bounce and header docking using `wx.createAnimation`.

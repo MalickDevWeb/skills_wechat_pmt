@@ -43,6 +43,9 @@ Chaque recette est une **solution complète et autonome**. Vous trouvez votre si
 | 🔒 [Recette 32](#-recette-32--anti-clic-universel-withlock) | Verrouillage anti-rebond d'action réutilisable sur n'importe quelle méthode | Facile |
 | 🚨 [Recette 33](#-recette-33--gestionnaire-centralisé-derreurs-typées) | Toast d'erreur contextualisé selon le type (Réseau, Session, Validation) | Moyenne |
 | 🤝 [Recette 34](#-recette-34--matrice-disolation-multi-développeurs) | Organisation à 7 développeurs en simultané avec zéro conflit Git | Avancée |
+| 👆 [Recette 35](#-recette-35--feedback-tactile-au-clic-hover-class) | Effet de pression "Apple Press" au clic sur boutons et cartes | Facile |
+| 🎬 [Recette 36](#-recette-36--animation-dentrée-de-page-fluide) | Transition d'entrée de page douce à 60 FPS avec cascade | Facile |
+| 🏆 [Recette 37](#-recette-37--animation-séquentielle-intro-success) | Séquence animée JS avec wx.createAnimation (zoom, rebond, docking) | Avancée |
 
 ---
 
@@ -1552,3 +1555,134 @@ DÉV 7 (Core & Mappers)       ➔ utils/mappers/**, utils/helpers/**
 1. **Un dossier = Un seul propriétaire à la fois.**
 2. **On ne touche jamais au fichier d'un collègue.**
 3. **Les modifications du Core (DÉV 7) sont mergées en premier, puis tout le monde rebase.**
+
+
+---
+
+## 👆 Recette 35 : Feedback Tactile au Clic (`hover-class`)
+
+**Quand l'utiliser ?** Sur n'importe quel bouton, cellule ou carte cliquable pour que l'utilisateur ressente physiquement la réaction au toucher (effet "Apple Press") sans perturber le défilement.
+
+### Dans votre WXML
+```xml
+<view 
+  class="bouton-action" 
+  hover-class="bouton-action--pressed" 
+  hover-start-time="20" 
+  hover-stay-time="100" 
+  bindtap="validerAction"
+>
+  Confirmer
+</view>
+```
+
+### Dans votre WXSS
+```css
+.bouton-action {
+  transition: transform 0.12s cubic-bezier(0.2, 0, 0, 1), opacity 0.12s ease;
+  will-change: transform, opacity;
+}
+
+.bouton-action--pressed {
+  transform: scale(0.96);
+  opacity: 0.85;
+}
+```
+
+---
+
+## 🎬 Recette 36 : Animation d'Entrée de Page Fluide
+
+**Quand l'utiliser ?** Dès qu'une nouvelle page s'ouvre pour supprimer le saut visuel brutal et offrir une sensation premium de transition fluide.
+
+### Dans le conteneur principal de votre page (`.wxml`)
+```xml
+<view class="page-container page-enter">
+  <!-- Tout le contenu de la page -->
+</view>
+```
+
+### Dans le WXSS (`.wxss`)
+```css
+.page-enter {
+  animation: pageFadeIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+```
+
+---
+
+## 🏆 Recette 37 : Animation Séquentielle "Intro Success"
+
+**Quand l'utiliser ?** Sur une page de confirmation de paiement, de réservation ou de commande validée pour célébrer le succès avec un badge qui grossit puis glisse en haut de l'écran.
+
+### Le Contrôleur (`.js`)
+```javascript
+Page({
+  data: {
+    introScaleAnim: null,
+    isDocked: false,
+    showContent: false
+  },
+
+  onShow() {
+    // 1. Pop & Rebond de l'icône de succès
+    const anim = wx.createAnimation({ duration: 400, timingFunction: 'ease-out' });
+    anim.scale(1.2).opacity(1).step();
+    this.setData({ introScaleAnim: anim.export() });
+
+    // 2. Amorti à taille 1
+    setTimeout(() => {
+      anim.scale(1).step({ duration: 250, timingFunction: 'ease-in-out' });
+      this.setData({ introScaleAnim: anim.export() });
+    }, 450);
+
+    // 3. Montée vers le header ("Docking")
+    setTimeout(() => {
+      this.setData({ isDocked: true });
+    }, 800);
+
+    // 4. Révélation du reçu
+    setTimeout(() => {
+      this.setData({ showContent: true });
+    }, 1250);
+  }
+});
+```
+
+### Dans le WXML & WXSS
+```xml
+<view class="badge-success {{ isDocked ? 'badge-success--docked' : '' }}" animation="{{ introScaleAnim }}">
+  <icon type="success" size="64" />
+</view>
+<view class="recu {{ showContent ? 'page-enter' : 'masque' }}">
+  <!-- Reçu de paiement -->
+</view>
+```
+
+```css
+.badge-success {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: top 500ms cubic-bezier(0.22, 1, 0.36, 1), transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 50;
+}
+.badge-success--docked {
+  top: 130rpx;
+  transform: translate(-50%, 0) scale(0.7);
+}
+.masque { display: none; }
+```

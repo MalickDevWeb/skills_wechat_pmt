@@ -21,6 +21,7 @@ You MUST follow ALL rules in this document for every code change.
 | `@BEHAVIOR-MIXIN` | Factorise le code récurrent (loading, state) via les Behaviors natifs WeChat. |
 | `@MAXIT-SDK` | Utilise le SDK officiel Sonatel Max It (`@sonatel-os/maxit-mini-sdk`). |
 | `@COMPILER-SAFE` | Élimine les pièges compilateur (BOM UTF-8, @font-face 404, guards onLoad, retour intelligent). |
+| `@PAGE-ANIM` | Ajoute le feedback tactile au clic (`hover-class`) et les transitions de page fluides (courbe Apple). |
 
 ---
 
@@ -216,3 +217,12 @@ Toujours utiliser les clés de traduction : `{{ t('ma.cle') }}`
 2. **Pas de BOM UTF-8 :** Enregistre en UTF-8 sans BOM.
 3. **Retour Intelligent :** Toujours vérifier `getCurrentPages().length > 1` avant `navigateBack()`, sinon basculer vers `switchTab('/pages/home/home')`.
 4. **Guards d'arguments dans onLoad :** Vérifie toujours la présence de l'ID obligatoire.
+
+
+---
+
+## RÈGLE 9 — Animations & Feedback Tactile au Clic
+
+1. **Feedback Tactile :** N'utilise JAMAIS `:active`. Utilise toujours `hover-class="btn--pressed"` avec `transform: scale(0.96); opacity: 0.85;`.
+2. **Entrée de Page Fluide :** Ajoute la classe `.page-enter` sur le conteneur principal de la page (`cubic-bezier(0.22, 1, 0.36, 1)`).
+3. **Animations Séquentielles :** Utilise `wx.createAnimation()` pour les séquences de succès / pop avec docking.
