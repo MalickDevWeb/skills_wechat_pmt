@@ -22,8 +22,8 @@ try {
     fs.rmSync(TEMP_DIR, { recursive: true, force: true });
   }
 
-  // 1. Test create-page.js
-  console.log('🔍 Test 1 : Génération de page (create-page.js)...');
+  // 1. Test create-page.js (Paquet Principal)
+  console.log('🔍 Test 1 : Génération de page racine (create-page.js)...');
   const pageTarget = path.join(TEMP_DIR, 'pages', 'test-order');
   execSync(`node "${path.join(__dirname, 'create-page.js')}" "${pageTarget}" --with-api`, {
     stdio: 'pipe',
@@ -45,7 +45,28 @@ try {
   if (!pageJson.usingComponents) {
     throw new Error('index.json de la page ne contient pas usingComponents');
   }
-  console.log('  ✅ create-page.js fonctionne avec succès (4 fichiers valides).\n');
+  console.log('  ✅ create-page.js (root) fonctionne avec succès (4 fichiers valides).\n');
+
+  // 1b. Test create-page.js avec sous-paquet (--subpackage)
+  console.log('🔍 Test 1b : Génération de page en sous-paquet (create-page.js --subpackage)...');
+  execSync(`node "${path.join(__dirname, 'create-page.js')}" detail --subpackage booking --with-api`, {
+    cwd: TEMP_DIR,
+    stdio: 'pipe',
+  });
+
+  const subPageTarget = path.join(TEMP_DIR, 'subpackages', 'booking', 'pages', 'detail');
+  ['index.js', 'index.wxml', 'index.wxss', 'index.json'].forEach((file) => {
+    const filePath = path.join(subPageTarget, file);
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Fichier sous-paquet manquant : ${file}`);
+    }
+  });
+
+  const subJs = fs.readFileSync(path.join(subPageTarget, 'index.js'), 'utf8');
+  if (!subJs.includes('../../../../utils/')) {
+    throw new Error('Les chemins relatifs vers utils/ dans le sous-paquet sont incorrects');
+  }
+  console.log('  ✅ create-page.js (--subpackage) fonctionne avec succès (chemins relatifs ../../../../ corrects).\n');
 
   // 2. Test create-component.js (Mode UI)
   console.log('🔍 Test 2 : Génération de composant UI (create-component.js)...');
@@ -100,7 +121,7 @@ try {
   console.log('  ✅ create-api.js fonctionne avec succès (API service + json-sculpt mapper).\n');
 
   console.log('====================================================');
-  console.log('✨ TOUS LES 3 GÉNÉRATEURS SONT OPÉRATIONNELS ET VALIDES !');
+  console.log('✨ TOUS LES GÉNÉRATEURS SONT OPÉRATIONNELS ET VALIDES !');
   console.log('====================================================\n');
 } catch (err) {
   console.error(`\n❌ Échec du test des générateurs : ${err.message}`);

@@ -3,34 +3,71 @@
 /**
  * ⚡ CREATE-PAGE — WeChat PMT
  * Générateur de page conforme aux standards de production (Règle des 4 fichiers).
+ * Supporte le paquet principal (root) et les sous-paquets TCMPP (subpackages).
  * 
  * Usage :
- *   node create-page.js <chemin-page> [--with-api]
+ *   node scripts/create-page.js <nom-ou-dossier> [--subpackage <nom>] [--with-api]
  * 
- * Exemple :
- *   node create-page.js pages/mon-profil
- *   node create-page.js pages/paiement-facture --with-api
+ * Exemples :
+ *   node scripts/create-page.js pages/mon-profil
+ *   node scripts/create-page.js flight-detail --subpackage booking
+ *   node scripts/create-page.js checkout --subpackage payment --with-api
  */
 
 const fs = require('fs');
 const path = require('path');
 
 const args = process.argv.slice(2);
-const pageTarget = args.find(a => !a.startsWith('--'));
-const withApi = args.includes('--with-api');
+let pageTarget = null;
+let subpackage = null;
+let withApi = false;
+
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === '--subpackage' || args[i] === '-s') {
+    subpackage = args[i + 1];
+    i++;
+  } else if (args[i] === '--with-api') {
+    withApi = true;
+  } else if (!args[i].startsWith('--')) {
+    pageTarget = args[i];
+  }
+}
 
 if (!pageTarget) {
-  console.log('Usage: node create-page.js <dossier-cible> [--with-api]');
-  console.log('Exemple: node create-page.js pages/historique-commandes');
+  console.log('Usage: node scripts/create-page.js <nom-ou-dossier> [--subpackage <nom>] [--with-api]');
+  console.log('Exemples:');
+  console.log('  node scripts/create-page.js pages/mon-profil');
+  console.log('  node scripts/create-page.js flight-detail --subpackage booking');
+  console.log('  node scripts/create-page.js checkout --subpackage payment --with-api');
   process.exit(1);
 }
 
-const targetDir = path.resolve(process.cwd(), pageTarget);
+// Résolution du chemin selon paquet principal ou sous-paquet
+let finalPath = pageTarget;
+let cleanSubPage = pageTarget;
+
+if (path.isAbsolute(finalPath)) {
+  cleanSubPage = path.basename(finalPath);
+} else if (subpackage) {
+  if (!pageTarget.startsWith('subpackages/')) {
+    cleanSubPage = pageTarget.replace(/^pages\//, '');
+    finalPath = path.join('subpackages', subpackage, 'pages', cleanSubPage);
+  }
+} else if (!finalPath.startsWith('pages/') && !finalPath.startsWith('subpackages/')) {
+  finalPath = path.join('pages', finalPath);
+}
+
+const targetDir = path.resolve(process.cwd(), finalPath);
 const pageName = path.basename(targetDir);
 
 if (!fs.existsSync(targetDir)) {
   fs.mkdirSync(targetDir, { recursive: true });
 }
+
+// Calcul dynamique du chemin relatif vers la racine du projet
+let relToRoot = path.relative(targetDir, process.cwd()).replace(/\\/g, '/');
+if (!relToRoot) relToRoot = '.';
+const utilsPath = `${relToRoot}/utils`;
 
 // -----------------------------------------------------------------------------
 // 1. INDEX.JSON
@@ -52,10 +89,11 @@ const jsonContent = {
 const jsContent = `// ============================================================================
 // ${pageName.toUpperCase()} — Contrôleur de Page WeChat PMT
 // Standard : State Machine (uiState), Safe Area, Safe Nav
+// ${subpackage ? `Sous-Paquet TCMPP : ${subpackage}` : 'Paquet Principal (Root)'}
 // ============================================================================
 
-import { navigateWithLock } from '../../utils/helpers/navigation.js';
-${withApi ? "import { backendAPI } from '../../utils/apis/index.js';\n" : ""}
+import { navigateWithLock } from '${utilsPath}/helpers/navigation.js';
+${withApi ? `import { backendAPI } from '${utilsPath}/apis/index.js';\n` : ""}
 Page({
   data: {
     uiState: 'loading', // 'loading' | 'content' | 'empty' | 'error'
@@ -108,7 +146,7 @@ Page({
 // -----------------------------------------------------------------------------
 // 3. INDEX.WXML
 // -----------------------------------------------------------------------------
-const wxmlContent = `<wxs src="../../utils/wxs/filters.wxs" module="f" />
+const wxmlContent = `<wxs src="${utilsPath}/wxs/filters.wxs" module="f" />
 
 <app-layout
   title="${pageName}"
@@ -251,6 +289,16 @@ fileNames.forEach((name, i) => {
   console.log(`  ✅ Créé : ${path.relative(process.cwd(), filePath)}`);
 });
 
-console.log(`\n🎉 Page [${pageName}] créée avec succès selon les standards PMT !`);
-console.log(`👉 N'oubliez pas d'ajouter "${pageTarget}/index" dans app.json > pages.`);
-
+if (subpackage) {
+  console.log(`\n🎉 Page [${pageName}] créée avec succès dans le sous-paquet [${subpackage}] !`);
+  console.log(`👉 N'oubliez pas d'enregistrer la page dans app.json > subpackages :`);
+  console.log(`   {`);
+  console.log(`     "root": "subpackages/${subpackage}",`);
+  console.log(`     "pages": [`);
+  console.log(`       "pages/${cleanSubPage}/index"`);
+  console.log(`     ]`);
+  console.log(`   }\n`);
+} else {
+  console.log(`\n🎉 Page [${pageName}] créée avec succès selon les standards PMT !`);
+  console.log(`👉 N'oubliez pas d'ajouter "${finalPath}/index" dans app.json > pages.\n`);
+}

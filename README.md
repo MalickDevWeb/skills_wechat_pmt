@@ -41,6 +41,8 @@ npm test                  # Lance l'audit complet (5 tests de santé + 3 tests g
 node scripts/create-page.js pages/ma-nouvelle-page
 # Optionnel : pré-câbler l'appel API avec BackendAPI
 node scripts/create-page.js pages/mon-panier --with-api
+# Dans un sous-paquet TCMPP (pour respecter la limite de 2 Mo du root) :
+node scripts/create-page.js flight-detail --subpackage booking --with-api
 
 # 3. Générer un composant réutilisable (Component, lifetimes, triggerEvent, BEM)
 # Mode UI Présentation :
@@ -99,6 +101,7 @@ Toutes les compétences du kit sont organisées en **5 pôles d'excellence**, co
 * 📊 **[`DOC_TAGGAGE_EVENEMENTS_ET_ANALYTICS.md`](docs/DOC_TAGGAGE_EVENEMENTS_ET_ANALYTICS.md)** : Télémétrie et suivi des conversions conforme Orange/Sonatel avec file d'attente hors-ligne.
 
 ### 🛠️ PÔLE 5 : Compilateur TCMPP & Qualité d'Équipe
+* 📦 **[`DOC_ARCHITECTURE_SUBPACKAGES_TCMPP.md`](docs/DOC_ARCHITECTURE_SUBPACKAGES_TCMPP.md)** : Règle des 2 Mo, découpage en sous-paquets, préchargement `preloadRule` et option `--subpackage`.
 * 🛠️ **[`DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md`](docs/DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md)** : Résolution des erreurs fatales du compilateur (BOM UTF-8, erreur 404 sur les polices locales `@font-face`, clauses de garde dans `onLoad`).
 * 🤝 **Matrice d'Isolation Multi-Développeurs** : Attribution exclusive des dossiers pour faire collaborer 7 développeurs en simultané avec zéro conflit Git.
 * 📚 **[`DOC_RECETTES_COPIER_COLLER.md`](docs/DOC_RECETTES_COPIER_COLLER.md)** : 45 recettes de code complètes prêtes à copier.

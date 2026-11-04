@@ -157,6 +157,7 @@ Exécuter impérativement dans cet ordre :
 - **Zéro BOM UTF-8** : Tout fichier doit être sauvegardé en UTF-8 sans BOM (`\uFEFF`) sous peine de crash syntaxique.
 - **Zéro @font-face local** : Ne jamais charger de `.ttf` locaux dans les WXSS (erreur 404 avec `-do-not-use-local-path-`).
 - **Guards dans onLoad** : Valider tout paramètre requis dès l'entrée avec toast d'alerte et retour automatique.
+- **Plafond des 2 Mo & Sous-Paquets** : Le paquet principal ne doit jamais dépasser 2 Mo. Tout parcours riche doit être découpé en sous-paquet (`subpackages/`) avec préchargement silencieux `preloadRule` dans `app.json`.
 
 ### 5.2 Collaboration Multi-Développeurs (Zéro Conflit Git)
 - Chaque développeur est propriétaire d'un sous-dossier exclusif.
@@ -164,7 +165,7 @@ Exécuter impérativement dans cet ordre :
 
 ### 5.3 Outillage & Automatisation CLI
 - **`node scripts/skill-doctor.js`** : Valide l'intégrité globale du skill (détection de BOM UTF-8 `\uFEFF`, validation JSON, vérification de l'absence de nesting SCSS en WXSS, exhaustivité des déclencheurs IA).
-- **`node scripts/create-page.js <dossier> [--with-api]`** : Échafaude immédiatement les 4 fichiers d'une nouvelle page (`.js`, `.wxml`, `.wxss`, `.json`) avec machine à états `uiState`, Safe Area iPhone, classes `hover-class` Apple Press et câblage optionnel `backendAPI`.
+- **`node scripts/create-page.js <dossier> [--subpackage <nom>] [--with-api]`** : Échafaude immédiatement les 4 fichiers d'une nouvelle page (`.js`, `.wxml`, `.wxss`, `.json`) avec machine à états `uiState`, Safe Area iPhone, classes `hover-class` Apple Press, calcul dynamique des chemins relatifs et câblage optionnel `backendAPI`.
 - **`node scripts/create-component.js <dossier> [--ux]`** : Échafaude les 4 fichiers d'un composant (`Component()`, lifetimes strictes, `triggerEvent`, BEM, Safe Areas) en mode présentation ou UX skeleton shimmer.
 - **`node scripts/create-api.js <domaine>`** : Échafaude le service API (`utils/apis/<domaine>.api.js`) et son mappeur `json-sculpt` (`utils/mappers/<domaine>.js`) avec endpoints, méthodes CRUD et gestion d'erreurs typées.
 - **`npm test` / `npm run doctor`** : Automatise l'audit de conformité (zéro BOM UTF-8, syntaxe JSON, WXSS, déclencheurs IA) exécuté par la CI GitHub Actions.
