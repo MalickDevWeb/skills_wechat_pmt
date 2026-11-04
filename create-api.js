@@ -145,3 +145,4 @@ console.log(`  ✅ Créé : ${path.relative(process.cwd(), apiFile)}`);
 console.log(`\n🎉 Module API [${domainName}] créé avec succès !`);
 console.log(`👉 N'oubliez pas d'enregistrer le service dans utils/apis/index.js :`);
 console.log(`   export { ${camel}API } from './${domainName}.api.js';\n`);
+
