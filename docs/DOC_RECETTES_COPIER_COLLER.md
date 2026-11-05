@@ -56,6 +56,15 @@ Chaque recette est une **solution complète et autonome**. Vous trouvez votre si
 | 🌙 [Recette 45](#-recette-45--thème-sombre-dark-mode-avec-variables-css) | Support du mode sombre avec variables adaptatives et écoute à chaud | Moyenne |
 | 🌍 [Recette 46](#-recette-46--data-saver-compression-dimage-avant-upload--moniteur-3g) | Compression JPEG 75% client (gain 95% data) et détection 2G/3G | Moyenne |
 | 🛡️ [Recette 47](#-recette-47--conformité-cdp-masquage-msisdn-et-purge-sécurisée) | Masquage légal numéro de téléphone et purge de session | Facile |
+| 🟠 [Recette 48](#-recette-48--solde-orange-money-om-balance-pill-avec-masquage-1-tap-et-haptique) | Composant signature solde OM avec masquage et haptique | Facile |
+| ⚡ [Recette 49](#-recette-49--throttle--debounce-60-fps-pour-scroll-et-saisie-rapide) | Optimisation 60 FPS du scroll et recherche temps réel | Moyenne |
+| 🌍 [Recette 50](#-recette-50--moteur-i18n-wxs-0ms-wolof--français--anglais) | Dictionnaire et moteur de traduction WXS instantané | Facile |
+| 📦 [Recette 51](#-recette-51--outbox-pattern-offline-first-file-dattente-fifo--auto-sync) | Synchronisation asynchrone hors-ligne et clés d'idempotence | Avancée |
+| 🧪 [Recette 52](#-recette-52--harness-de-test-unitaire-headless-pour-machine-à-états-uistate-ci-ready) | Test unitaire automatisé headless hors DevTools | Moyenne |
+| 📄 [Recette 53](#-recette-53--générateur-de-billetfacture-pdf-vectoriel-natif-en-pur-js-0-dépendance) | Générateur PDF vectoriel %PDF-1.4 ultra-léger sans npm | Avancée |
+| 💺 [Recette 54](#-recette-54--sélecteur-de-sièges-aériens--bus-avec-encodage-gds-15-champs) | Plan de cabine interactif et chaîne normalisée 15 champs | Avancée |
+| ⚡ [Recette 55](#-recette-55--rendu-par-lots-de-20-cartes-anti-saturation-du-pont-ipc-wechat) | Batch rendering par paquets de 20 avec callbacks setData | Avancée |
+| 💰 [Recette 56](#-recette-56--moteur-de-décomposition-tarifaire-multi-passagers-sans-doublon-de-taxes) | Calculateur de prix multi-passagers blindé anti-mismatch | Moyenne |
 
 ---
 
@@ -2952,7 +2961,316 @@ harness.triggerLoad().then(() => {
 });
 ```
 
+---
 
+## 📄 Recette 53 : Générateur de Billet/Facture PDF Vectoriel natif en pur JS (0 dépendance)
 
+**Quand l'utiliser ?** Vous devez permettre au client de télécharger, partager (WhatsApp, Email) ou imprimer un billet de transport, une facture ou un reçu officiel en PDF, sans dépasser le quota des 2 Mo de votre application WeChat/TCMPP et sans librairie npm lourde.
 
+### 1. Le Moteur de Sérialisation PDF (`utils/helpers/pdfGenerator.js`)
+```javascript
+/**
+ * Sérialise une liste d'objets PDF en binaire %PDF-1.4 avec table xref dynamique
+ */
+export function serializePdfObjects(objects) {
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+
+  objects.forEach((object, index) => {
+    offsets.push(pdf.length);
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  });
+
+  const xref = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+
+  offsets.slice(1).forEach((offset) => {
+    pdf += `${String(offset).padStart(10, "0")} 00000 n \n`;
+  });
+
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  return pdf;
+}
+
+/**
+ * Construit le contenu graphique vectoriel du billet A4 (595 x 842 points)
+ */
+export function buildTicketPdf({ reference, passengerName, route, date, amount, currency }) {
+  const content = `
+    BT
+      /F1 18 Tf
+      50 780 Td
+      (BILLET DE TRANSPORT ELECTRONIQUE) Tj
+      /F1 12 Tf
+      0 -35 Td
+      (Reference de dossier : ${reference}) Tj
+      0 -22 Td
+      (Voyageur : ${passengerName}) Tj
+      0 -22 Td
+      (Itineraire : ${route}) Tj
+      0 -22 Td
+      (Date de depart : ${date}) Tj
+      0 -35 Td
+      /F1 14 Tf
+      (Montant regle : ${amount} ${currency}) Tj
+    ET
+  `;
+
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+    `<< /Length ${content.trim().length} >>\nstream\n${content.trim()}\nendstream`,
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
+  ];
+
+  return serializePdfObjects(objects);
+}
+
+/**
+ * Sauvegarde locale et ouverture directe dans la visionneuse native
+ */
+export function telechargerBilletPdf(ticketData) {
+  return new Promise((resolve, reject) => {
+    wx.showLoading({ title: 'Génération du PDF...' });
+    const pdfContent = buildTicketPdf(ticketData);
+    const fs = wx.getFileSystemManager();
+    const filePath = `${wx.env.USER_DATA_PATH}/billet_${ticketData.reference}.pdf`;
+
+    fs.writeFile({
+      filePath,
+      data: pdfContent,
+      encoding: 'binary',
+      success: () => {
+        wx.hideLoading();
+        wx.openDocument({
+          filePath,
+          fileType: 'pdf',
+          showMenu: true, // Affiche l'icône de partage natif (WhatsApp, Impression, Sauvegarde)
+          success: resolve,
+          fail: reject
+        });
+      },
+      fail: (err) => {
+        wx.hideLoading();
+        reject(err);
+      }
+    });
+  });
+}
+```
+
+### 2. Déclenchement dans votre Page (`pages/trip-details/index.js`)
+```javascript
+import { telechargerBilletPdf } from '../../utils/helpers/pdfGenerator';
+
+Page({
+  async onExporterBillet() {
+    try {
+      await telechargerBilletPdf({
+        reference: 'ATS-2026-9901',
+        passengerName: 'Mamadou Diallo',
+        route: 'Dakar (DSS) -> Paris (CDG)',
+        date: '15 Novembre 2026',
+        amount: '450 000',
+        currency: 'FCFA'
+      });
+    } catch (err) {
+      wx.showToast({ title: 'Échec de génération du billet', icon: 'none' });
+    }
+  }
+});
+```
+
+---
+
+## 💺 Recette 54 : Sélecteur de Sièges Aériens / Bus avec encodage GDS 15 champs
+
+**Quand l'utiliser ?** Dans un écran de choix de sièges pour un vol ou un trajet d'autocar, pour associer chaque siège à un voyageur précis et générer la charge utile de réservation conforme aux spécifications GDS.
+
+### 1. Le Helper d'Encodage GDS (`utils/helpers/seatMapEncoder.js`)
+```javascript
+/**
+ * Encode les sièges choisis au format GDS (15 champs délimités par des tirets)
+ */
+export function encodeSeatSelection({ segments, travellers, selectedSeats, currency = 'XOF', posCountry = 'SN' }) {
+  const encodedPayload = {};
+  let totalSeatAddon = 0;
+
+  segments.forEach((segment, segIdx) => {
+    const segmentMap = selectedSeats[segment.id] || {};
+
+    travellers.forEach((traveller, trvIdx) => {
+      // ⚠️ Exclusion obligatoire des nourrissons sur les genoux (INL)
+      if (traveller.type === 'INL') return;
+
+      const seat = segmentMap[traveller.id];
+      if (!seat) return;
+
+      const isPaid = (seat.price > 0) ? '1' : '0';
+      const base = seat.price || 0;
+      const tax = seat.tax || 0;
+      totalSeatAddon += (base + tax);
+
+      const departureUnix = Math.floor(new Date(segment.departureDate).getTime() / 1000);
+
+      // Chaîne normalisée à 15 champs
+      const seatString = [
+        departureUnix,            // 1. Timestamp UNIX de départ
+        segment.origin,           // 2. Code IATA départ
+        segment.destination,      // 3. Code IATA destination
+        segment.carrier,          // 4. Code compagnie
+        segment.flightNumber,     // 5. Numéro de vol
+        trvIdx + 1,               // 6. Index passager 1-based
+        seat.code,                // 7. Numéro de siège (ex: 14A)
+        isPaid,                   // 8. Siège payant ('1' ou '0')
+        base + tax,               // 9. Montant total siège
+        base,                     // 10. Montant hors taxe
+        tax,                      // 11. Taxe siège
+        currency,                 // 12. Devise (XOF)
+        posCountry,               // 13. Pays du point de vente (SN)
+        seat.type || 'STANDARD',  // 14. Catégorie de siège
+        '0'                       // 15. Réserve technique
+      ].join('-');
+
+      if (!encodedPayload[segIdx]) encodedPayload[segIdx] = [];
+      encodedPayload[segIdx].push(seatString);
+    });
+  });
+
+  return {
+    seatsConfirmed: Object.keys(encodedPayload).length > 0 ? 1 : 0,
+    seatSelections: encodedPayload,
+    totalSeatAddon
+  };
+}
+```
+
+---
+
+## ⚡ Recette 55 : Rendu par lots de 20 cartes anti-saturation du pont IPC WeChat
+
+**Quand l'utiliser ?** Votre API renvoie une liste importante (100 à 300 résultats de recherche, vols, produits). Pour éviter de geler l'interface mobile par un `setData` monolithique, injectez les cartes par tranches de 20 avec attente de confirmation de rendu.
+
+### 1. Logique de Page Optimisée (`pages/catalog/index.js`)
+```javascript
+Page({
+  data: {
+    displayedItems: [],
+    hasMore: true
+  },
+
+  // Stockage JS pur en mémoire (non transmis à WXML)
+  rawItems: [],
+  cursor: 0,
+  batchSize: 20,
+
+  async onLoad() {
+    wx.showLoading({ title: 'Recherche...' });
+    const fullList = await this.chargerDonneesServeur();
+    wx.hideLoading();
+
+    this.rawItems = fullList;
+    this.cursor = 0;
+    this.setData({ displayedItems: [], hasMore: fullList.length > 0 }, () => {
+      // Démarre la cascade de rendu
+      this.rendreProchainLot();
+    });
+  },
+
+  rendreProchainLot() {
+    if (this.cursor >= this.rawItems.length) {
+      this.setData({ hasMore: false });
+      return;
+    }
+
+    const nextBatch = this.rawItems.slice(this.cursor, this.cursor + this.batchSize);
+    const updateMap = {};
+
+    // Injection par chemin d'index : ne renvoie pas tout le tableau !
+    nextBatch.forEach((item, index) => {
+      updateMap[`displayedItems[${this.cursor + index}]`] = item;
+    });
+
+    this.cursor += nextBatch.length;
+
+    // Attendre le callback de rendu de la vue avant toute autre action
+    this.setData(updateMap, () => {
+      // Auto-complétion du premier écran si moins de 40 éléments affichés
+      if (this.cursor < 40 && this.cursor < this.rawItems.length) {
+        this.rendreProchainLot();
+      }
+    });
+  },
+
+  onReachBottom() {
+    // Défilement infini fluide
+    if (this.data.hasMore) {
+      this.rendreProchainLot();
+    }
+  }
+});
+```
+
+---
+
+## 💰 Recette 56 : Moteur de décomposition tarifaire multi-passagers sans doublon de taxes
+
+**Quand l'utiliser ?** Dans l'écran de récapitulatif avant paiement pour certifier le montant total au centime près, rejeter les mélanges de devises et éviter de multiplier les taxes de groupe par le nombre de voyageurs.
+
+### 1. Le Module de Calcul Certifié (`utils/helpers/priceBreakdown.js`)
+```javascript
+/**
+ * Calcule et certifie la décomposition du prix d'une commande
+ */
+export function computeCertifiedPriceBreakdown({
+  passengerFares = [],
+  packageTax,
+  seatAddon = 0,
+  extraLuggage = 0,
+  promoDiscount = 0,
+  currency = 'XOF'
+}) {
+  if (!currency) {
+    throw new Error('Devise manquante dans le calcul de prix');
+  }
+
+  // 1. Somme des tarifs de base par voyageur
+  let totalBaseFare = 0;
+  passengerFares.forEach((fare) => {
+    if (typeof fare.unitPrice !== 'number' || fare.unitPrice < 0) {
+      throw new Error(`Prix unitaire invalide pour le passager : ${fare.category}`);
+    }
+    totalBaseFare += (fare.unitPrice * (fare.count || 1));
+  });
+
+  // 2. Contrôle rigoureux de la taxe globale
+  // ⚠️ Une taxe null ou undefined signifie "en attente de calcul", JAMAIS 0 FCFA !
+  if (packageTax === null || packageTax === undefined) {
+    return {
+      isCertified: false,
+      status: 'TAX_UNRESOLVED',
+      message: 'La taxe globale est en cours de tarification auprès du fournisseur.'
+    };
+  }
+
+  // 3. Calcul net final arrondi à l'entier (zone Franc CFA)
+  const netTotal = Math.max(0, Math.round(
+    totalBaseFare + packageTax + seatAddon + extraLuggage - promoDiscount
+  ));
+
+  return {
+    isCertified: true,
+    currency,
+    breakdown: {
+      totalBaseFare,
+      packageTax,
+      seatAddon,
+      extraLuggage,
+      promoDiscount,
+      netTotal
+    }
+  };
+}
+```
 

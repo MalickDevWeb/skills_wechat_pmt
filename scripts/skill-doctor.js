@@ -135,6 +135,7 @@ if (fs.existsSync(skillMdPath)) {
     '@ANALYTICS-TRACK',
     '@DARK-MODE',
     '@COMPILER-SAFE',
+    '@TUNNEL-COMPLEXE',
   ];
 
   let missingTriggers = 0;

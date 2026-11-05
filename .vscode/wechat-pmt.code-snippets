@@ -238,5 +238,48 @@
       "  return `${prefix} *** ** ${suffix}`;",
       "}"
     ]
+  },
+  "PMT: Vector PDF Ticket Generator (0 Dependency)": {
+    "scope": "javascript",
+    "prefix": "pmt-pdf-ticket",
+    "description": "Générateur de billet ou facture PDF vectoriel %PDF-1.4 natif sans aucune dépendance npm",
+    "body": [
+      "export function serializePdfObjects(objects) {",
+      "  let pdf = '%PDF-1.4\\n';",
+      "  const offsets = [0];",
+      "  objects.forEach((obj, idx) => {",
+      "    offsets.push(pdf.length);",
+      "    pdf += `${idx + 1} 0 obj\\n${obj}\\nendobj\\n`;",
+      "  });",
+      "  const xref = pdf.length;",
+      "  pdf += `xref\\n0 ${objects.length + 1}\\n0000000000 65535 f \\n`;",
+      "  offsets.slice(1).forEach((offset) => {",
+      "    pdf += `${String(offset).padStart(10, '0')} 00000 n \\n`;",
+      "  });",
+      "  pdf += `trailer\\n<< /Size ${objects.length + 1} /Root 1 0 R >>\\nstartxref\\n${xref}\\n%%EOF`;",
+      "  return pdf;",
+      "}"
+    ]
+  },
+  "PMT: Batch Rendering Cascade (Anti IPC Freeze)": {
+    "scope": "javascript",
+    "prefix": "pmt-batch-render",
+    "description": "Rendu par lots de 20 cartes avec attente de callback setData pour éviter de saturer le pont IPC",
+    "body": [
+      "injectNextBatch() {",
+      "  if (this.cursor >= this.rawItems.length) return;",
+      "  const nextBatch = this.rawItems.slice(this.cursor, this.cursor + 20);",
+      "  const updatePayload = {};",
+      "  nextBatch.forEach((item, index) => {",
+      "    updatePayload[`${displayedItems}[${this.cursor + index}]`] = item;",
+      "  });",
+      "  this.cursor += nextBatch.length;",
+      "  this.setData(updatePayload, () => {",
+      "    if (this.cursor < 40 && this.cursor < this.rawItems.length) {",
+      "      this.injectNextBatch();",
+      "    }",
+      "  });",
+      "}"
+    ]
   }
 }

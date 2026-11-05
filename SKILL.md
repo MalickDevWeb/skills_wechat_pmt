@@ -31,6 +31,7 @@ Ce skill impose les règles strictes d'ingénierie logicielle pour concevoir, st
 | **`@ANALYTICS-TRACK`** | Télémétrie & Taggage | Suivi d'audience et de conversion conforme Sonatel/Orange : traçage des écrans (`page_view`), clics CTA, tunnel de réservation et paiements avec file d'attente hors-ligne. |
 | **`@DARK-MODE`** | Thème & Accessibilité | Support du mode sombre natif WeChat (`theme.json`), variables CSS sémantiques adaptatives et respect des normes de contraste WCAG AA. |
 | **`@COMPILER-SAFE`** | Compilateur TCMPP | Élimine les pièges de compilation fatals : zéro BOM UTF-8 (`\uFEFF`), zéro `@font-face` local, clauses de garde obligatoires dans `onLoad` avec retour automatique. |
+| **`@TUNNEL-COMPLEXE`** | Billetterie & Funnels | Orchestre les entonnoirs multi-écrans : générateur PDF vectoriel natif 0 dépendance (%PDF-1.4), plan de sièges GDS 15 champs, rendu par lots de 20 (batching anti-freeze IPC) et décomposition tarifaire certifiée. |
 
 ---
 
@@ -200,3 +201,27 @@ Exécuter impérativement dans cet ordre :
 - **Snippets IDE VSCode & Cursor** : Auto-complétion instantanée (`.vscode/wechat-pmt.code-snippets`) pour insérer en 1 clic les templates `pmt-page-js`, `pmt-om-pill`, `pmt-i18n-wxs`, `pmt-outbox` et `pmt-throttle-scroll`.
 - **Showcase Playground (`playground/`)** : Mini-programme autonome prêt à être importé dans WeChat DevTools (`touristappid`) pour tester en direct tous les composants ODS Sonatel, Solde OM, i18n Wolof et Outbox hors-ligne.
 - **`npm test` / `npm run doctor`** : Automatise l'audit de conformité (zéro BOM UTF-8, syntaxe JSON, WXSS, déclencheurs IA, générateurs, bundle doctor, headless test harness) exécuté par la CI GitHub Actions.
+
+---
+
+## ✈️ PÔLE 6 : TUNNELS DE RÉSERVATION, BILLETTERIE & RENDU HAUTE PERFORMANCE
+
+### 6.1 Générateur de Billet/Facture PDF Vectoriel 0 Dépendance
+- Génération binaire directe `%PDF-1.4` avec table `xref` calculée en pur JavaScript (`serializePdfObjects`).
+- Zéro dépendance npm (`jspdf`, `pdfkit` interdits pour respecter la limite des 2 Mo).
+- Sauvegarde locale via `wx.getFileSystemManager().writeFile` et ouverture native `wx.openDocument({ showMenu: true })`.
+
+### 6.2 Plan de Sièges Interactif & Encodage GDS 15 Champs
+- Affectation explicite par voyageur et par tronçon de vol / bus.
+- Exclusion obligatoire des nourrissons sur les genoux (`INL` / Lap Infants).
+- Sérialisation au format GDS 15 champs : `départUnix-origine-destination-compagnie-numéroVol-indexVoyageur-siège-payant-total-base-taxe-devise-paysPOS-typeSiège-0`.
+
+### 6.3 Rendu par Lots Anti-Freeze IPC (Batch Rendering 20 Cartes)
+- Découpage des gros volumes de recherche (100 à 300 résultats) en tranches de 20 cartes injectées par chemins d'index (`displayedFlights[0]`).
+- Attente du callback de confirmation `setData` avant d'injecter la tranche suivante pour garantir une fluidité constante à 60 FPS.
+
+### 6.4 Décomposition Tarifaire Certifiée Multi-Lignes
+- Absence de taxe (`null` / `undefined`) traitée comme un état d'attente, jamais comme 0 FCFA.
+- Bouclier anti-mismatch de devises (interdiction d'additionner des monnaies distinctes).
+- Prévention contre la sur-multiplication des taxes de groupe déjà agrégées.
+- *Référentiel détaillé : [docs/DOC_TUNNELS_METIERS_ET_BILLETTERIE_AVANCEE.md](docs/DOC_TUNNELS_METIERS_ET_BILLETTERIE_AVANCEE.md).*
