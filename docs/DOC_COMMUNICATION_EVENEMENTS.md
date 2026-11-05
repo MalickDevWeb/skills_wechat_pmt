@@ -205,3 +205,16 @@ clicPasserEnAnglais() {
 }
 ```
 
+---
+
+## 🌐 OUTIL 3 : `webSocketService` (Flux Temps Réel Serveur <-> Mini-Programme)
+*Règle : Pour le streaming bidirectionnel en direct (suivi de chauffeur, livraison, chat, statut de paiement sans polling).*
+
+Lorsque le serveur doit pousser des événements directement au client sans que le téléphone n'interroge l'API en boucle :
+* Utiliser **`webSocketService`** (`connect`, `on`, `send`, `disconnect`).
+* Résilient avec battement de cœur **Ping/Pong 30s** et reconnexion progressive en cas de micro-coupure 4G.
+* Messages hors-ligne mis en mémoire tampon (*Outbox*) et envoyés dès la reconnexion.
+
+> 💡 **Implémentation prête à l'emploi :** Voir [Recette 61 : Gestionnaire WebSocket Résilient](DOC_RECETTES_COPIER_COLLER.md#-recette-61--gestionnaire-websocket-résilient-avec-heartbeat-pingpong--reconnexion-auto).
+
+

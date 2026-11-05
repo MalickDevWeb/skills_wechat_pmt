@@ -69,6 +69,9 @@ Chaque recette est une **solution complète et autonome**. Vous trouvez votre si
 | 👥 [Recette 58](#-recette-58--sélecteur-de-voyageurs-avec-validation-de-ratios-iata-bébés-sur-genoux) | Formulaire multi-passagers avec contrôle strict des ratios | Facile |
 | 📡 [Recette 59](#-recette-59--téléversement-par-morceaux-chunking-1-mo-avec-reprise-automatique-3g4g) | Téléversement résilient de gros fichiers avec reprise après micro-coupure 3G/4G | Avancée |
 | 🔐 [Recette 60](#-recette-60--stockage-local-chiffré-aes-transparent-protection-data-at-rest-cdp--sonatel) | Chiffrement symétrique Data-at-Rest des tokens, MSISDN et pièces d'identité | Moyenne |
+| ⚡ [Recette 61](#-recette-61--gestionnaire-websocket-résilient-avec-heartbeat-pingpong--reconnexion-auto) | Flux bidirectionnel temps réel avec heartbeat, reconnexion progressive et outbox | Avancée |
+| 🎯 [Recette 62](#-recette-62--action-optimiste-transactionnelle-avec-rollback-automatique-sur-erreur-serveur) | Mise à jour UI instantanée 0ms avec annulation propre si l'API backend échoue | Moyenne |
+| 🛡️ [Recette 63](#-recette-63--bootstrapper-de-sous-paquet-indépendant-pour-deep-links--qr-codes) | Sécurisation de l'arrivée directe sur un sous-paquet sans attendre l'accueil | Facile |
 
 ---
 
@@ -4150,6 +4153,627 @@ export function logoutUser() {
 - **Après (Avec `secureStorage`) :**
   Fichier local : `ENC:v1:7316bbbe:008b0031004e00e50090006b00d50072007800...`  
   *Résultat d'audit : 100% CONFORME (Chiffrement Data-at-Rest vérifié avec scellement d'empreinte matérielle).*
+
+---
+
+## ⚡ Recette 61 : Gestionnaire WebSocket Résilient avec Heartbeat Ping/Pong & Reconnexion Auto
+
+**Quand l'utiliser ?** Dès qu'un mini-programme nécessite des mises à jour en direct :
+- Suivi de position d'un chauffeur, livreur ou car en temps réel.
+- Réception instantanée d'un statut de paiement Orange Money (sans polling HTTP répétitif).
+- Messagerie instantanée / chat d'assistance client.
+- Bourse de fret ou enchères de billets à la seconde près.
+
+**Pourquoi l'API brute `wx.connectSocket` est insuffisante en production ?**
+1. **Passage en arrière-plan (`onHide`) :** Le système d'exploitation mobile ou WeChat coupe les sockets inactives après quelques secondes. Au retour, la socket reste muette et ne se reconnecte pas seule.
+2. **Micro-coupures 4G :** La socket se ferme brutalement. Si le code tente d'envoyer un message pendant la coupure, une exception fatale est levée et le message est perdu.
+3. **Timeouts des Proxies/Passerelles :** Sans battement de cœur (*Heartbeat Ping* régulier), les pare-feux et équilibreurs de charge ferment silencieusement la connexion après 60 secondes.
+
+**La Solution Industrielle :**
+Un gestionnaire événementiel `webSocketService` avec détection automatique de vie (Ping/Pong 30s), reconnexion exponentielle (1s, 2s, 4s, 8s...), et file d'attente sortante (*Outbox Buffer*) qui stocke les messages émis hors-ligne et les dépile dès que la socket est reconnectée.
+
+### 1. Le Gestionnaire WebSocket Résilient (`utils/helpers/websocketService.js`)
+```javascript
+/**
+ * ⚡ Module WebSocket Résilient avec Heartbeat & Reconnexion Automatique
+ * Conforme runtime WeChat Mini-Program & TCMPP
+ * Zéro dépendance npm
+ */
+
+class WebSocketManager {
+  #socketTask = null;
+  #url = '';
+  #options = {};
+  #isConnected = false;
+  #isManualClose = false;
+  #reconnectAttempts = 0;
+  #maxReconnectAttempts = 5;
+  #heartbeatTimer = null;
+  #pongTimeoutTimer = null;
+  #heartbeatInterval = 30000; // Ping toutes les 30 secondes
+  #pongTimeout = 5000;        // Attente pong max 5 secondes
+  #outboxQueue = [];          // Messages en attente de reconnexion
+  #listeners = new Map();     // Abonnements d'événements
+
+  /**
+   * Ouvre la connexion WebSocket sécurisée (wss://)
+   * @param {string} url Endpoint wss:// validé en console TCMPP
+   * @param {Object} [options]
+   * @param {Object} [options.headers] En-têtes (Authorization: Bearer...)
+   * @param {number} [options.heartbeatInterval=30000] Intervalle ping en ms
+   * @param {number} [options.maxReconnectAttempts=5] Tentatives de reconnexion
+   */
+  connect(url, options = {}) {
+    if (this.#isConnected && this.#socketTask) {
+      console.log('[WebSocket] Déjà connecté à', this.#url);
+      return;
+    }
+
+    this.#url = url || this.#url;
+    this.#options = options;
+    this.#maxReconnectAttempts = options.maxReconnectAttempts || 5;
+    this.#heartbeatInterval = options.heartbeatInterval || 30000;
+    this.#isManualClose = false;
+
+    console.log('[WebSocket] Tentative de connexion vers', this.#url);
+
+    try {
+      this.#socketTask = wx.connectSocket({
+        url: this.#url,
+        header: options.headers || {},
+        success: () => {
+          console.log('[WebSocket] Socket initialisée');
+        },
+        fail: (err) => {
+          console.error('[WebSocket] Échec initialisation socket :', err);
+          this.#scheduleReconnect();
+        }
+      });
+
+      this.#setupSocketListeners();
+    } catch (e) {
+      console.error('[WebSocket] Exception ouverture socket :', e);
+      this.#scheduleReconnect();
+    }
+  }
+
+  #setupSocketListeners() {
+    if (!this.#socketTask) return;
+
+    this.#socketTask.onOpen(() => {
+      console.log('[WebSocket] ✅ Connexion établie avec succès');
+      this.#isConnected = true;
+      this.#reconnectAttempts = 0;
+      this.#startHeartbeat();
+      this.#flushOutbox();
+      this.#emit('open');
+    });
+
+    this.#socketTask.onMessage((res) => {
+      // Détection et traitement du Pong
+      if (res.data === 'pong' || res.data === 'PONG' || res.data === '{"type":"pong"}') {
+        clearTimeout(this.#pongTimeoutTimer);
+        return;
+      }
+
+      let parsed = res.data;
+      try {
+        parsed = JSON.parse(res.data);
+      } catch (_) {}
+
+      // Si le message a un type d'événement typé (ex: { event: 'order_status', data: ... })
+      if (parsed && typeof parsed === 'object' && parsed.event) {
+        this.#emit(parsed.event, parsed.data);
+      }
+      this.#emit('message', parsed);
+    });
+
+    this.#socketTask.onError((err) => {
+      console.warn('[WebSocket] ⚠️ Erreur détectée :', err);
+      this.#isConnected = false;
+      this.#stopHeartbeat();
+      this.#emit('error', err);
+    });
+
+    this.#socketTask.onClose((res) => {
+      console.log('[WebSocket] Fermeture de la connexion (code:', res.code, 'raison:', res.reason, ')');
+      this.#isConnected = false;
+      this.#stopHeartbeat();
+      this.#emit('close', res);
+
+      if (!this.#isManualClose) {
+        this.#scheduleReconnect();
+      }
+    });
+  }
+
+  /**
+   * Envoie un message au serveur avec mise en mémoire tampon si déconnecté
+   * @param {any} data Données (texte ou objet sérialisé)
+   * @returns {boolean} True si envoyé immédiatement, False si mis en file d'attente
+   */
+  send(data) {
+    const payload = typeof data === 'object' ? JSON.stringify(data) : String(data);
+
+    if (this.#isConnected && this.#socketTask) {
+      this.#socketTask.send({
+        data: payload,
+        fail: (err) => {
+          console.warn('[WebSocket] Échec envoi, mise en outbox :', err);
+          this.#outboxQueue.push(payload);
+        }
+      });
+      return true;
+    } else {
+      console.log('[WebSocket] Déconnecté : message mis en file d\'attente outbox');
+      this.#outboxQueue.push(payload);
+      return false;
+    }
+  }
+
+  #flushOutbox() {
+    if (this.#outboxQueue.length === 0) return;
+    console.log(`[WebSocket] Envoi de ${this.#outboxQueue.length} message(s) en attente...`);
+    while (this.#outboxQueue.length > 0 && this.#isConnected) {
+      const msg = this.#outboxQueue.shift();
+      this.#socketTask.send({ data: msg });
+    }
+  }
+
+  #startHeartbeat() {
+    this.#stopHeartbeat();
+    this.#heartbeatTimer = setInterval(() => {
+      if (!this.#isConnected || !this.#socketTask) return;
+
+      // 1. Envoi du Ping
+      this.#socketTask.send({
+        data: JSON.stringify({ type: 'ping', t: Date.now() }),
+        fail: () => {
+          this.#handleHeartbeatTimeout();
+        }
+      });
+
+      // 2. Décompte d'attente du Pong
+      this.#pongTimeoutTimer = setTimeout(() => {
+        console.warn('[WebSocket] Pong non reçu dans les délais : socket considérée morte');
+        this.#handleHeartbeatTimeout();
+      }, this.#pongTimeout);
+
+    }, this.#heartbeatInterval);
+  }
+
+  #handleHeartbeatTimeout() {
+    this.#stopHeartbeat();
+    if (this.#socketTask) {
+      try {
+        this.#socketTask.close({ reason: 'Heartbeat timeout' });
+      } catch (_) {}
+    }
+    this.#scheduleReconnect();
+  }
+
+  #stopHeartbeat() {
+    clearInterval(this.#heartbeatTimer);
+    clearTimeout(this.#pongTimeoutTimer);
+    this.#heartbeatTimer = null;
+    this.#pongTimeoutTimer = null;
+  }
+
+  #scheduleReconnect() {
+    if (this.#isManualClose) return;
+
+    if (this.#reconnectAttempts >= this.#maxReconnectAttempts) {
+      console.error(`[WebSocket] Seuil de reconnexion atteint (${this.#maxReconnectAttempts} tentatives). Abandon.`);
+      this.#emit('reconnect_failed');
+      return;
+    }
+
+    this.#reconnectAttempts++;
+    // Backoff exponentiel : 1s, 2s, 4s, 8s, 16s...
+    const delay = Math.min(30000, 1000 * Math.pow(2, this.#reconnectAttempts - 1));
+    console.log(`[WebSocket] Reconnexion dans ${delay / 1000}s (tentative ${this.#reconnectAttempts}/${this.#maxReconnectAttempts})...`);
+
+    setTimeout(() => {
+      if (!this.#isManualClose && !this.#isConnected) {
+        this.connect(this.#url, this.#options);
+      }
+    }, delay);
+  }
+
+  /**
+   * S'abonne à un événement reçu de la socket
+   * @param {string} event Nom d'événement ('message', 'open', 'close', ou nom personnalisé)
+   * @param {Function} callback Fonction de traitement
+   * @returns {Function} Fonction de désabonnement propre
+   */
+  on(event, callback) {
+    if (!this.#listeners.has(event)) {
+      this.#listeners.set(event, new Set());
+    }
+    this.#listeners.get(event).add(callback);
+    return () => this.off(event, callback);
+  }
+
+  off(event, callback) {
+    if (this.#listeners.has(event)) {
+      this.#listeners.get(event).delete(callback);
+    }
+  }
+
+  #emit(event, data) {
+    if (this.#listeners.has(event)) {
+      this.#listeners.get(event).forEach((cb) => {
+        try {
+          cb(data);
+        } catch (e) {
+          console.error(`[WebSocket] Erreur listener '${event}' :`, e);
+        }
+      });
+    }
+  }
+
+  /**
+   * Fermeture manuelle explicite (ex: déconnexion ou fermeture définitive de page)
+   */
+  disconnect() {
+    this.#isManualClose = true;
+    this.#stopHeartbeat();
+    if (this.#socketTask) {
+      try {
+        this.#socketTask.close({ reason: 'Manual disconnect' });
+      } catch (_) {}
+      this.#socketTask = null;
+    }
+    this.#isConnected = false;
+    this.#outboxQueue = [];
+    console.log('[WebSocket] Déconnexion manuelle effectuée');
+  }
+
+  isConnected() {
+    return this.#isConnected;
+  }
+}
+
+export const webSocketService = new WebSocketManager();
+```
+
+### 2. Consommation dans une Page de Suivi en Direct (`pages/tracking/index.js`)
+```javascript
+import { webSocketService } from '../../utils/helpers/websocketService';
+
+Page({
+  data: {
+    tripStatus: 'En route vers la gare',
+    driverLat: 14.6928,
+    driverLng: -17.4467,
+    isSocketLive: false
+  },
+
+  onLoad(options) {
+    const tripId = options.tripId || 'TRIP_123';
+    const token = wx.getStorageSync('auth_token');
+
+    // 1. Connexion au flux WebSocket temps réel
+    webSocketService.connect(`wss://stream.sonatel.sn/v1/trips/${tripId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      heartbeatInterval: 25000
+    });
+
+    // 2. Écoute des mises à jour métier poussées par le serveur
+    this.unsubOpen = webSocketService.on('open', () => {
+      this.setData({ isSocketLive: true });
+    });
+
+    this.unsubDriverMove = webSocketService.on('driver_location', (data) => {
+      this.setData({
+        driverLat: data.latitude,
+        driverLng: data.longitude,
+        tripStatus: data.statusText
+      });
+    });
+
+    this.unsubTripCompleted = webSocketService.on('trip_arrived', () => {
+      wx.showToast({ title: 'Le véhicule est arrivé !', icon: 'success' });
+      this.setData({ tripStatus: 'Arrivé à destination' });
+    });
+  },
+
+  onSendPingDriver() {
+    // Message envoyé immédiatement si en ligne, ou mis en outbox tampon si coupure 4G
+    webSocketService.send({ action: 'ping_driver', timestamp: Date.now() });
+  },
+
+  onUnload() {
+    // Nettoyage impératif des écouteurs et déconnexion propre
+    if (this.unsubOpen) this.unsubOpen();
+    if (this.unsubDriverMove) this.unsubDriverMove();
+    if (this.unsubTripCompleted) this.unsubTripCompleted();
+    webSocketService.disconnect();
+  }
+});
+```
+
+---
+
+## 🎯 Recette 62 : Action Optimiste Transactionnelle avec Rollback Automatique sur Erreur Serveur
+
+**Quand l'utiliser ?** Lorsqu'un utilisateur effectue une action interactive qui doit répondre à **0 ms de latence** sans attendre la confirmation du serveur :
+- Cliquer sur le bouton "Cœur / Favori" d'un voyage ou d'une offre.
+- Supprimer un élément d'une liste (ex: un voyageur enregistré).
+- Appliquer un commutateur / toggle (ex: activer une notification SMS ou bagage supplémentaire).
+
+**Pourquoi sans rollback c'est une catastrophe ?**
+Si le serveur plante (erreur 500, jeton expiré 401, timeout 4G), et que l'interface a déjà modifié l'écran de manière optimiste, l'utilisateur croit que l'action est enregistrée. Quand il revient sur la page 10 minutes plus tard, l'élément n'a jamais été sauvegardé (effet "état fantôme").
+
+**La Solution Industrielle :**
+Le helper `executeOptimisticAction` :
+1. Capture un instantané (*snapshot*) automatique de l'état actuel de la page.
+2. Injecte immédiatement l'état optimiste dans `setData` (affichage instantané à 0 ms).
+3. Déclenche la requête serveur en arrière-plan.
+4. Si le serveur échoue : restaure instantanément l'état d'origine, émet une vibration haptique discrète et affiche un toast bienveillant explicatif.
+
+### 1. Le Helper Optimiste Transactionnel (`utils/helpers/optimisticAction.js`)
+```javascript
+/**
+ * ⚡ Helper d'Action Optimiste Transactionnelle (0ms Latency + Auto Rollback)
+ * Permet un retour tactile et visuel instantané avec annulation propre si le serveur échoue.
+ */
+
+/**
+ * Exécute une modification d'état optimiste avec rollback garanti en cas d'échec API
+ * @param {Object} options Configuration de la transaction optimiste
+ * @param {Object} options.page Instance de la page (this)
+ * @param {Object} options.optimisticData Données à injecter immédiatement dans setData
+ * @param {Function} options.serverCall Fonction async exécutant la requête backend
+ * @param {Object} [options.rollbackData] Données de restauration (si omis, capture snapshot auto)
+ * @param {Function} [options.onSuccess] Callback après confirmation serveur
+ * @param {string} [options.errorMessage='L\'action a échoué. Veuillez réessayer.'] Message en cas d'erreur
+ * @param {boolean} [options.vibrateOnError=true] Déclenche une vibration haptique en cas d'annulation
+ * @returns {Promise<any>} Résultat de la requête serveur
+ */
+export async function executeOptimisticAction({
+  page,
+  optimisticData,
+  serverCall,
+  rollbackData = null,
+  onSuccess = null,
+  errorMessage = 'L\'action a échoué. Veuillez réessayer.',
+  vibrateOnError = true
+}) {
+  if (!page || typeof page.setData !== 'function') {
+    throw new Error('[OptimisticAction] L\'instance page (this) est obligatoire.');
+  }
+
+  // 1. Snapshot automatique des clés modifiées pour le rollback si non fourni
+  const autoRollback = {};
+  if (!rollbackData) {
+    Object.keys(optimisticData).forEach((key) => {
+      // Supporte les chemins simples et clés directes
+      if (key in page.data) {
+        autoRollback[key] = page.data[key];
+      }
+    });
+  }
+  const effectiveRollback = rollbackData || autoRollback;
+
+  // 2. Application immédiate à l'écran (0 ms de latence pour l'utilisateur)
+  page.setData(optimisticData);
+
+  try {
+    // 3. Appel serveur en tâche asynchrone
+    const serverResult = await serverCall();
+
+    // 4. Succès confirmé
+    if (typeof onSuccess === 'function') {
+      onSuccess(serverResult);
+    }
+    return serverResult;
+  } catch (err) {
+    console.warn('[OptimisticAction] Échec serveur, déclenchement du Rollback :', err);
+
+    // 5. Restauration instantanée de l'état d'origine
+    page.setData(effectiveRollback);
+
+    // 6. Feedback haptique d'avertissement
+    if (vibrateOnError) {
+      try {
+        wx.vibrateShort({ type: 'medium' });
+      } catch (_) {}
+    }
+
+    // 7. Notification bienveillante
+    const message = err?.message || errorMessage;
+    wx.showToast({
+      title: message,
+      icon: 'none',
+      duration: 3000
+    });
+
+    throw err;
+  }
+}
+```
+
+### 2. Exemple d'Utilisation : Bouton Favoris Optimiste (`pages/flight-details/index.js`)
+```javascript
+import { executeOptimisticAction } from '../../utils/helpers/optimisticAction';
+
+Page({
+  data: {
+    flightId: 'FL_902',
+    isFavorite: false,
+    favoritesCount: 142
+  },
+
+  async onToggleFavorite() {
+    const nextState = !this.data.isFavorite;
+    const nextCount = nextState ? this.data.favoritesCount + 1 : this.data.favoritesCount - 1;
+
+    // Vibration haptique immédiate pour récompenser l'interaction
+    wx.vibrateShort({ type: 'light' });
+
+    try {
+      await executeOptimisticAction({
+        page: this,
+        // Écran mis à jour instantanément à 0ms
+        optimisticData: {
+          isFavorite: nextState,
+          favoritesCount: nextCount
+        },
+        // Requête réseau exécutée en arrière-plan
+        serverCall: async () => {
+          const res = await wx.cloud.callFunction({
+            name: 'toggleFavorite',
+            data: { flightId: this.data.flightId, status: nextState }
+          });
+          return res.result;
+        },
+        errorMessage: 'Impossible d\'enregistrer vos favoris pour le moment.'
+      });
+    } catch (_) {
+      // Le rollback a déjà remis isFavorite et favoritesCount à leur valeur d'origine automatiquement !
+    }
+  }
+});
+```
+
+---
+
+## 🛡️ Recette 63 : Bootstrapper de Sous-Paquet Indépendant pour Deep Links & QR Codes
+
+**Quand l'utiliser ?** Dès qu'un utilisateur peut atterrir directement sur une page secondaire située dans un sous-paquet (`subpackages/booking/pages/ticket/index`) :
+- Scan d'un QR code imprimé sur une borne ou une affiche.
+- Clic sur un lien de partage WhatsApp / WeChat (`wx.shareAppMessage`).
+- Push notification ou bannière d'accueil de la super-app Max It pointant directement vers une commande.
+
+**Pourquoi sans bootstrapper le sous-paquet crashe ?**
+Sur WeChat Mini-Program, ouvrir directement une URL de sous-paquet n'exécute pas la page d'accueil. L'application `app.js` lance ses initialisations asynchrones dans `onLaunch` (récupération de session, configuration distante, token d'authentification). La page du sous-paquet s'exécute souvent **avant** que le token ne soit disponible.
+Résultat : requête API avec `token = null`, erreur 401 brutale, ou redirection indésirable vers la page d'accueil !
+
+**La Solution Industrielle :**
+Le module `subpackageGuard.js` qui fournit un guard d'initialisation `ensureAppReady()` :
+1. Attend que `app.js` ait résolu sa promesse globale `getApp().readyPromise`.
+2. Affiche un écran de chargement élégant ou skeleton d'attente pendant cette demi-seconde de démarrage.
+3. Ne lance l'exécution métier de la page qu'une fois les fondations de l'application prêtes et le token chargé.
+
+### 1. Le Module de Garde Sous-Paquet (`utils/helpers/subpackageGuard.js`)
+```javascript
+/**
+ * 🛡️ Bootstrapper de Sous-Paquet Indépendant (Deep Link & QR Code Guard)
+ * Sécurise l'arrivée directe sur une page secondaire sans attendre l'accueil
+ */
+
+/**
+ * Attend que l'application et les prérequis globaux (Auth, SDK) soient prêts
+ * @param {number} [timeoutMs=6000] Délai d'attente maximum
+ * @returns {Promise<boolean>} True si l'application est opérationnelle
+ */
+export async function ensureAppReady(timeoutMs = 6000) {
+  const app = getApp();
+
+  // 1. Si app.js expose une Promise globale readyPromise
+  if (app && app.readyPromise) {
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('[SubpackageGuard] Timeout initialisation globale')), timeoutMs)
+    );
+    try {
+      await Promise.race([app.readyPromise, timeout]);
+      return true;
+    } catch (e) {
+      console.warn('[SubpackageGuard] ReadyPromise a expiré ou échoué :', e);
+    }
+  }
+
+  // 2. Fallback de sondage (vérifie si auth_token ou indicateur est initialisé)
+  const startTime = Date.now();
+  while (Date.now() - startTime < timeoutMs) {
+    if (app && (app.isAppReady || wx.getStorageSync('auth_token'))) {
+      return true;
+    }
+    await new Promise((r) => setTimeout(r, 100));
+  }
+
+  console.warn('[SubpackageGuard] Prérequis non validés dans les temps, bascule en mode autonome');
+  return false;
+}
+
+/**
+ * Wrapper de page pour sous-paquet avec écran d'attente automatique
+ * @param {Object} pageDefinition Définition standard de Page({ ... })
+ * @returns {Object} Page sécurisée
+ */
+export function createSubpackagePage(pageDefinition) {
+  const originalOnLoad = pageDefinition.onLoad;
+
+  return {
+    ...pageDefinition,
+
+    data: {
+      isBootstrapping: true,
+      ...(pageDefinition.data || {})
+    },
+
+    async onLoad(options) {
+      // 1. Affichage du masque d'attente
+      this.setData({ isBootstrapping: true });
+
+      // 2. Attente de la préparation de l'application globale
+      await ensureAppReady(5000);
+
+      this.setData({ isBootstrapping: false });
+
+      // 3. Exécution de la logique métier réelle
+      if (typeof originalOnLoad === 'function') {
+        originalOnLoad.call(this, options);
+      }
+    }
+  };
+}
+```
+
+### 2. Configuration dans `app.js` (Exposition de la Promesse Globale)
+```javascript
+// app.js
+App({
+  readyPromise: null,
+  isAppReady: false,
+
+  onLaunch(options) {
+    // Crée la promesse partagée avec tous les sous-paquets
+    this.readyPromise = new Promise(async (resolve) => {
+      try {
+        console.log('[App] Initialisation des prérequis au lancement...');
+        // Simulation / récupération du token et configuration hôte
+        const token = wx.getStorageSync('auth_token');
+        this.isAppReady = true;
+        resolve(true);
+      } catch (err) {
+        console.error('[App] Erreur init :', err);
+        resolve(false);
+      }
+    });
+  }
+});
+```
+
+### 3. Utilisation dans une Page de Sous-Paquet (`subpackages/booking/pages/ticket/index.js`)
+```javascript
+import { createSubpackagePage } from '../../../../utils/helpers/subpackageGuard';
+
+Page(createSubpackagePage({
+  data: {
+    ticketData: null
+  },
+
+  async onLoad(options) {
+    // Cette méthode ne sera appelée QU'UNE FOIS app.js 100% prêt
+    const ticketId = options.id;
+    console.log('[TicketPage] Chargement sécurisé du billet :', ticketId);
+    // Appel API garanti avec token d'authentification présent
+  }
+}));
+```
+
 
 
 

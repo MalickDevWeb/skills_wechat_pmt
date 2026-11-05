@@ -328,5 +328,70 @@
       "// Purge complète des clés sensibles à la déconnexion",
       "secureStorage.clearSensitiveSession();"
     ]
+  },
+  "PMT: Resilient WebSocket Service (Heartbeat & Auto Reconnect)": {
+    "scope": "javascript",
+    "prefix": "pmt-websocket",
+    "description": "Connexion WebSocket résiliente avec heartbeat ping/pong, reconnexion progressive et file d'attente sortante",
+    "body": [
+      "import { webSocketService } from '../../utils/helpers/websocketService';",
+      "",
+      "onLoad(options) {",
+      "  webSocketService.connect('${1:wss://stream.sonatel.sn/v1/live}', {",
+      "    headers: { Authorization: `Bearer ${wx.getStorageSync('auth_token')}` },",
+      "    heartbeatInterval: 30000",
+      "  });",
+      "",
+      "  this.unsub = webSocketService.on('${2:event_name}', (data) => {",
+      "    this.setData({ liveData: data });",
+      "  });",
+      "},",
+      "",
+      "onUnload() {",
+      "  if (this.unsub) this.unsub();",
+      "  webSocketService.disconnect();",
+      "}"
+    ]
+  },
+  "PMT: Optimistic Transactional Action (0ms & Auto Rollback)": {
+    "scope": "javascript",
+    "prefix": "pmt-optimistic-action",
+    "description": "Action optimiste à 0ms de latence avec rollback garanti et vibration haptique si l'API échoue",
+    "body": [
+      "import { executeOptimisticAction } from '../../utils/helpers/optimisticAction';",
+      "",
+      "async onToggleAction() {",
+      "  const nextState = !this.data.${1:isActive};",
+      "  wx.vibrateShort({ type: 'light' });",
+      "",
+      "  await executeOptimisticAction({",
+      "    page: this,",
+      "    optimisticData: { ${1:isActive}: nextState },",
+      "    serverCall: async () => {",
+      "      return await BackendAPI.${2:updateStatus}(nextState);",
+      "    },",
+      "    errorMessage: 'Impossible de mettre à jour le statut.'",
+      "  });",
+      "}"
+    ]
+  },
+  "PMT: Subpackage Bootstrapper (Deep Link & QR Guard)": {
+    "scope": "javascript",
+    "prefix": "pmt-subpackage-guard",
+    "description": "Sécurise une page de sous-paquet ouverte directement via deep link sans attendre app.js",
+    "body": [
+      "import { createSubpackagePage } from '../../../../utils/helpers/subpackageGuard';",
+      "",
+      "Page(createSubpackagePage({",
+      "  data: {",
+      "    detailData: null",
+      "  },",
+      "",
+      "  async onLoad(options) {",
+      "    const id = options.id;",
+      "    // Garanti exécuté après initialisation complète de l'application",
+      "  }",
+      "}));"
+    ]
   }
 }

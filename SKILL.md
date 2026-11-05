@@ -123,9 +123,10 @@ pages/ma-page/
 - Utiliser `storage.getOrSet(key, factory)` pour calculer et mettre en cache paresseusement les données lourdes.
 - **Stockage Chiffré Data-at-Rest** : Pour toute donnée sensible (tokens JWT, MSISDN, pièces d'identité, transactions OM), utiliser obligatoirement `secureStorage` (chiffrement symétrique par flux avec empreinte matérielle `brand + model` et checksum anti-falsification FNV-1a conforme aux exigences CDP Sénégal et audits de sécurité Sonatel).
 
-### 2.7 Logique Métier & Favoris
+### 2.7 Logique Métier, Favoris & Actions Optimistes
 - Traiter les dates sans décalage UTC (`new Date(`${dateStr}T00:00:00`)`).
 - Favoris réactifs : Double cache (mémoire synchrone à 0 ms de latence + persistance locale asynchrone).
+- **Actions Optimistes Transactionnelles** : Répondre instantanément à 0 ms de latence avec `executeOptimisticAction` et rollback automatique garanti (snapshot, annulation et haptique d'erreur) en cas d'échec API backend.
 
 ---
 
@@ -154,6 +155,10 @@ Exécuter impérativement dans cet ordre :
 - Clé d'idempotence unique par action (`X-Idempotency-Key`) pour éliminer tout risque de doublon au niveau backend.
 - Rejeu automatique déclenché sur `wx.onNetworkStatusChange` dès le rétablissement de la 4G/Wi-Fi.
 - *Référentiel détaillé : [docs/DOC_OFFLINE_FIRST_ET_OUTBOX_QUEUE.md](docs/DOC_OFFLINE_FIRST_ET_OUTBOX_QUEUE.md).*
+
+### 3.6 Flux Temps Réel & WebSockets Résilients
+- Ne jamais utiliser `wx.connectSocket` brut sans orchestrateur : les proxies coupent les connexions au bout de 60s et les micro-coupures 4G font perdre des messages.
+- Utiliser `webSocketService` avec détection de vie Heartbeat Ping/Pong (30s), reconnexion exponentielle progressive (1s à 16s) et file d'attente sortante tampon (Outbox buffer).
 
 ---
 
@@ -187,6 +192,7 @@ Exécuter impérativement dans cet ordre :
 - **Zéro @font-face local** : Ne jamais charger de `.ttf` locaux dans les WXSS (erreur 404 avec `-do-not-use-local-path-`).
 - **Guards dans onLoad** : Valider tout paramètre requis dès l'entrée avec toast d'alerte et retour automatique.
 - **Plafond des 2 Mo & Sous-Paquets** : Le paquet principal ne doit jamais dépasser 2 Mo. Tout parcours riche doit être découpé en sous-paquet (`subpackages/`) avec préchargement silencieux `preloadRule` dans `app.json`.
+- **Bootstrapper de Sous-Paquet (Deep Links & QR Codes)** : Sécuriser les accès directs aux sous-paquets avec `createSubpackagePage` / `ensureAppReady` pour empêcher l'exécution de la page avant la fin du `onLaunch` d'app.js.
 - **Matrice Anti-Panique des 30 Erreurs** : Résolution en 60s des erreurs réseau, domaine, double débit OM et saturation de pile. Voir [docs/DOC_MATRICE_ERREURS_PROD_TCMPP.md](docs/DOC_MATRICE_ERREURS_PROD_TCMPP.md).
 
 ### 5.2 Collaboration Multi-Développeurs (Zéro Conflit Git)
@@ -200,7 +206,7 @@ Exécuter impérativement dans cet ordre :
 - **`node scripts/create-component.js <dossier> [--ux]`** : Échafaude les 4 fichiers d'un composant (`Component()`, lifetimes strictes, `triggerEvent`, BEM, Safe Areas) en mode présentation ou UX skeleton shimmer.
 - **`node scripts/create-api.js <domaine>`** : Échafaude le service API (`utils/apis/<domaine>.api.js`) et son mappeur `json-sculpt` (`utils/mappers/<domaine>.js`) avec endpoints, méthodes CRUD et gestion d'erreurs typées.
 - **`node scripts/test-page-harness.js` (`npm run test:harness`)** : Émulateur headless en mémoire pour tester les transitions de machine à états `uiState` (loading -> success -> error) et le nettoyage mémoire de `onUnload()` sans ouvrir WeChat DevTools. Voir [docs/DOC_TESTING_HEADLESS_PAGE_ET_UISTATE.md](docs/DOC_TESTING_HEADLESS_PAGE_ET_UISTATE.md).
-- **Snippets IDE VSCode & Cursor** : Auto-complétion instantanée (`.vscode/wechat-pmt.code-snippets`) pour insérer en 1 clic les templates `pmt-page-js`, `pmt-om-pill`, `pmt-i18n-wxs`, `pmt-outbox`, `pmt-throttle-scroll`, `pmt-chunk-upload` et `pmt-secure-storage`.
+- **Snippets IDE VSCode & Cursor** : Auto-complétion instantanée (`.vscode/wechat-pmt.code-snippets`) pour insérer en 1 clic les templates `pmt-page-js`, `pmt-om-pill`, `pmt-i18n-wxs`, `pmt-outbox`, `pmt-throttle-scroll`, `pmt-chunk-upload`, `pmt-secure-storage`, `pmt-websocket`, `pmt-optimistic-action` et `pmt-subpackage-guard`.
 - **Showcase Playground (`playground/`)** : Mini-programme autonome prêt à être importé dans WeChat DevTools (`touristappid`) pour tester en direct tous les composants ODS Sonatel, Solde OM, i18n Wolof et Outbox hors-ligne.
 - **`npm test` / `npm run doctor`** : Automatise l'audit de conformité (zéro BOM UTF-8, syntaxe JSON, WXSS, déclencheurs IA, générateurs, bundle doctor, headless test harness) exécuté par la CI GitHub Actions.
 
