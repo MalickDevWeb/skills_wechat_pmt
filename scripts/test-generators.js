@@ -7,10 +7,10 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { execSync } = require('child_process');
 
-const SKILL_DIR = path.resolve(__dirname, '..');
-const TEMP_DIR = path.join(SKILL_DIR, '.tmp-test-scaffold');
+const TEMP_DIR = path.join(os.tmpdir(), 'wechat-pmt-test-scaffold');
 
 console.log('====================================================');
 console.log('🧪 TEST DES GÉNÉRATEURS CLI — WECHAT PMT');

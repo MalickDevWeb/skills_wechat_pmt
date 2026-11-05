@@ -10,3 +10,4 @@ Lorsque vous suggérez ou générez du code pour ce mini-programme, appliquez ob
 6. **Moteur i18n WXS** : Utiliser le résolveur WXS pur ES5 pour le Wolof et le Français à 0 ms de latence.
 7. **Compilateur TCMPP** : Enregistrer strictement en UTF-8 sans BOM (`\uFEFF`), sans nesting SCSS, sans `@font-face` local, et sécuriser la pile de 10 pages avec `navigateToSafe()`.
 8. **Conformité CDP Sénégal** : Masquage obligatoire des MSISDN (`77 *** ** 12`).
+

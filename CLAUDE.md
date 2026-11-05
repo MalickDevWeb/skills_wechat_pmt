@@ -39,3 +39,4 @@ Lors de la rédaction de code WeChat pour ce projet, Claude Code DOIT respecter 
 6. **Moteur i18n Wolof / Français** : Résolution WXS pur ES5 directement dans le WXML sans surcharge de `setData`.
 7. **Compilateur TCMPP** : Sauvegarder strictement en **UTF-8 sans BOM** (`\uFEFF`), aucun `@font-face` local, aucun nesting SCSS.
 8. **Conformité CDP Sénégal** : Masquer obligatoirement les numéros clients sous la forme `77 *** ** 12`.
+

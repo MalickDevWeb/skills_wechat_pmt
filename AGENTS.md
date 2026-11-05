@@ -54,3 +54,4 @@ Ce fichier définit les règles de gouvernance technique que tout agent d'ingén
 - **Zéro BOM UTF-8** : Aucun fichier source ne doit contenir le caractère invisible `\uFEFF`.
 - **Zéro @font-face local** : Ne jamais charger de fichiers de police `.ttf` ou `.woff` en local.
 - **Pile de navigation sécurisée** : Remplacer `wx.navigateTo` par `navigateToSafe()` pour empêcher le crash fatal à 10 pages.
+
