@@ -431,3 +431,4 @@ export function submitBookingOnce(attemptId, bookingPayload, apiCaller) {
 > - [Guide Officiel du SDK Max It Sonatel](DOC_MAXIT_MINI_SDK_SONATEL.md)
 > - [Matrice des Erreurs Production TCMPP & OM](DOC_MATRICE_ERREURS_PROD_TCMPP.md)
 > - [Recettes Prêtes à l'Emploi](DOC_RECETTES_COPIER_COLLER.md)
+

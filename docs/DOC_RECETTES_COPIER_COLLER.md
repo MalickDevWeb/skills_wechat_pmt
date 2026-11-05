@@ -65,6 +65,8 @@ Chaque recette est une **solution complète et autonome**. Vous trouvez votre si
 | 💺 [Recette 54](#-recette-54--sélecteur-de-sièges-aériens--bus-avec-encodage-gds-15-champs) | Plan de cabine interactif et chaîne normalisée 15 champs | Avancée |
 | ⚡ [Recette 55](#-recette-55--rendu-par-lots-de-20-cartes-anti-saturation-du-pont-ipc-wechat) | Batch rendering par paquets de 20 avec callbacks setData | Avancée |
 | 💰 [Recette 56](#-recette-56--moteur-de-décomposition-tarifaire-multi-passagers-sans-doublon-de-taxes) | Calculateur de prix multi-passagers blindé anti-mismatch | Moyenne |
+| ✈️ [Recette 57](#-recette-57--loader-avion-animé-en-pur-css-ciel-dégradé-nuages-défilants-et-traînée-60-fps) | Animation plein écran de vol 60 FPS ultra-légère | Moyenne |
+| 👥 [Recette 58](#-recette-58--sélecteur-de-voyageurs-avec-validation-de-ratios-iata-bébés-sur-genoux) | Formulaire multi-passagers avec contrôle strict des ratios | Facile |
 
 ---
 
@@ -3273,4 +3275,252 @@ export function computeCertifiedPriceBreakdown({
   };
 }
 ```
+
+---
+
+## ✈️ Recette 57 : Loader Avion Animé en Pur CSS (Ciel dégradé, nuages défilants et traînée 60 FPS)
+
+**Quand l'utiliser ?** Vous avez une opération longue de recherche de vols, de réservation ou de paiement (> 3 secondes). Au lieu d'un spinner classique ennuyeux, offrez une animation thématique de vol en plein ciel à 60 FPS sans impacter la batterie ni la mémoire vive (100% GPU avec `transform` et `opacity`).
+
+### 1. La Structure WXML (`components/ux/flight-loader/index.wxml`)
+```xml
+<view class="al-root">
+  <view class="al-sky">
+    <!-- Halo lumineux soleil / lune -->
+    <view class="al-glow"></view>
+
+    <!-- Nuages défilants à vitesses différentes -->
+    <view class="al-cloud al-cloud--1"></view>
+    <view class="al-cloud al-cloud--2"></view>
+    <view class="al-cloud al-cloud--3"></view>
+
+    <!-- Trajectoire de vol en pointillés animés -->
+    <view class="al-path"></view>
+
+    <!-- Avion et panaches de fumée -->
+    <view class="al-plane-wrap">
+      <view class="al-puff al-puff--1"></view>
+      <view class="al-puff al-puff--2"></view>
+      <view class="al-puff al-puff--3"></view>
+      <image class="al-plane" src="/assets/icons/global/airplane.png" mode="aspectFit" />
+    </view>
+
+    <!-- Ligne d'horizon -->
+    <view class="al-ground"></view>
+  </view>
+
+  <view class="al-text-row">
+    <text class="al-text">{{ message || 'Recherche de vos billets en cours' }}</text>
+    <text class="al-dot al-dot--1">.</text>
+    <text class="al-dot al-dot--2">.</text>
+    <text class="al-dot al-dot--3">.</text>
+  </view>
+</view>
+```
+
+### 2. Les Animations WXSS à 60 FPS (`components/ux/flight-loader/index.wxss`)
+```css
+.al-root {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30rpx 0;
+}
+
+.al-sky {
+  position: relative;
+  width: 90%;
+  height: 220rpx;
+  overflow: hidden;
+  border-radius: 24rpx;
+  background: linear-gradient(160deg, #1b2a63 0%, #3a5bc7 42%, #6f93e8 75%, #aac2f5 100%);
+  box-shadow: 0 12rpx 40rpx rgba(30, 50, 110, 0.35);
+}
+
+.al-cloud {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 100rpx;
+}
+.al-cloud--1 { width: 60rpx; height: 20rpx; top: 55%; left: -15%; animation: al-drift 6.5s linear infinite; }
+.al-cloud--2 { width: 70rpx; height: 22rpx; top: 30%; left: -18%; animation: al-drift 12s linear infinite; animation-delay: -3s; }
+
+@keyframes al-drift {
+  from { transform: translateX(0); }
+  to { transform: translateX(760rpx); }
+}
+
+.al-path {
+  position: absolute;
+  top: 48%;
+  left: 6%;
+  right: 6%;
+  height: 2rpx;
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.55) 0 16rpx, transparent 16rpx 30rpx);
+  background-size: 30rpx 2rpx;
+  background-repeat: repeat-x;
+  animation: al-path-move 1.1s linear infinite;
+}
+@keyframes al-path-move {
+  from { background-position: 0 0; }
+  to { background-position: -30rpx 0; }
+}
+
+.al-plane-wrap {
+  position: absolute;
+  top: 10%;
+  left: 0;
+  width: 72rpx;
+  height: 72rpx;
+  animation: al-fly 3.6s ease-in-out infinite;
+}
+@keyframes al-fly {
+  0% { transform: translate(-140rpx, -6rpx) rotate(-3deg); }
+  50% { transform: translate(320rpx, 14rpx) rotate(4deg); }
+  100% { transform: translate(760rpx, -4rpx) rotate(-3deg); }
+}
+
+.al-plane { width: 100%; height: 100%; }
+
+.al-puff {
+  position: absolute;
+  top: 44%;
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  animation: al-puff-fade 1.1s ease-out infinite;
+}
+.al-puff--1 { left: -6rpx; animation-delay: 0s; }
+.al-puff--2 { left: -22rpx; animation-delay: 0.18s; }
+.al-puff--3 { left: -38rpx; animation-delay: 0.36s; }
+
+@keyframes al-puff-fade {
+  0% { opacity: 0.75; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.2); }
+}
+
+.al-text-row { display: flex; align-items: flex-end; margin-top: 24rpx; }
+.al-text { font-size: 26rpx; font-weight: 600; color: #344054; }
+.al-dot { font-size: 28rpx; color: #FD6602; animation: al-blink 1.4s infinite both; }
+.al-dot--2 { animation-delay: 0.2s; }
+.al-dot--3 { animation-delay: 0.4s; }
+@keyframes al-blink { 0%, 20% { opacity: 0; } 50% { opacity: 1; } }
+```
+
+---
+
+## 👥 Recette 58 : Sélecteur de Voyageurs avec Validation de Ratios IATA (Bébés sur genoux)
+
+**Quand l'utiliser ?** Dans le panneau ou la modale de choix du nombre de passagers (vols, trains, cars), pour s'assurer qu'aucun client ne réserve plus de bébés sur les genoux qu'il n'y a d'adultes accompagnateurs.
+
+### 1. Module de Contrôle des Ratios (`utils/helpers/passengerValidator.js`)
+```javascript
+/**
+ * Valide les effectifs de passagers selon les normes de transport aérien et ferroviaire
+ */
+export function validatePassengerMix({ adults = 1, children = 0, infantsOnSeat = 0, infantsOnLap = 0 }) {
+  // 1. Au moins un adulte obligatoire
+  if (adults < 1) {
+    return {
+      isValid: false,
+      message: 'La réservation doit comporter au moins un passager adulte.'
+    };
+  }
+
+  // 2. Règle internationale IATA : Max 1 bébé sur les genoux par adulte
+  if (infantsOnLap > adults) {
+    return {
+      isValid: false,
+      message: `Vous ne pouvez pas voyager avec ${infantsOnLap} bébés sur les genoux pour ${adults} adulte(s). Chaque bébé sur les genoux nécessite un adulte distinct.`
+    };
+  }
+
+  // 3. Plafond groupe standard
+  const total = adults + children + infantsOnSeat + infantsOnLap;
+  if (total > 9) {
+    return {
+      isValid: false,
+      message: 'Les groupes de plus de 9 voyageurs font l objet d une tarification spéciale.'
+    };
+  }
+
+  return {
+    isValid: true,
+    totalCount: total,
+    summaryText: `${total} voyageur${total > 1 ? 's' : ''} (${adults} Adulte${adults > 1 ? 's' : ''}${children ? ', ' + children + ' Enfant(s)' : ''})`
+  };
+}
+```
+
+### 2. Intégration dans le Composant Voyageurs (`components/ui/passenger-picker/index.js`)
+```javascript
+import { validatePassengerMix } from '../../../utils/helpers/passengerValidator';
+
+Component({
+  data: {
+    adults: 1,
+    children: 0,
+    infantsOnLap: 0,
+    errorMessage: '',
+    summaryText: '1 voyageur'
+  },
+
+  methods: {
+    onIncrement(e) {
+      const { type } = e.currentTarget.dataset;
+      const nextCounts = {
+        adults: this.data.adults,
+        children: this.data.children,
+        infantsOnLap: this.data.infantsOnLap,
+        [type]: this.data[type] + 1
+      };
+
+      const check = validatePassengerMix(nextCounts);
+      if (!check.isValid) {
+        this.setData({ errorMessage: check.message });
+        wx.showToast({ title: check.message, icon: 'none', duration: 3000 });
+        return;
+      }
+
+      this.setData({
+        [type]: nextCounts[type],
+        errorMessage: '',
+        summaryText: check.summaryText
+      });
+      this.triggerEvent('change', nextCounts);
+    },
+
+    onDecrement(e) {
+      const { type } = e.currentTarget.dataset;
+      if (this.data[type] <= 0) return;
+      if (type === 'adults' && this.data.adults <= 1) return;
+
+      const nextCounts = {
+        adults: this.data.adults,
+        children: this.data.children,
+        infantsOnLap: this.data.infantsOnLap,
+        [type]: this.data[type] - 1
+      };
+
+      const check = validatePassengerMix(nextCounts);
+      if (!check.isValid) {
+        this.setData({ errorMessage: check.message });
+        wx.showToast({ title: check.message, icon: 'none', duration: 3000 });
+        return;
+      }
+
+      this.setData({
+        [type]: nextCounts[type],
+        errorMessage: '',
+        summaryText: check.summaryText
+      });
+      this.triggerEvent('change', nextCounts);
+    }
+  }
+});
+```
+
 
