@@ -95,6 +95,21 @@ export const HelpersMath = {
 };
 ```
 
+### 🎯 Contexte 3 : Formulaires Dynamiques Pilotés par Schéma (`dynamicFormEngine.js`)
+*Valider un formulaire généré dynamiquement par le serveur sans coder les champs en dur.*
+
+```javascript
+import { validateFormSchema } from './helpers/dynamicFormEngine.js';
+
+// Schéma JSON reçu du backend + valeurs saisies
+const { isValid, errors, cleanData } = validateFormSchema(schemaFromBackend, currentFormValues);
+if (!isValid) {
+  // errors contient les messages contextualisés par champ
+  this.setData({ formErrors: errors });
+}
+```
+> 💡 **Cas d'usage complet :** Voir [Recette 65 : Formulaires Dynamiques Pilotés par Schéma JSON](DOC_RECETTES_COPIER_COLLER.md#-recette-65--formulaires-dynamiques-pilotés-par-schéma-json-server-driven-form-builder).
+
 ---
 
 ## 💄 3. Les Helpers WXS (Le Maquillage pour l'Écran)
