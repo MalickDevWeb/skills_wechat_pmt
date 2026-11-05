@@ -110,6 +110,50 @@ if (!isValid) {
 ```
 > 💡 **Cas d'usage complet :** Voir [Recette 65 : Formulaires Dynamiques Pilotés par Schéma JSON](DOC_RECETTES_COPIER_COLLER.md#-recette-65--formulaires-dynamiques-pilotés-par-schéma-json-server-driven-form-builder).
 
+### 🎯 Contexte 4 : Résolution de Logos & Transporteurs (`airlineLogo.js`)
+*Résoudre instantanément les logos des compagnies régionales sans requête réseau et basculer sur un badge initiales si l'URL externe échoue.*
+
+```javascript
+import { resolveAirlineLogo, airlineFallbackLabel, handleAirlineLogoError } from './helpers/airlineLogo.js';
+
+const carrier = { code: 'HC', name: 'Air Sénégal', logo: 'https://...' };
+const logoSrc = resolveAirlineLogo(carrier); // /assets/images/airlines/air-senegal.png (0 ms)
+const fallback = airlineFallbackLabel(carrier); // "HC"
+```
+> 💡 **Cas d'usage complet :** Voir [Recette 69 : Résolveur de Logos & Transporteurs](DOC_RECETTES_COPIER_COLLER.md#-recette-69--résolveur-de-logos--transporteurs-avec-cache-local-whitelist-domaines--fallback-initiales).
+
+### 🎯 Contexte 5 : Lecteur Défensif & Réconciliation d'Arrondis (`defensiveReader.js`)
+*Extraire des champs dans des JSON hétérogènes sans jamais lever d'erreur `TypeError` et aligner les centimes des passagers avec le total panier.*
+
+```javascript
+import { pickPath, toOptionalAmount, reconcileRoundedLines } from './helpers/defensiveReader.js';
+
+// 1. Extraction multi-chemins garantie sans exception
+const total = toOptionalAmount(pickPath(apiData, ['tax.taxTotal', 'taxes.total', 'tax_amount']));
+
+// 2. Réconciliation des arrondis de centimes sur le panier
+const rec = reconcileRoundedLines(passagers, 'baseFare', totalFacture, 'XOF');
+// rec.adjustment contient l'écart d'arrondi (ex: 0.01 ou 0)
+```
+> 💡 **Cas d'usage complet :** Voir [Recette 72 : Lecteur Défensif & Réconciliation d'Arrondis](DOC_RECETTES_COPIER_COLLER.md#-recette-72--lecteur-défensif-de-schémas-json-opaques--réconciliation-darrondis-monétaires).
+
+### 🎯 Contexte 6 : Exportateur de Billet Canvas 2D Mobile (`ticketExporter.js`)
+*Générer et sauvegarder des reçus de paiement et billets d'embarquement haute résolution directement sur le téléphone.*
+
+```javascript
+import { exportCanvasToImage, saveTicketToPhotosAlbum } from './helpers/ticketExporter.js';
+
+const tempPath = await exportCanvasToImage(this, 'ticketCanvas', {
+  width: 750,
+  height: 1200,
+  drawRoutine: (ctx, w, h) => {
+    // Routine de tracé haute résolution
+  }
+});
+if (tempPath) await saveTicketToPhotosAlbum(tempPath);
+```
+> 💡 **Cas d'usage complet :** Voir [Recette 71 : Export de Billet & Reçu Client Mobile](DOC_RECETTES_COPIER_COLLER.md#-recette-71--export-de-billet--reçu-client-vectoriel-pdf-et-canvas-2d-mobile).
+
 ---
 
 ## 💄 3. Les Helpers WXS (Le Maquillage pour l'Écran)

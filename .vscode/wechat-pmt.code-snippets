@@ -460,5 +460,71 @@
       "  this.setData({ processingStatus: 'unknown', canResumeCheck: true });",
       "}"
     ]
+  },
+  "PMT: Airline Logo & Fallback Resolver": {
+    "scope": "javascript",
+    "prefix": "pmt-airline-logo",
+    "description": "Résolution de logo compagnie aérienne avec cache local, whitelist domaines et fallback initiales SVG/CSS",
+    "body": [
+      "import { resolveAirlineLogo, airlineFallbackLabel, handleAirlineLogoError } from '../../utils/helpers/airlineLogo.js';",
+      "",
+      "const carrier = { code: '${1:HC}', name: '${2:Air Sénégal}', logo: ${3:options.logo} };",
+      "this.setData({",
+      "  logoUrl: resolveAirlineLogo(carrier),",
+      "  fallbackLabel: airlineFallbackLabel(carrier)",
+      "});"
+    ]
+  },
+  "PMT: Virtual Host Baggage Allowance Accordion": {
+    "scope": "wxml,html",
+    "prefix": "pmt-baggage-allowance",
+    "description": "Composant accordéon de franchise bagages 60 FPS avec virtualHost: true",
+    "body": [
+      "<baggage-allowance",
+      "  open=\"{{ ${1:false} }}\"",
+      "  showSummaryBadges=\"{{ ${2:true} }}\"",
+      "  summary=\"{{ ${3:baggageSummary} }}\"",
+      "  routeList=\"{{ ${4:baggageRoutes} }}\"",
+      "/>"
+    ]
+  },
+  "PMT: Resilient Canvas 2D Ticket Exporter": {
+    "scope": "javascript",
+    "prefix": "pmt-ticket-export",
+    "description": "Export de reçu ou billet d'embarquement via Canvas 2D avec timeout guard et pagination GPU",
+    "body": [
+      "import { exportCanvasToImage, saveTicketToPhotosAlbum } from '../../utils/helpers/ticketExporter.js';",
+      "",
+      "const tempPath = await exportCanvasToImage(this, '${1:ticketCanvas}', {",
+      "  width: 750,",
+      "  height: ${2:1200},",
+      "  drawRoutine: (ctx, w, h) => {",
+      "    ctx.fillStyle = '#FFFFFF';",
+      "    ctx.fillRect(0, 0, w, h);",
+      "    ctx.fillStyle = '#FD6602';",
+      "    ctx.fillRect(0, 0, w, 16);",
+      "    ${3:// tracé additionnel}",
+      "  }",
+      "});",
+      "if (tempPath) {",
+      "  await saveTicketToPhotosAlbum(tempPath);",
+      "}"
+    ]
+  },
+  "PMT: Defensive Reader & Rounding Reconciliation": {
+    "scope": "javascript",
+    "prefix": "pmt-defensive-reader",
+    "description": "Lecteur défensif multi-chemins et réconciliation des arrondis de centimes",
+    "body": [
+      "import { pickPath, toOptionalAmount, reconcileRoundedLines } from '../../utils/helpers/defensiveReader.js';",
+      "",
+      "const ${1:totalAmount} = toOptionalAmount(",
+      "  pickPath(${2:apiResponse}, [",
+      "    '${3:data.pricing.total}',",
+      "    '${4:data.totalPayable}',",
+      "    '${5:data.amount}'",
+      "  ])",
+      ");"
+    ]
   }
 }

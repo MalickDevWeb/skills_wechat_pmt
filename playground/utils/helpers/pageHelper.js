@@ -60,3 +60,4 @@ export const showLoading = (message = 'Chargement...') => {
 export const hideLoading = () => {
   wx.hideLoading();
 };
+

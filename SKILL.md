@@ -218,7 +218,7 @@ Exécuter impérativement dans cet ordre :
 - **`node scripts/create-component.js <dossier> [--ux]`** : Échafaude les 4 fichiers d'un composant (`Component()`, lifetimes strictes, `triggerEvent`, BEM, Safe Areas) en mode présentation ou UX skeleton shimmer.
 - **`node scripts/create-api.js <domaine>`** : Échafaude le service API (`utils/apis/<domaine>.api.js`) et son mappeur `json-sculpt` (`utils/mappers/<domaine>.js`) avec endpoints, méthodes CRUD et gestion d'erreurs typées.
 - **`node scripts/test-page-harness.js` (`npm run test:harness`)** : Émulateur headless en mémoire pour tester les transitions de machine à états `uiState` (loading -> success -> error) et le nettoyage mémoire de `onUnload()` sans ouvrir WeChat DevTools. Voir [docs/DOC_TESTING_HEADLESS_PAGE_ET_UISTATE.md](docs/DOC_TESTING_HEADLESS_PAGE_ET_UISTATE.md).
-- **Snippets IDE VSCode & Cursor** : Auto-complétion instantanée (`.vscode/wechat-pmt.code-snippets`) pour insérer en 1 clic les templates `pmt-page-js`, `pmt-om-pill`, `pmt-i18n-wxs`, `pmt-outbox`, `pmt-throttle-scroll`, `pmt-chunk-upload`, `pmt-secure-storage`, `pmt-websocket`, `pmt-optimistic-action`, `pmt-subpackage-guard`, `pmt-announce-a11y`, `pmt-dynamic-form`, `pmt-wait-paint`, `pmt-stepper` et `pmt-tri-state`.
+- **Snippets IDE VSCode & Cursor** : Auto-complétion instantanée (`.vscode/wechat-pmt.code-snippets`) pour insérer en 1 clic les templates `pmt-page-js`, `pmt-om-pill`, `pmt-i18n-wxs`, `pmt-outbox`, `pmt-throttle-scroll`, `pmt-chunk-upload`, `pmt-secure-storage`, `pmt-websocket`, `pmt-optimistic-action`, `pmt-subpackage-guard`, `pmt-announce-a11y`, `pmt-dynamic-form`, `pmt-wait-paint`, `pmt-stepper`, `pmt-tri-state`, `pmt-airline-logo`, `pmt-baggage-allowance`, `pmt-ticket-export` et `pmt-defensive-reader`.
 - **Showcase Playground (`playground/`)** : Mini-programme autonome prêt à être importé dans WeChat DevTools (`touristappid`) pour tester en direct tous les composants ODS Sonatel, Solde OM, i18n Wolof et Outbox hors-ligne.
 - **`npm test` / `npm run doctor`** : Automatise l'audit de conformité (zéro BOM UTF-8, syntaxe JSON, WXSS, déclencheurs IA, générateurs, bundle doctor, headless test harness) exécuté par la CI GitHub Actions.
 
@@ -244,4 +244,26 @@ Exécuter impérativement dans cet ordre :
 - Absence de taxe (`null` / `undefined`) traitée comme un état d'attente, jamais comme 0 FCFA.
 - Bouclier anti-mismatch de devises (interdiction d'additionner des monnaies distinctes).
 - Prévention contre la sur-multiplication des taxes de groupe déjà agrégées.
+
+### 6.5 Résolveur de Logos & Transporteurs Résilient (`airlineLogo.js`)
+- Mappage prioritaire vers les assets locaux (`HC`, `HF`, `KP`, `R2`, `AF`, `SS`) pour un affichage instantané à 0 ms et 0 data réseau.
+- Tolérance aux variations orthographiques et accents via normalisation Unicode NFD.
+- Fallback automatique en initiales SVG/CSS lors des erreurs réseau via `binderror="onAirlineLogoError"`.
+- Blocage strict des protocoles HTTP non chiffrés.
+
+### 6.6 Composants Déclaratifs à Nœud Virtuel (`virtualHost: true`)
+- Suppression de l'enveloppe DOM intermédiaire avec `options: { virtualHost: true }` sur les composants de présentation pour ne pas casser les layouts `flex` et `grid` parents.
+- Modèle de franchise bagages et règles tarifaires 100% piloté par API sans mock statique trompeur.
+- Déploiement accordéon fluide à 60 FPS basé sur `max-height` dynamique et accélération matérielle CSS.
+
+### 6.7 Lecteur Défensif de Schémas JSON Opaques & Réconciliation d'Arrondis (`defensiveReader.js`)
+- Exploration multipath sécurisée sans crash `TypeError` via `pickPath(source, paths)`.
+- Parsing universel des montants monétaires (`toOptionalAmount`) supportant les espaces insécables (`\u00a0\u202f`), virgules et points.
+- Réconciliation des arrondis de centimes (`reconcileRoundedLines`) pour aligner au centime près les sous-totaux passagers avec le montant débité Orange Money.
+
+### 6.8 Export de Reçu / Billet Client Canvas 2D avec Timeout Guard (`ticketExporter.js`)
+- Rendu graphique et conversion PNG/JPG en local sur le smartphone via WeChat Canvas 2D (`exportCanvasToImage`).
+- Protection contre les freezes natifs avec `withTicketTimeout` (10s max).
+- Pagination dynamique (`paginateTicketModel`) prévenant les dépassements de mémoire GPU (anti-OOM).
+- Enregistrement dans l'album photo (`saveTicketToPhotosAlbum`) avec détection `auth deny` et guidage vers `wx.openSetting`.
 - *Référentiel détaillé : [docs/DOC_TUNNELS_METIERS_ET_BILLETTERIE_AVANCEE.md](docs/DOC_TUNNELS_METIERS_ET_BILLETTERIE_AVANCEE.md).*
