@@ -86,6 +86,10 @@ const jsonContent = {
 // -----------------------------------------------------------------------------
 // 2. INDEX.JS
 // -----------------------------------------------------------------------------
+const subpackageImport = subpackage ? `import { createSubpackagePage } from '${utilsPath}/helpers/subpackageGuard.js';\n` : '';
+const pageWrapperOpen = subpackage ? `Page(createSubpackagePage({` : `Page({`;
+const pageWrapperClose = subpackage ? `}));` : `});`;
+
 const jsContent = `// ============================================================================
 // ${pageName.toUpperCase()} — Contrôleur de Page WeChat PMT
 // Standard : State Machine (uiState), Safe Area, Safe Nav
@@ -93,8 +97,8 @@ const jsContent = `// ==========================================================
 // ============================================================================
 
 import { navigateWithLock } from '${utilsPath}/helpers/navigation.js';
-${withApi ? `import { backendAPI } from '${utilsPath}/apis/index.js';\n` : ""}
-Page({
+${subpackageImport}${withApi ? `import { backendAPI } from '${utilsPath}/apis/index.js';\n` : ""}
+${pageWrapperOpen}
   data: {
     uiState: 'loading', // 'loading' | 'content' | 'empty' | 'error'
     errorMessage: '',
@@ -140,7 +144,7 @@ Page({
   retry() {
     this.loadData();
   },
-});
+${pageWrapperClose}
 `;
 
 // -----------------------------------------------------------------------------

@@ -172,3 +172,67 @@ npm run create:page -- flight-detail --subpackage booking
 npm run create:page -- flight-detail --subpackage booking --with-api
 ```
 
+---
+
+## 🛡️ 8. Le Piège des Sous-Paquets Indépendants (`independent: true`) & Deep Links
+
+### 8.1 Qu'est-ce qu'un Sous-Paquet Indépendant ?
+WeChat permet de marquer un sous-paquet avec `"independent": true` dans `app.json` :
+```json
+{
+  "root": "subpackages/booking",
+  "name": "booking",
+  "independent": true,
+  "pages": [
+    "pages/ticket/index"
+  ]
+}
+```
+Ce mode permet au sous-paquet de s'ouvrir en **0,2 seconde chrono** sans télécharger le paquet principal lors du scan d'un QR code physique.
+
+### 8.2 Le Piège Fatal : `app.js` N'EST PAS EXÉCUTÉ !
+En mode indépendant ou lors d'une arrivée directe par lien profond :
+* **`app.js` est complètement zappé par WeChat.**
+* `getApp()` ne contient ni token, ni configuration `miniSDK`, ni `Bus`.
+* Tout appel à `getApp().globalData` lève un `TypeError` fatal entraînant un **écran blanc total**.
+
+### 8.3 La Solution : Le Bootstrapper Universel (`subpackageGuard.js`)
+Toute page de sous-paquet susceptible d'être ouverte directement doit être enveloppée par `createSubpackagePage` :
+
+```javascript
+// subpackages/booking/pages/ticket/index.js
+import { createSubpackagePage } from '../../../../utils/helpers/subpackageGuard.js';
+
+Page(createSubpackagePage({
+  data: {
+    ticketData: null
+  },
+
+  async onLoad(options) {
+    // Exécuté UNIQUEMENT quand l'application globale est 100% prête
+    const ticketId = options.id;
+    console.log('[Billet] Chargement garanti avec token valide :', ticketId);
+  }
+}));
+```
+
+### 8.4 Comment Simuler et Tester dans WeChat DevTools
+Pour tester la robustesse de vos sous-paquets avant la mise en production :
+1. Dans WeChat DevTools, cliquez sur le menu déroulant **« Mode de compilation ordinaire »** en haut à côté du bouton Aperçu.
+2. Cliquez sur **« Ajouter une condition de compilation personnalisée »** (*Add Custom Compilation*).
+3. Renseignez :
+   * **Chemin de démarrage :** `subpackages/booking/pages/ticket/index`
+   * **Paramètres de démarrage :** `id=TK9921`
+   * **Scène d'entrée :** `1011 (Scan de QR Code d'événement)` ou `1007 (Message de discussion partagé)`
+4. Validez et lancez : si votre page s'affiche sans planter et récupère son token, votre sous-paquet est **100 % Production Ready**.
+
+---
+
+## 📋 9. Check-list de Validation Avant Homologation
+- [ ] Le paquet principal (`root`) fait strictement **moins de 2 Mo**.
+- [ ] Chaque sous-paquet fait individuellement **moins de 2 Mo**.
+- [ ] Aucun sous-paquet n'importe de fichier depuis un autre sous-paquet (isolation stricte).
+- [ ] Les pages de sous-paquet ouvertes par QR code utilisent `createSubpackagePage`.
+- [ ] La règle de préchargement `preloadRule` est active sur les pages d'entrée.
+
+

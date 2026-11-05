@@ -21,3 +21,4 @@ export function announceToScreenReader(message) {
     console.warn('[Accessibility] Non supporté sur ce terminal :', err);
   }
 }
+
