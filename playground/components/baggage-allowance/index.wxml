@@ -7,7 +7,7 @@
         <block wx:for="{{summary}}" wx:for-item="badge" wx:key="id">
           <view class="baggage-summary__item baggage-summary__item--{{badge.tone || 'muted'}}">
             <text class="baggage-summary__count">{{badge.label}}</text>
-            <image wx:if="{{ badge.icon }}" class="baggage-summary__mini" src="{{badge.icon}}" mode="aspectFit" />
+            <image wx:if="{{ badge.icon }}" class="baggage-summary__mini" src="{{badge.icon}}" mode="aspectFit"/>
           </view>
         </block>
       </view>

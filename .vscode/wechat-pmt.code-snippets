@@ -526,5 +526,28 @@
       "  ])",
       ");"
     ]
+  },
+  "PMT: Resilient WhatsApp Bridge & Support ActionSheet": {
+    "scope": "javascript",
+    "prefix": "pmt-whatsapp-bridge",
+    "description": "Pont hybride WhatsApp (ActionSheet, modale in-app anti-écran noir, long-press QR et liens courts)",
+    "body": [
+      "import { openWhatsAppSupportSheet, buildWhatsAppUrl, copyToClipboard } from '../../utils/helpers/whatsappBridge.js';",
+      "",
+      "const whatsappUrl = buildWhatsAppUrl({",
+      "  shortLinkId: '${1:F5VM5FMWEDWLJ1}',",
+      "  phone: '${2:221770000000}',",
+      "  message: '${3:Bonjour, je souhaite une assistance.}'",
+      "});",
+      "",
+      "openWhatsAppSupportSheet({",
+      "  whatsappUrl,",
+      "  supportPhone: '${4:+221 77 000 00 00}',",
+      "  brandName: '${5:Support}',",
+      "  onOpenModal: () => {",
+      "    this.setData({ ${6:showWhatsAppModal}: true });",
+      "  }",
+      "});"
+    ]
   }
 }

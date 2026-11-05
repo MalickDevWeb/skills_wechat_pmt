@@ -81,6 +81,7 @@ Chaque recette est une **solution complète et autonome**. Vous trouvez votre si
 | 🧳 [Recette 70](#-recette-70--accordéon-de-franchise-bagages--règles-tarifaires-à-nœud-virtuel-virtualhost) | Composant accordéon 60 FPS sans conteneur DOM parasite et modèle strict API | Moyenne |
 | 📄 [Recette 71](#-recette-71--export-de-billet--reçu-client-vectoriel-pdf-et-canvas-2d-mobile) | Génération haute résolution sur le mobile, timeout guard et pagination GPU | Avancée |
 | 🛡️ [Recette 72](#-recette-72--lecteur-défensif-de-schémas-json-opaques--réconciliation-darrondis-monétaires) | Exploration multi-chemins anti-crash TypeError et réconciliation des centimes | Moyenne |
+| 💬 [Recette 73](#-recette-73--pont-hybride-support-client-whatsapp--téléphone-modale-in-app-long-press-qr-et-anti-black-screen) | Passerelle support WhatsApp avec modale in-app anti-écran noir, détection appui long et liens courts | Moyenne |
 
 ---
 
@@ -6250,3 +6251,221 @@ const passagers = [
 const reconciliation = reconcileRoundedLines(passagers, 'tarifBase', 150000, 'XOF');
 // reconciliation.adjustment = 0.03
 ```
+
+---
+
+## 💬 Recette 73 : Pont Hybride Support Client WhatsApp & Téléphone (Modale In-App, Long-Press QR & Anti-Black-Screen)
+
+**Quand l'utiliser ?** Dès que vous devez intégrer un canal de support direct (WhatsApp Business, Téléphone vocal, E-mail) dans un Mini-Programme WeChat ou TCMPP (Max It Sonatel), tout en contournant l'impossibilité de redirection web externe directe (`window.open` / `<a href>`) et le bug d'écran noir infini de `wx.previewImage` dans le simulateur WeChat DevTools.
+
+### Le Problème & La Contrainte Technique WeChat
+1. **Pas de redirection web directe libre** : WeChat Mini-Program interdit d'ouvrir directement une URL externe (`https://wa.me/...`) via un simple clic sur un lien, sauf si le domaine est whitelisted dans la console Tencent Cloud Mini-Program.
+2. **Le piège de `wx.previewImage` sur PC DevTools** : Appeler `wx.previewImage({ urls: ['/assets/...'] })` avec un chemin d'asset local relatif bloque le simulateur WeChat DevTools sur un **écran noir avec une roue de chargement infinie**. DevTools attend une URL `https://` distante ou un fichier temporaire `wxfile://`.
+3. **L'expérience mobile idéale** : Sur smartphone, l'utilisateur doit pouvoir faire un **appui long** de 1 seconde sur le QR code pour déclencher le scanner natif WeChat (*"Identifier le code QR"*) sans quitter l'application, ou disposer d'un bouton de copie direct en 1 clic.
+
+---
+
+### Étape 1/4 — Le Helper Reusable (`utils/helpers/whatsappBridge.js`)
+```javascript
+/**
+ * WhatsApp & Support Client Resilient Bridge
+ */
+
+export function buildWhatsAppUrl({ phone, message = "", shortLinkId = "" } = {}) {
+  if (shortLinkId) {
+    return `https://wa.me/message/${encodeURIComponent(shortLinkId.trim())}`;
+  }
+  const cleanPhone = String(phone || "").replace(/[^0-9]/g, "");
+  if (!cleanPhone) {
+    throw new Error("[WhatsAppBridge] Téléphone ou shortLinkId requis.");
+  }
+  const trimmedMsg = String(message || "").trim();
+  if (trimmedMsg) {
+    return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(trimmedMsg)}`;
+  }
+  return `https://wa.me/${cleanPhone}`;
+}
+
+export function copyToClipboard(data, toastTitle = "Copié !") {
+  return new Promise((resolve) => {
+    if (!data) return resolve(false);
+    wx.setClipboardData({
+      data: String(data),
+      success: () => {
+        if (typeof wx.vibrateShort === "function") {
+          wx.vibrateShort({ type: "medium" });
+        }
+        wx.showToast({
+          title: toastTitle,
+          icon: "success",
+          duration: 2500
+        });
+        resolve(true);
+      },
+      fail: (err) => {
+        console.warn("[WhatsAppBridge] Erreur presse-papier :", err);
+        resolve(false);
+      }
+    });
+  });
+}
+
+export function makeSupportPhoneCall(phoneNumber) {
+  return new Promise((resolve) => {
+    const cleanPhone = String(phoneNumber || "").replace(/[^0-9+]/g, "");
+    if (!cleanPhone) return resolve(false);
+    wx.makePhoneCall({
+      phoneNumber: cleanPhone,
+      success: () => resolve(true),
+      fail: (err) => {
+        console.warn("[WhatsAppBridge] Appel annulé :", err);
+        resolve(false);
+      }
+    });
+  });
+}
+
+export function openWhatsAppSupportSheet({
+  whatsappUrl,
+  supportPhone = "+221 77 000 00 00",
+  rawCallPhone = "221770000000",
+  brandName = "WhatsApp",
+  onOpenModal
+}) {
+  wx.showActionSheet({
+    itemList: [
+      `📷 Afficher le QR Code ${brandName}`,
+      `📋 Copier le lien ${brandName} direct`,
+      `📞 Appeler le service client (${supportPhone})`
+    ],
+    success: (res) => {
+      if (res.tapIndex === 0) {
+        if (typeof onOpenModal === "function") onOpenModal();
+      } else if (res.tapIndex === 1) {
+        copyToClipboard(whatsappUrl, "Lien copié !");
+      } else if (res.tapIndex === 2) {
+        makeSupportPhoneCall(rawCallPhone || supportPhone);
+      }
+    }
+  });
+}
+```
+
+---
+
+### Étape 2/4 — La Page WXML (`pages/index/index.wxml`)
+```xml
+<!-- Bouton déclencheur dans la page d'accueil ou d'aide -->
+<view class="contact-cta" bindtap="handleContactWhatsApp">
+  <image class="contact-icon" src="/assets/icons/whatsapp.png" mode="aspectFit" />
+  <text class="contact-label">Assistance WhatsApp</text>
+</view>
+
+<!-- Modale In-App Anti-Black-Screen avec Appui Long Natif -->
+<osn-modal
+  visible="{{ showWhatsAppModal }}"
+  placement="center"
+  size="lg"
+  hasHeader="{{ true }}"
+  hasContent="{{ true }}"
+  hasFooter="{{ true }}"
+  bind:close="handleCloseWhatsAppModal"
+>
+  <view slot="header" class="modal-header d-flex justify-content-between align-items-center w-100" style="padding: 24rpx 32rpx 16rpx;">
+    <text class="modal-title font-weight-bold">WhatsApp — Support Client</text>
+    <osn-icon icon="close" width="{{ 24 }}" height="{{ 24 }}" bind:tap="handleCloseWhatsAppModal" />
+  </view>
+
+  <view slot="content" class="d-flex flex-column align-items-center" style="padding: 16rpx 32rpx;">
+    <!-- L'attribut show-menu-by-longpress="{{ true }}" active le scan natif WeChat sur mobile -->
+    <image
+      src="/assets/images/contact/whatsapp-qr.png"
+      mode="widthFix"
+      style="width: 480rpx; max-height: 650rpx; border-radius: 16rpx; display: block;"
+      show-menu-by-longpress="{{ true }}"
+    />
+    <text class="modal-hint text-muted text-center" style="margin-top: 20rpx; font-size: 24rpx;">
+      Maintenez le doigt sur le QR Code pour ouvrir WhatsApp
+    </text>
+  </view>
+
+  <view slot="footer" class="modal-footer d-flex gap-2 w-100" style="padding: 16rpx 32rpx 24rpx;">
+    <button class="btn btn-secondary flex-1" bindtap="handleCopyWhatsAppDirect">
+      Copier le lien direct
+    </button>
+    <button class="btn btn-primary flex-1" bindtap="handleCloseWhatsAppModal">
+      Fermer
+    </button>
+  </view>
+</osn-modal>
+```
+
+---
+
+### Étape 3/4 — Le Contrôleur Page JS (`pages/index/index.js`)
+```javascript
+import {
+  openWhatsAppSupportSheet,
+  copyToClipboard,
+  buildWhatsAppUrl
+} from "../../utils/helpers/whatsappBridge.js";
+
+Page({
+  data: {
+    showWhatsAppModal: false,
+    supportConfig: {
+      phone: "+221 77 000 00 00",
+      rawPhone: "221770000000",
+      shortLinkId: "F5VM5FMWEDWLJ1", // Lien court WhatsApp Business
+      brandName: "Sen Aura Tech"
+    }
+  },
+
+  handleContactWhatsApp() {
+    const { shortLinkId, phone, rawPhone, brandName } = this.data.supportConfig;
+    const whatsappUrl = buildWhatsAppUrl({ shortLinkId });
+
+    openWhatsAppSupportSheet({
+      whatsappUrl,
+      supportPhone: phone,
+      rawCallPhone: rawPhone,
+      brandName,
+      onOpenModal: () => {
+        this.setData({ showWhatsAppModal: true });
+      }
+    });
+  },
+
+  handleOpenWhatsAppModal() {
+    this.setData({ showWhatsAppModal: true });
+  },
+
+  handleCloseWhatsAppModal() {
+    this.setData({ showWhatsAppModal: false });
+  },
+
+  async handleCopyWhatsAppDirect() {
+    const { shortLinkId } = this.data.supportConfig;
+    const waUrl = buildWhatsAppUrl({ shortLinkId });
+    await copyToClipboard(waUrl, "Lien copié !");
+  }
+});
+```
+
+---
+
+### Étape 4/4 — Test Unitaire Automatisé Headless (`tests/contact-flow.test.mjs`)
+```javascript
+import test from "node:test";
+import assert from "node:assert/strict";
+import { buildWhatsAppUrl } from "../utils/helpers/whatsappBridge.js";
+
+test("buildWhatsAppUrl generates correct format", () => {
+  const shortUrl = buildWhatsAppUrl({ shortLinkId: "F5VM5FMWEDWLJ1" });
+  assert.equal(shortUrl, "https://wa.me/message/F5VM5FMWEDWLJ1");
+
+  const directUrl = buildWhatsAppUrl({ phone: "+221 77 000 00 00", message: "Bonjour Support" });
+  assert.equal(directUrl, "https://wa.me/221770000000?text=Bonjour%20Support");
+});
+```
+

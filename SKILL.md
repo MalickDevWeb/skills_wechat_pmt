@@ -4,7 +4,8 @@ description: >-
   Expertise complète pour WeChat Mini-Program (PMT / TCMPP) : architecture modulaire anti-conflits,
   intégration API avec json-sculpt mappers, client HTTP BackendAPI, EventBus (Bus), gestion d'erreurs typées,
   bonnes pratiques UI WeChat (WXS ES5, setData optimisé, safe areas env(safe-area-inset-bottom), lifetimes composants),
-  skeletons shimmer UX, SDK officiel Sonatel Max It, bouclier anti-double débit Orange Money et animations 60 FPS.
+  skeletons shimmer UX, SDK officiel Sonatel Max It, bouclier anti-double débit Orange Money, animations 60 FPS
+  et pont hybride support client WhatsApp / Téléphone anti-black-screen.
 ---
 
 # ⚡ WeChat PMT : Référentiel d'Architecture & Standards de Production
@@ -32,6 +33,7 @@ Ce skill impose les règles strictes d'ingénierie logicielle pour concevoir, st
 | **`@DARK-MODE`** | Thème & Accessibilité | Support du mode sombre natif WeChat (`theme.json`), variables CSS sémantiques adaptatives et respect des normes de contraste WCAG AA. |
 | **`@COMPILER-SAFE`** | Compilateur TCMPP | Élimine les pièges de compilation fatals : zéro BOM UTF-8 (`\uFEFF`), zéro `@font-face` local, clauses de garde obligatoires dans `onLoad` avec retour automatique. |
 | **`@TUNNEL-COMPLEXE`** | Billetterie & Funnels | Orchestre les entonnoirs multi-écrans : générateur PDF vectoriel natif 0 dépendance (%PDF-1.4), plan de sièges GDS 15 champs, rendu par lots de 20 (batching anti-freeze IPC) et décomposition tarifaire certifiée. |
+| **`@SUPPORT-WHATSAPP`** | Support & WhatsApp | Déploie le pont hybride support client (WhatsApp Business, Téléphone vocal, E-mail) : modale in-app anti-écran noir pour simulateur DevTools, appui long (`show-menu-by-longpress`) et ActionSheet multi-canaux. |
 
 ---
 

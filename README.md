@@ -372,6 +372,7 @@ Si tu utilises Cursor, Copilot ou Gemini avec le fichier `.cursorrules` :
 | Bouton fixé sans Safe Area | Masqué par Home Indicator iPhone | `padding-bottom: calc(XXrpx + env(safe-area-inset-bottom))` |
 | `height: 100vh; overflow: hidden` | Contenu tronqué sur iPhone réel | Préférer `min-height: 100vh` souple |
 | Oublier `getTabBar().setData()` dans `onShow` | Mauvais onglet actif / scintillement | Synchroniser l'index dans le cycle `onShow` |
+| `wx.previewImage()` sur chemin local `/assets/...` | Écran noir et chargement infini sur DevTools PC | Utiliser une modale in-app avec `show-menu-by-longpress` (Recette 73) |
 
 ---
 
@@ -385,5 +386,5 @@ Si tu utilises Cursor, Copilot ou Gemini avec le fichier `.cursorrules` :
 - 🧭 **`DOC_NAVIGATION_BEHAVIORS_ET_METIER.md`** : Navigation sécurisée (pile 10 pages, anti-double clic), mixins officiels WeChat (Behaviors) et règles métier (annulation, favoris, buffer OAuth2).
 - 🛠️ **`DOC_PIEGES_COMPILATEUR_ET_PATTERNS_PROD.md`** : Résolution des pièges fatals TCMPP (BOM UTF-8, @font-face 404, guards onLoad, retour intelligent, matrice d'isolation à 7 développeurs).
 - 🎬 **`DOC_FLUX_COMPLEXES_ANIMATIONS.md`** : Feedback tactile au clic (`hover-class` Apple Press), entrée de page fluide 60 FPS, micro-interactions (cœur pulsant) et séquences JS (`wx.createAnimation`).
-- 📚 **`DOC_RECETTES_COPIER_COLLER.md`** : 47 recettes prêtes à l'emploi (Liste, Formulaire, Upload, Paiement natif, Smart polling, Custom navbar, Custom tabbar, Store réactif, Navigation safe, Behaviors, SDK officiel Max It, Guards onLoad, Retour intelligent, withLock, handleAppError, Feedback tactile, Entrée de page, Séquence de succès).
+- 📚 **`DOC_RECETTES_COPIER_COLLER.md`** : 73 recettes prêtes à l'emploi (Liste, Formulaire, Upload, Paiement natif, Smart polling, Custom navbar, Custom tabbar, Store réactif, Navigation safe, Behaviors, SDK officiel Max It, Guards onLoad, Retour intelligent, withLock, handleAppError, Feedback tactile, Entrée de page, Séquence de succès).
 - ❓ **`DOC_FAQ_ERREURS_FREQUENTES.md`** : 40+ questions/réponses pour ne jamais faire d'erreur (UI, API, Paiement, iPhone, Git, Performance).

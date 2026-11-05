@@ -164,3 +164,4 @@ export const reconcileRoundedLines = (lines, field, expectedTotal, currency = 'X
     adjustment: Math.abs(adjustment) < 0.000001 ? 0 : adjustment
   };
 };
+
