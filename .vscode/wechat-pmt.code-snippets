@@ -281,5 +281,52 @@
       "  });",
       "}"
     ]
+  },
+  "PMT: Chunked File Uploader (Resumable 1 Mo)": {
+    "scope": "javascript",
+    "prefix": "pmt-chunk-upload",
+    "description": "Téléversement par morceaux (chunks 1 Mo) avec auto-retry 3G/4G et suivi de progression",
+    "body": [
+      "import { uploadFileInChunks } from '../../utils/helpers/chunkedUploader';",
+      "",
+      "async uploadLargeDocument(filePath) {",
+      "  this.setData({ isUploading: true, uploadProgress: 0 });",
+      "  try {",
+      "    const token = wx.getStorageSync('auth_token') || '';",
+      "    const result = await uploadFileInChunks({",
+      "      filePath,",
+      "      fileName: '${1:document.pdf}',",
+      "      uploadUrl: '${2:https://api.sonatel.sn/v1/upload/chunk}',",
+      "      completeUrl: '${3:https://api.sonatel.sn/v1/upload/complete}',",
+      "      headers: { Authorization: `Bearer ${token}` },",
+      "      onProgress: ({ percent, currentChunk, totalChunks }) => {",
+      "        this.setData({ uploadProgress: percent });",
+      "      }",
+      "    });",
+      "    this.setData({ isUploading: false, uploadedUrl: result.fileUrl });",
+      "    wx.showToast({ title: 'Téléversement réussi', icon: 'success' });",
+      "  } catch (err) {",
+      "    this.setData({ isUploading: false });",
+      "    wx.showModal({ title: 'Erreur', content: err.message, showCancel: false });",
+      "  }",
+      "}"
+    ]
+  },
+  "PMT: Encrypted Secure Storage (CDP & Sonatel Compliant)": {
+    "scope": "javascript",
+    "prefix": "pmt-secure-storage",
+    "description": "Stockage local chiffré transparent avec empreinte matérielle et anti-tampering FNV-1a",
+    "body": [
+      "import { secureStorage } from '../../utils/helpers/secureStorage';",
+      "",
+      "// Écriture chiffrée sur la mémoire flash (Data-at-Rest)",
+      "secureStorage.set('${1:auth_token}', ${2:tokenValue});",
+      "",
+      "// Lecture sécurisée avec fallback",
+      "const ${1:token} = secureStorage.get('${1:auth_token}', null);",
+      "",
+      "// Purge complète des clés sensibles à la déconnexion",
+      "secureStorage.clearSensitiveSession();"
+    ]
   }
 }

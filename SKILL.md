@@ -121,6 +121,7 @@ pages/ma-page/
 - Ne jamais appeler `wx.getStorageSync` directement sans wrapper : WeChat renvoie une chaîne vide `''` pour les clés absentes.
 - Protéger les opérations contre le dépassement du quota local de 10 MB.
 - Utiliser `storage.getOrSet(key, factory)` pour calculer et mettre en cache paresseusement les données lourdes.
+- **Stockage Chiffré Data-at-Rest** : Pour toute donnée sensible (tokens JWT, MSISDN, pièces d'identité, transactions OM), utiliser obligatoirement `secureStorage` (chiffrement symétrique par flux avec empreinte matérielle `brand + model` et checksum anti-falsification FNV-1a conforme aux exigences CDP Sénégal et audits de sécurité Sonatel).
 
 ### 2.7 Logique Métier & Favoris
 - Traiter les dates sans décalage UTC (`new Date(`${dateStr}T00:00:00`)`).
@@ -146,6 +147,7 @@ Exécuter impérativement dans cet ordre :
 ### 3.4 Data-Saver & Compression Côté Client
 - Toute image capturée doit être compressée via `wx.compressImage` (qualité 75) avant upload afin d'économiser 95% du forfait data de l'utilisateur.
 - Utiliser `NetworkMonitor` pour détecter les réseaux dégradés 2G/3G et adapter l'UI sans blocage.
+- **Téléversement par Morceaux (Chunking 1 Mo)** : Pour les documents volumineux (> 1 Mo : CNI, passeport, relevé, contrat PDF), découper les fichiers en tranches binaires via `wx.getFileSystemManager().readFile` avec reprise automatique séquentielle après micro-coupures 3G/4G (`uploadFileInChunks`), évitant de renvoyer le fichier depuis 0 Ko.
 
 ### 3.5 Résilience Hors-Ligne & Outbox Pattern (Offline-First)
 - File d'attente FIFO persistante dans `wxStorage` pour toutes les actions non-monétaires (formulaires, favoris, signalements).
@@ -198,7 +200,7 @@ Exécuter impérativement dans cet ordre :
 - **`node scripts/create-component.js <dossier> [--ux]`** : Échafaude les 4 fichiers d'un composant (`Component()`, lifetimes strictes, `triggerEvent`, BEM, Safe Areas) en mode présentation ou UX skeleton shimmer.
 - **`node scripts/create-api.js <domaine>`** : Échafaude le service API (`utils/apis/<domaine>.api.js`) et son mappeur `json-sculpt` (`utils/mappers/<domaine>.js`) avec endpoints, méthodes CRUD et gestion d'erreurs typées.
 - **`node scripts/test-page-harness.js` (`npm run test:harness`)** : Émulateur headless en mémoire pour tester les transitions de machine à états `uiState` (loading -> success -> error) et le nettoyage mémoire de `onUnload()` sans ouvrir WeChat DevTools. Voir [docs/DOC_TESTING_HEADLESS_PAGE_ET_UISTATE.md](docs/DOC_TESTING_HEADLESS_PAGE_ET_UISTATE.md).
-- **Snippets IDE VSCode & Cursor** : Auto-complétion instantanée (`.vscode/wechat-pmt.code-snippets`) pour insérer en 1 clic les templates `pmt-page-js`, `pmt-om-pill`, `pmt-i18n-wxs`, `pmt-outbox` et `pmt-throttle-scroll`.
+- **Snippets IDE VSCode & Cursor** : Auto-complétion instantanée (`.vscode/wechat-pmt.code-snippets`) pour insérer en 1 clic les templates `pmt-page-js`, `pmt-om-pill`, `pmt-i18n-wxs`, `pmt-outbox`, `pmt-throttle-scroll`, `pmt-chunk-upload` et `pmt-secure-storage`.
 - **Showcase Playground (`playground/`)** : Mini-programme autonome prêt à être importé dans WeChat DevTools (`touristappid`) pour tester en direct tous les composants ODS Sonatel, Solde OM, i18n Wolof et Outbox hors-ligne.
 - **`npm test` / `npm run doctor`** : Automatise l'audit de conformité (zéro BOM UTF-8, syntaxe JSON, WXSS, déclencheurs IA, générateurs, bundle doctor, headless test harness) exécuté par la CI GitHub Actions.
 

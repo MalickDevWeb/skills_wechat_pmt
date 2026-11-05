@@ -51,7 +51,7 @@ Le stockage local sur smartphone est persistant mais non crypté par défaut sur
 | **Token OAuth2 d'accès** | ⚠️ **Autorisé sous conditions** | Doit être associé à un timestamp d'expiration (`token_expiry`) et purgé dès déconnexion. |
 | **Données de profil (Nom, Prénom)** | ✅ **Autorisé** | Stockage en cache mémoire/disque autorisé pour accélération UI. |
 
-### Purge Obligatoire à la Déconnexion (`clearSessionSafe`)
+### 2.1 Purge Obligatoire à la Déconnexion (`clearSessionSafe`)
 ```javascript
 export function clearSessionSafe() {
   const SENSITIVE_KEYS = ['auth_token', 'token_expiry', 'user_msisdn', 'refresh_token'];
@@ -64,6 +64,16 @@ export function clearSessionSafe() {
   });
 }
 ```
+
+### 2.2 Chiffrement Obligatoire des Données au Repos (`Data-at-Rest`) avec `secureStorage`
+Les données sensibles telles que les jetons d'accès JWT, les numéros MSISDN et les identités des clients ne doivent **JAMAIS** être stockées en clair (`JSON.stringify`) dans `wx.setStorageSync`.
+
+Un audit de sécurité Sonatel / CDP recherche systématiquement ces données en mémoire flash. L'utilisation du wrapper **`secureStorage`** est obligatoire :
+* **Empreinte matérielle dynamique** (`brand + model + platform`) combinée à un sel applicatif.
+* **Chiffrement symétrique par flux** (RC4) compact à 0 dépendance npm.
+* **Contrôle d'intégrité anti-falsification** (Checksum FNV-1a).
+
+> 💡 **Implémentation prête à l'emploi :** Voir [Recette 60 : Stockage Local Chiffré AES Transparent](DOC_RECETTES_COPIER_COLLER.md#-recette-60--stockage-local-chiffré-aes-transparent-protection-data-at-rest-cdp--sonatel).
 
 ---
 

@@ -442,3 +442,4 @@ export function serializePdfObjects(objects) {
 > - [Guide des Tunnels Métiers & Billetterie](DOC_TUNNELS_METIERS_ET_BILLETTERIE_AVANCEE.md)
 > - [Guide Officiel du SDK Max It Sonatel](DOC_MAXIT_MINI_SDK_SONATEL.md)
 > - [Le Livre de Recettes Copier-Coller](DOC_RECETTES_COPIER_COLLER.md)
+

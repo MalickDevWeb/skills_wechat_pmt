@@ -207,3 +207,17 @@ export function uploadWithProgress(url, filePath, onProgress) {
 }
 ```
 
+---
+
+## 📡 6. Téléversement par Morceaux (Chunking 1 Mo) & Reprise Résiliente
+
+Pour les fichiers volumineux (> 1 Mo : pièces d'identité recto/verso, passeports, justificatifs PDF, constats vidéo), `wx.uploadFile` monolithique présente un risque critique d'abandon : toute micro-coupure réseau au-delà de 90% annule l'intégralité du transfert et oblige l'utilisateur à renvoyer 100% du fichier.
+
+**Standard Sonatel & TCMPP :**
+* Découpage binaire en tranches de 1 Mo (`fs.readFile({ position, length })`).
+* Envoi séquentiel avec headers de réconciliation (`X-Upload-Id`, `X-Chunk-Index`, `X-Total-Chunks`).
+* Reprise automatique (jusqu'à 3 tentatives avec backoff progressif) sur le morceau précis qui a échoué, sans réémettre les morceaux déjà enregistrés.
+
+> 💡 **Implémentation prête à l'emploi :** Voir [Recette 59 : Téléversement par Morceaux (Chunking 1 Mo) avec Reprise Automatique 3G/4G](DOC_RECETTES_COPIER_COLLER.md#-recette-59--téléversement-par-morceaux-chunking-1-mo-avec-reprise-automatique-3g4g).
+
+
