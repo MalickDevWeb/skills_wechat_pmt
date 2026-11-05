@@ -393,5 +393,31 @@
       "  }",
       "}));"
     ]
+  },
+  "PMT: Screen Reader Accessibility Announcement (VoiceOver/TalkBack)": {
+    "scope": "javascript",
+    "prefix": "pmt-announce-a11y",
+    "description": "Vocalise immédiatement une notification ou un changement d'état via VoiceOver / TalkBack",
+    "body": [
+      "import { announceToScreenReader } from '../../utils/helpers/accessibilityHelper';",
+      "",
+      "announceToScreenReader('${1:Action confirmée avec succès.}');"
+    ]
+  },
+  "PMT: Dynamic Server-Driven Form Engine": {
+    "scope": "javascript",
+    "prefix": "pmt-dynamic-form",
+    "description": "Validation et soumission d'un formulaire dynamique piloté par schéma JSON serveur",
+    "body": [
+      "import { validateFormSchema } from '../../utils/helpers/dynamicFormEngine';",
+      "",
+      "const { isValid, errors, cleanData } = validateFormSchema(this.data.${1:fieldsSchema}, this.data.${2:formValues});",
+      "if (!isValid) {",
+      "  this.setData({ formErrors: errors });",
+      "  wx.showToast({ title: Object.values(errors)[0], icon: 'none' });",
+      "  return;",
+      "}",
+      "// Traitement des données validées : cleanData"
+    ]
   }
 }

@@ -182,3 +182,17 @@ page {
    });
    ```
 
+---
+
+## ♿ 5. Accessibilité Inclusive & Lecteurs d'Écran (VoiceOver / TalkBack)
+
+Pour garantir la conformité RSE d'Orange / Sonatel et permettre aux personnes malvoyantes d'utiliser le mini-programme :
+
+1. **Étiquetage des Boutons Icônes (`aria-label`)** : Tout élément cliquable sans texte explicite doit posséder un `aria-role="button"` et un `aria-label="Action explicite"`.
+2. **Neutralisation des Décorations (`aria-hidden="true"`)** : Toute icône purement visuelle, flèche d'ornement ou séparateur doit être masqué avec `aria-hidden="true"` pour ne pas surcharger la lecture audio.
+3. **Annonces Vocales Asynchrones (`wx.accessibilityAnnounce`)** : Après un paiement ou une erreur, déclencher une vocalisation explicite pour que l'utilisateur non-voyant soit immédiatement informé.
+4. **Cibles Tactiles Ergonomiques Minimales** : `min-width: 88rpx; min-height: 88rpx;` (norme 44×44 points).
+
+> 💡 **Guide complet d'implémentation :** Voir [Recette 64 : Accessibilité Inclusive & Lecteurs d'Écran](DOC_RECETTES_COPIER_COLLER.md#-recette-64--accessibilité-inclusive--lecteurs-décran-voiceover--talkback--aria-).
+
+

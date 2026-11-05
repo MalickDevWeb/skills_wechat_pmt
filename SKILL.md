@@ -91,6 +91,12 @@ pages/ma-page/
 - Dictionnaire régional officiel Sonatel Max It (Wolof, Français, Anglais) et bascule réactive 1 tap via `Bus.emit('LANG_CHANGED')`.
 - *Référentiel détaillé : [docs/DOC_INTERNATIONALISATION_I18N_WOLOF.md](docs/DOC_INTERNATIONALISATION_I18N_WOLOF.md).*
 
+### 1.10 Accessibilité Inclusive VoiceOver / TalkBack (`@DARK-MODE`)
+- Déclarer systématiquement `aria-role="button"` et `aria-label="description explicite"` sur les boutons icônes et actions interactives.
+- Masquer impérativement les éléments purement décoratifs (flèches, séparateurs, arrière-plans) avec `aria-hidden="true"`.
+- Déclencher `announceToScreenReader(message)` via `wx.accessibilityAnnounce` lors des validations ou erreurs asynchrones.
+- Cibles tactiles ergonomiques minimales : `88rpx × 88rpx` (norme WCAG AA / 44×44 points).
+
 ---
 
 ## 🧠 PÔLE 2 : LOGIQUE MÉTIER, NAVIGATION, STOCKAGE & BEHAVIORS
@@ -160,6 +166,10 @@ Exécuter impérativement dans cet ordre :
 - Ne jamais utiliser `wx.connectSocket` brut sans orchestrateur : les proxies coupent les connexions au bout de 60s et les micro-coupures 4G font perdre des messages.
 - Utiliser `webSocketService` avec détection de vie Heartbeat Ping/Pong (30s), reconnexion exponentielle progressive (1s à 16s) et file d'attente sortante tampon (Outbox buffer).
 
+### 3.7 Formulaires Dynamiques Pilotés par Schéma JSON (Server-Driven UI)
+- Adapter et orchestrer les formulaires complexes (KYC, passagers, options) sans recompiler le mini-programme via `validateFormSchema` (`dynamicFormEngine.js`).
+- Prise en charge universelle des types `text`, `phone`, `number`, `date`, `select`, `switch` avec contrôle déclaratif des regex et bornes.
+
 ---
 
 ## ⚙️ PÔLE 4 : INTÉGRATION HÔTE MAX IT, PAIEMENT & SÉCURITÉ
@@ -206,7 +216,7 @@ Exécuter impérativement dans cet ordre :
 - **`node scripts/create-component.js <dossier> [--ux]`** : Échafaude les 4 fichiers d'un composant (`Component()`, lifetimes strictes, `triggerEvent`, BEM, Safe Areas) en mode présentation ou UX skeleton shimmer.
 - **`node scripts/create-api.js <domaine>`** : Échafaude le service API (`utils/apis/<domaine>.api.js`) et son mappeur `json-sculpt` (`utils/mappers/<domaine>.js`) avec endpoints, méthodes CRUD et gestion d'erreurs typées.
 - **`node scripts/test-page-harness.js` (`npm run test:harness`)** : Émulateur headless en mémoire pour tester les transitions de machine à états `uiState` (loading -> success -> error) et le nettoyage mémoire de `onUnload()` sans ouvrir WeChat DevTools. Voir [docs/DOC_TESTING_HEADLESS_PAGE_ET_UISTATE.md](docs/DOC_TESTING_HEADLESS_PAGE_ET_UISTATE.md).
-- **Snippets IDE VSCode & Cursor** : Auto-complétion instantanée (`.vscode/wechat-pmt.code-snippets`) pour insérer en 1 clic les templates `pmt-page-js`, `pmt-om-pill`, `pmt-i18n-wxs`, `pmt-outbox`, `pmt-throttle-scroll`, `pmt-chunk-upload`, `pmt-secure-storage`, `pmt-websocket`, `pmt-optimistic-action` et `pmt-subpackage-guard`.
+- **Snippets IDE VSCode & Cursor** : Auto-complétion instantanée (`.vscode/wechat-pmt.code-snippets`) pour insérer en 1 clic les templates `pmt-page-js`, `pmt-om-pill`, `pmt-i18n-wxs`, `pmt-outbox`, `pmt-throttle-scroll`, `pmt-chunk-upload`, `pmt-secure-storage`, `pmt-websocket`, `pmt-optimistic-action`, `pmt-subpackage-guard`, `pmt-announce-a11y` et `pmt-dynamic-form`.
 - **Showcase Playground (`playground/`)** : Mini-programme autonome prêt à être importé dans WeChat DevTools (`touristappid`) pour tester en direct tous les composants ODS Sonatel, Solde OM, i18n Wolof et Outbox hors-ligne.
 - **`npm test` / `npm run doctor`** : Automatise l'audit de conformité (zéro BOM UTF-8, syntaxe JSON, WXSS, déclencheurs IA, générateurs, bundle doctor, headless test harness) exécuté par la CI GitHub Actions.
 

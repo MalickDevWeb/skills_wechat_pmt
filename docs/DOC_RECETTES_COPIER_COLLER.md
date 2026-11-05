@@ -72,6 +72,8 @@ Chaque recette est une **solution complète et autonome**. Vous trouvez votre si
 | ⚡ [Recette 61](#-recette-61--gestionnaire-websocket-résilient-avec-heartbeat-pingpong--reconnexion-auto) | Flux bidirectionnel temps réel avec heartbeat, reconnexion progressive et outbox | Avancée |
 | 🎯 [Recette 62](#-recette-62--action-optimiste-transactionnelle-avec-rollback-automatique-sur-erreur-serveur) | Mise à jour UI instantanée 0ms avec annulation propre si l'API backend échoue | Moyenne |
 | 🛡️ [Recette 63](#-recette-63--bootstrapper-de-sous-paquet-indépendant-pour-deep-links--qr-codes) | Sécurisation de l'arrivée directe sur un sous-paquet sans attendre l'accueil | Facile |
+| ♿ [Recette 64](#-recette-64--accessibilité-inclusive--lecteurs-décran-voiceover--talkback--aria-) | Rendre le mini-programme 100% accessible aux personnes malvoyantes (VoiceOver / TalkBack) | Facile |
+| 📝 [Recette 65](#-recette-65--formulaires-dynamiques-pilotés-par-schéma-json-server-driven-form-builder) | Moteur de formulaires dynamiques généré par JSON backend sans recompiler | Avancée |
 
 ---
 
@@ -4773,6 +4775,507 @@ Page(createSubpackagePage({
   }
 }));
 ```
+
+---
+
+## ♿ Recette 64 : Accessibilité Inclusive & Lecteurs d'Écran (VoiceOver / TalkBack / aria-*)
+
+**Quand l'utiliser ?** Dès qu'un mini-programme s'adresse au grand public (particulièrement pour les démarches publiques, les transports, l'achat de billets et les paiements Sonatel / Orange Money) pour garantir que les **personnes malvoyantes ou aveugles** puissent utiliser l'application de façon fluide avec les lecteurs d'écran natifs (Apple VoiceOver sur iOS et Google TalkBack sur Android).
+
+**Pourquoi sans accessibilité l'application est inutilisable pour un malvoyant ?**
+1. **Les boutons avec icônes seuls** : Un bouton avec une icône SVG ou PNG (comme une corbeille ou un bouton retour) est lu par VoiceOver comme : *"Bouton"* ou *"Image sans description"*. L'utilisateur ne sait pas sur quoi il clique.
+2. **La pollution des icônes décoratives** : Les flèches de séparation `->`, les fonds décoratifs et les petits badges d'ornement sont tous lus un par un, ce qui ralentit et fatigue l'utilisateur.
+3. **Le silence lors des actions asynchrones** : Si l'utilisateur clique sur "Valider" et qu'un message d'erreur ou de succès apparaît, le lecteur d'écran ne le sait pas et ne le lit pas, laissant l'utilisateur dans l'ignorance totale du résultat de son paiement.
+
+**La Solution Industrielle :**
+1. Utilisation stricte des attributs WeChat : `aria-role`, `aria-label`, `aria-hidden="true"`, `aria-checked`, `aria-disabled`.
+2. Déclenchement automatique d'annonces vocales dynamiques via `wx.accessibilityAnnounce()` lors des changements d'état (succès, erreur, chargement).
+3. Respect des dimensions ergonomiques minimales (zone tactile de `88rpx × 88rpx`).
+
+### 1. Le Module d'Accessibilité Vocale (`utils/helpers/accessibilityHelper.js`)
+```javascript
+/**
+ * ♿ Helper d'Accessibilité Inclusive (VoiceOver & TalkBack)
+ * Conforme aux standards WCAG 2.1 AA et API d'accessibilité WeChat
+ */
+
+/**
+ * Force la vocalisation immédiate d'un message par le lecteur d'écran
+ * @param {string} message Texte à lire à voix haute par VoiceOver / TalkBack
+ */
+export function announceToScreenReader(message) {
+  if (!message || typeof message !== 'string') return;
+
+  try {
+    if (typeof wx.accessibilityAnnounce === 'function') {
+      wx.accessibilityAnnounce({
+        text: message
+      });
+      console.log('[Accessibility] Annonce vocale émise :', message);
+    }
+  } catch (err) {
+    console.warn('[Accessibility] Non supporté sur ce terminal :', err);
+  }
+}
+```
+
+### 2. Les Bonnes Pratiques en WXML (Copier-Coller)
+```xml
+<!-- 1. Bouton icône avec description claire pour le lecteur d'écran -->
+<view 
+  class="btn-icon" 
+  bindtap="onCloseModal"
+  aria-role="button" 
+  aria-label="Fermer la boîte de dialogue">
+  <image src="/assets/icons/close.svg" class="btn-icon__img" aria-hidden="true" />
+</view>
+
+<!-- 2. Masquage obligatoire des éléments purement décoratifs -->
+<view class="ticket-separator" aria-hidden="true">
+  <view class="ticket-separator__dash"></view>
+</view>
+
+<!-- 3. Case à cocher accessible (Checkbox / Radio) -->
+<view 
+  class="checkbox-item" 
+  bindtap="onToggleInsurance"
+  aria-role="checkbox" 
+  aria-checked="{{ hasInsurance }}" 
+  aria-label="Assurance voyage multirisque, 2 500 Francs CFA">
+  <view class="checkbox-box {{ hasInsurance ? 'checkbox-box--checked' : '' }}" aria-hidden="true"></view>
+  <text class="checkbox-label" aria-hidden="true">Assurance voyage (+2 500 FCFA)</text>
+</view>
+
+<!-- 4. Onglets de sélection (Tabs) avec rôle et sélection -->
+<view class="tabs-container" aria-role="tablist">
+  <view 
+    wx:for="{{ tabList }}" 
+    wx:key="id"
+    class="tab-item {{ currentTab === index ? 'tab-item--active' : '' }}"
+    bindtap="onSelectTab"
+    data-index="{{ index }}"
+    aria-role="tab"
+    aria-selected="{{ currentTab === index }}"
+    aria-label="{{ item.title }}, onglet {{ index + 1 }} sur {{ tabList.length }}">
+    <text aria-hidden="true">{{ item.title }}</text>
+  </view>
+</view>
+
+<!-- 5. Carte de résultat de vol / trajet vocalement structurée -->
+<view 
+  class="flight-card" 
+  bindtap="onSelectFlight" 
+  aria-role="button"
+  aria-label="Vol {{ flight.airline }} de {{ flight.origin }} vers {{ flight.destination }}. Départ à {{ flight.departureTime }}. Prix : {{ flight.priceFormatted }} FCFA. Appuyez deux fois pour sélectionner.">
+  <!-- Tout le contenu interne est masqué au lecteur car résumé de manière limpide ci-dessus -->
+  <view class="flight-card__inner" aria-hidden="true">
+    <text class="flight-card__route">{{ flight.origin }} ➔ {{ flight.destination }}</text>
+    <text class="flight-card__time">{{ flight.departureTime }}</text>
+    <text class="flight-card__price">{{ flight.priceFormatted }} FCFA</text>
+  </view>
+</view>
+```
+
+### 3. Règles WXSS pour Cibles Tactiles & Contrastes
+```css
+/* Zone tactile minimale ergonomique (44x44 points = 88x88rpx) */
+.btn-icon,
+.checkbox-item,
+.touch-target {
+  min-width: 88rpx;
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Anneau de focus visuel lors de la navigation au clavier / switch-control */
+.btn-icon:focus-visible,
+.touch-target:focus-visible {
+  outline: 4rpx solid #FD6602;
+  outline-offset: 4rpx;
+}
+```
+
+### 4. Utilisation dans le Contrôleur JS (`pages/checkout/index.js`)
+```javascript
+import { announceToScreenReader } from '../../utils/helpers/accessibilityHelper';
+
+Page({
+  async onConfirmPayment() {
+    this.setData({ isPaying: true });
+    announceToScreenReader('Paiement en cours de validation. Veuillez patienter.');
+
+    try {
+      // Simulation appel paiement
+      await this.processPayment();
+
+      this.setData({ isPaying: false, isSuccess: true });
+      // Annonce immédiate du résultat au malvoyant
+      announceToScreenReader('Paiement confirmé avec succès ! Votre billet a été émis.');
+    } catch (err) {
+      this.setData({ isPaying: false });
+      announceToScreenReader(`Échec de la transaction : ${err.message || 'Erreur réseau'}. Veuillez réessayer.`);
+    }
+  }
+});
+```
+
+---
+
+## 📝 Recette 65 : Formulaires Dynamiques Pilotés par Schéma JSON (Server-Driven Form Builder)
+
+**Quand l'utiliser ?** Dès qu'un mini-programme doit afficher des formulaires dont les champs, les règles de validation ou les libellés peuvent **évoluer sans recompilation du code** :
+- Informations obligatoires des voyageurs (ex: passeport, visa, numéro d'urgence selon la destination).
+- Déclarations KYC pour un marchand ou un transfert Orange Money.
+- Formulaire d'état des lieux ou de signalement de panne.
+
+**Pourquoi coder les formulaires en dur est une faiblesse ?**
+Dès qu'un pays ajoute un champ obligatoire (ex: "Numéro de carte consulaire") ou qu'un opérateur change une règle de validation, les développeurs doivent modifier le WXML, tester sur iOS et Android, et soumettre une nouvelle version à l'équipe de validation. Avec un formulaire dynamique, le serveur renvoie le JSON à jour et le mini-programme l'affiche instantanément.
+
+### 1. Le Moteur de Formulaire Dynamique (`utils/helpers/dynamicFormEngine.js`)
+```javascript
+/**
+ * 📝 Moteur de Formulaires Dynamiques (Server-Driven UI)
+ * Valide et orchestre les champs générés par un schéma JSON backend.
+ */
+
+/**
+ * Valide un champ individuel selon ses règles déclaratives
+ * @param {Object} field Définition du champ
+ * @param {any} value Valeur saisie par l'utilisateur
+ * @returns {string|null} Message d'erreur ou null si valide
+ */
+export function validateField(field, value) {
+  const strVal = value !== undefined && value !== null ? String(value).trim() : '';
+
+  // 1. Règle Obligatoire (Required)
+  if (field.required) {
+    if (field.type === 'switch') {
+      if (!value) return field.errorRequired || `Vous devez accepter : ${field.label}`;
+    } else if (!strVal) {
+      return field.errorRequired || `Le champ « ${field.label} » est obligatoire.`;
+    }
+  }
+
+  if (!strVal) return null; // Pas d'autre validation si vide et non-obligatoire
+
+  // 2. Longueur minimale / maximale
+  if (field.minLength && strVal.length < field.minLength) {
+    return `${field.label} doit contenir au moins ${field.minLength} caractères.`;
+  }
+  if (field.maxLength && strVal.length > field.maxLength) {
+    return `${field.label} ne doit pas dépasser ${field.maxLength} caractères.`;
+  }
+
+  // 3. Validation par Regex (Format)
+  if (field.pattern) {
+    const regex = new RegExp(field.pattern);
+    if (!regex.test(strVal)) {
+      return field.errorPattern || `Le format de « ${field.label} » est invalide.`;
+    }
+  }
+
+  // 4. Bornes numériques (pour type number)
+  if (field.type === 'number') {
+    const num = Number(strVal);
+    if (isNaN(num)) return `${field.label} doit être un nombre valide.`;
+    if (field.min !== undefined && num < field.min) return `${field.label} doit être au minimum ${field.min}.`;
+    if (field.max !== undefined && num > field.max) return `${field.label} doit être au maximum ${field.max}.`;
+  }
+
+  return null;
+}
+
+/**
+ * Valide l'intégralité d'un formulaire dynamique
+ * @param {Array<Object>} schema Liste des champs envoyée par le serveur
+ * @param {Object} values Dictionnaire des valeurs courantes
+ * @returns {{ isValid: boolean, errors: Object, cleanData: Object }}
+ */
+export function validateFormSchema(schema = [], values = {}) {
+  const errors = {};
+  const cleanData = {};
+  let isValid = true;
+
+  schema.forEach((field) => {
+    const val = values[field.name];
+    const err = validateField(field, val);
+    if (err) {
+      errors[field.name] = err;
+      isValid = false;
+    } else {
+      cleanData[field.name] = val;
+    }
+  });
+
+  return { isValid, errors, cleanData };
+}
+```
+
+### 2. Schéma JSON Retourné par le Serveur (`schema.json`)
+```json
+[
+  {
+    "name": "fullName",
+    "type": "text",
+    "label": "Nom et Prénom",
+    "placeholder": "Ex: Amadou Diallo",
+    "required": true,
+    "minLength": 3
+  },
+  {
+    "name": "phoneNumber",
+    "type": "phone",
+    "label": "Numéro de téléphone",
+    "placeholder": "77 123 45 67",
+    "required": true,
+    "pattern": "^(7[05678])[0-9]{7}$",
+    "errorPattern": "Numéro sénégalais invalide (ex: 771234567)"
+  },
+  {
+    "name": "birthDate",
+    "type": "date",
+    "label": "Date de Naissance",
+    "required": true
+  },
+  {
+    "name": "documentType",
+    "type": "select",
+    "label": "Type de Pièce d'Identité",
+    "options": ["CNI CEDEAO", "Passeport", "Permis de conduire"],
+    "required": true
+  },
+  {
+    "name": "acceptTerms",
+    "type": "switch",
+    "label": "J'atteste sur l'honneur l'exactitude des informations fournies",
+    "required": true
+  }
+]
+```
+
+### 3. Contrôleur de Page (`pages/dynamic-kyc/index.js`)
+```javascript
+import { validateFormSchema, validateField } from '../../utils/helpers/dynamicFormEngine';
+
+Page({
+  data: {
+    fieldsSchema: [],
+    formValues: {},
+    formErrors: {},
+    isSubmitting: false
+  },
+
+  async onLoad() {
+    // 1. Récupération du schéma dynamique depuis le backend
+    const res = await wx.request({ url: 'https://api.sonatel.sn/v1/kyc/fields' });
+    const schema = res.data || [];
+
+    // 2. Initialisation des valeurs par défaut
+    const initialValues = {};
+    schema.forEach((f) => {
+      initialValues[f.name] = f.defaultValue !== undefined ? f.defaultValue : (f.type === 'switch' ? false : '');
+    });
+
+    this.setData({
+      fieldsSchema: schema,
+      formValues: initialValues
+    });
+  },
+
+  onInputChange(e) {
+    const { name } = e.currentTarget.dataset;
+    const value = e.detail.value;
+
+    this.setData({
+      [`formValues.${name}`]: value,
+      [`formErrors.${name}`]: '' // Réinitialise l'erreur à la saisie
+    });
+  },
+
+  onSelectChange(e) {
+    const { name } = e.currentTarget.dataset;
+    const index = Number(e.detail.value);
+    const field = this.data.fieldsSchema.find(f => f.name === name);
+    const selectedOption = field.options[index];
+
+    this.setData({
+      [`formValues.${name}`]: selectedOption,
+      [`formErrors.${name}`]: ''
+    });
+  },
+
+  onSwitchChange(e) {
+    const { name } = e.currentTarget.dataset;
+    this.setData({
+      [`formValues.${name}`]: e.detail.value,
+      [`formErrors.${name}`]: ''
+    });
+  },
+
+  onSubmitForm() {
+    const check = validateFormSchema(this.data.fieldsSchema, this.data.formValues);
+
+    if (!check.isValid) {
+      this.setData({ formErrors: check.errors });
+      // Toast sur la première erreur rencontrée
+      const firstError = Object.values(check.errors)[0];
+      wx.showToast({ title: firstError, icon: 'none', duration: 3000 });
+      return;
+    }
+
+    this.setData({ isSubmitting: true });
+    console.log('[DynamicForm] Données certifiées prêtes pour envoi :', check.cleanData);
+
+    wx.showToast({ title: 'Formulaire validé !', icon: 'success' });
+  }
+});
+```
+
+### 4. Vue WXML Adaptative (`pages/dynamic-kyc/index.wxml`)
+```xml
+<view class="form-container">
+  <block wx:for="{{ fieldsSchema }}" wx:key="name">
+    <view class="form-field">
+      <view class="form-label-row">
+        <text class="form-label">{{ item.label }}</text>
+        <text wx:if="{{ item.required }}" class="form-required" aria-hidden="true">*</text>
+      </view>
+
+      <!-- Champ Texte / Téléphone / Nombre -->
+      <block wx:if="{{ item.type === 'text' || item.type === 'phone' || item.type === 'number' }}">
+        <input 
+          class="form-input {{ formErrors[item.name] ? 'form-input--error' : '' }}"
+          type="{{ item.type === 'phone' || item.type === 'number' ? 'number' : 'text' }}"
+          placeholder="{{ item.placeholder || '' }}"
+          value="{{ formValues[item.name] }}"
+          data-name="{{ item.name }}"
+          bindinput="onInputChange"
+          aria-label="{{ item.label }}"
+        />
+      </block>
+
+      <!-- Champ Date -->
+      <block wx:elif="{{ item.type === 'date' }}">
+        <picker mode="date" data-name="{{ item.name }}" bindchange="onInputChange">
+          <view class="form-picker {{ formErrors[item.name] ? 'form-input--error' : '' }}">
+            {{ formValues[item.name] || item.placeholder || 'Sélectionner une date' }}
+          </view>
+        </picker>
+      </block>
+
+      <!-- Champ Sélecteur (Options) -->
+      <block wx:elif="{{ item.type === 'select' }}">
+        <picker mode="selector" range="{{ item.options }}" data-name="{{ item.name }}" bindchange="onSelectChange">
+          <view class="form-picker {{ formErrors[item.name] ? 'form-input--error' : '' }}">
+            {{ formValues[item.name] || 'Choisir une option...' }}
+          </view>
+        </picker>
+      </block>
+
+      <!-- Champ Commutateur (Switch / Consentement) -->
+      <block wx:elif="{{ item.type === 'switch' }}">
+        <view class="form-switch-row">
+          <switch checked="{{ formValues[item.name] }}" data-name="{{ item.name }}" bindchange="onSwitchChange" color="#FD6602" />
+          <text class="form-switch-desc">{{ item.label }}</text>
+        </view>
+      </block>
+
+      <!-- Message d'erreur contextualisé sous le champ -->
+      <text wx:if="{{ formErrors[item.name] }}" class="form-error-text">{{ formErrors[item.name] }}</text>
+    </view>
+  </block>
+
+  <button class="form-submit-btn" bindtap="onSubmitForm" disabled="{{ isSubmitting }}">
+    {{ isSubmitting ? 'Validation en cours...' : 'Soumettre le dossier' }}
+  </button>
+</view>
+```
+
+### 5. Styles WXSS Sémantiques (`pages/dynamic-kyc/index.wxss`)
+```css
+.form-container {
+  padding: 32rpx;
+  background: #F8F9FA;
+  min-height: 100vh;
+}
+
+.form-field {
+  margin-bottom: 28rpx;
+  background: #FFFFFF;
+  padding: 24rpx;
+  border-radius: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+}
+
+.form-label-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.form-label {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #1D2939;
+}
+
+.form-required {
+  color: #D92D20;
+  margin-left: 6rpx;
+}
+
+.form-input,
+.form-picker {
+  height: 84rpx;
+  border: 2rpx solid #D0D5DD;
+  border-radius: 12rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  color: #101828;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.form-input--error {
+  border-color: #FDA29B;
+  background-color: #FEF3F2;
+}
+
+.form-switch-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.form-switch-desc {
+  font-size: 24rpx;
+  color: #475467;
+  flex: 1;
+}
+
+.form-error-text {
+  display: block;
+  font-size: 22rpx;
+  color: #D92D20;
+  margin-top: 8rpx;
+}
+
+.form-submit-btn {
+  margin-top: 40rpx;
+  background: #FD6602;
+  color: #FFFFFF;
+  font-weight: 700;
+  border-radius: 14rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+```
+
 
 
 
