@@ -419,5 +419,46 @@
       "}",
       "// Traitement des données validées : cleanData"
     ]
+  },
+  "PMT: Wait For Next Paint (Avoid UI Freeze)": {
+    "scope": "javascript",
+    "prefix": "pmt-wait-paint",
+    "description": "Garantit que le loader/skeleton est physiquement peint avant d'exécuter une tâche lourde",
+    "body": [
+      "import { waitForNextPaint } from '../../utils/helpers/pageHelper';",
+      "",
+      "// Force le rendu visuel avant le traitement lourd",
+      "await waitForNextPaint(this, { ${1:isLoading}: true });",
+      "if (this.isDisposed) return;"
+    ]
+  },
+  "PMT: Multi-Step Stepper Component": {
+    "scope": "wxml,html",
+    "prefix": "pmt-stepper",
+    "description": "Indicateur d'étapes horizontal pour tunnel de réservation et formulaires multi-écrans",
+    "body": [
+      "<app-stepper",
+      "  steps=\"{{ ${1:steps} }}\"",
+      "  current=\"{{ ${2:currentStep} }}\"",
+      "  variant=\"${3:default}\"",
+      "  clickable=\"{{ ${4:false} }}\"",
+      "  bind:change=\"${5:onStepChange}\"",
+      "/>"
+    ]
+  },
+  "PMT: Tri-State Post-Payment Resolver (Anti Double Debit)": {
+    "scope": "javascript",
+    "prefix": "pmt-tri-state",
+    "description": "Machine d'état post-paiement 3 statuts (confirmed, failed, unknown) avec bouclier anti-double débit",
+    "body": [
+      "if (outcome.status === 'confirmed') {",
+      "  wx.redirectTo({ url: '/pages/confirmed/index?ref=' + outcome.bookingReference });",
+      "} else if (outcome.status === 'failed') {",
+      "  this.setData({ processingStatus: 'failed', errorMessage: outcome.errorMessage });",
+      "} else {",
+      "  // Statut incertain (timeout réseau) : ne jamais redemander de payer immédiatement !",
+      "  this.setData({ processingStatus: 'unknown', canResumeCheck: true });",
+      "}"
+    ]
   }
 }

@@ -74,6 +74,9 @@ Chaque recette est une **solution complète et autonome**. Vous trouvez votre si
 | 🛡️ [Recette 63](#-recette-63--bootstrapper-de-sous-paquet-indépendant-pour-deep-links--qr-codes) | Sécurisation de l'arrivée directe sur un sous-paquet sans attendre l'accueil | Facile |
 | ♿ [Recette 64](#-recette-64--accessibilité-inclusive--lecteurs-décran-voiceover--talkback--aria-) | Rendre le mini-programme 100% accessible aux personnes malvoyantes (VoiceOver / TalkBack) | Facile |
 | 📝 [Recette 65](#-recette-65--formulaires-dynamiques-pilotés-par-schéma-json-server-driven-form-builder) | Moteur de formulaires dynamiques généré par JSON backend sans recompiler | Avancée |
+| 🎨 [Recette 66](#-recette-66--rendu-garanti-avant-traitement-lourd-waitfornextpaint--garde-anti-zombie-isdisposed) | Forcer l'affichage du loader avant les tâches lourdes et neutraliser les fuites | Moyenne |
+| 🔢 [Recette 67](#-recette-67--indicateur-détapes-horizontal-pour-entonnoirs-multi-écrans-app-stepper) | Stepper responsive d'avancement pour tunnels de réservation et formulaires | Moyenne |
+| ⚖️ [Recette 68](#-recette-68--machine-de-traitement-post-paiement-tri-statut-confirmed--failed--unknown) | Résolution post-paiement Orange Money 3 états (confirmé, rejeté, incertain) | Critique |
 
 ---
 
@@ -5275,6 +5278,406 @@ Page({
   justify-content: center;
 }
 ```
+
+---
+
+## 🎨 Recette 66 : Rendu Garanti avant Traitement Lourd (`waitForNextPaint`) & Garde Anti-Zombie (`isDisposed`)
+
+**Quand l'utiliser ?**
+1. Dès qu'une page doit afficher un loader de vol ou un skeleton **avant** de lancer une tâche JavaScript lourde (tri de 300 vols, calcul de tarifs, parsing complexe) ou un appel réseau.
+2. Pour sécuriser 100 % des rappels asynchrones (`async/await`, promesses `BackendAPI`) contre les fuites de mémoire et les erreurs de mise à jour sur des pages fermées (*Zombie Updates*).
+
+**Pourquoi le code classique `this.setData({ isLoading: true })` freeze l'écran ?**
+Sous WeChat, le moteur fonctionne avec une architecture à deux threads :
+* **Thread Logique (JavaScript) :** Exécute votre code JS.
+* **Thread Rendu (WebView) :** Dessine les composants à l'écran.
+Si vous écrivez :
+```javascript
+this.setData({ isLoading: true });
+heavyComputation(); // Le thread JS reste occupé pendant 600 ms !
+```
+Le thread JavaScript est saturé par `heavyComputation()`. Le message de mise à jour pour le loader reste bloqué dans la file d'attente du pont IPC. **Le loader ne s'affiche jamais**, et l'utilisateur a l'impression que son téléphone a planté pendant une demi-seconde !
+
+**La Solution `waitForNextPaint` :**
+Elle combine le callback de `setData` avec `wx.nextTick` pour céder la main à la WebView et garantir que le loader est physiquement dessiné sur la dalle de l'écran avant que la tâche lourde ne commence.
+
+### 1. Le Helper de Rendu Garanti (`utils/helpers/pageHelper.js`)
+```javascript
+/**
+ * 🎨 waitForNextPaint — Garantit que le rendu visuel (loader / skeleton) est physiquement
+ * peint sur l'écran avant qu'une tâche JS lourde ou une transition ne s'exécute.
+ * @param {Object} page - Instance de la page (this)
+ * @param {Object} [state={}] - État visuel à injecter immédiatement
+ * @returns {Promise<void>}
+ */
+export const waitForNextPaint = (page, state = {}) =>
+  new Promise((resolve) => {
+    const afterSetData = () => {
+      if (typeof wx !== 'undefined' && typeof wx.nextTick === 'function') {
+        wx.nextTick(resolve);
+        return;
+      }
+      setTimeout(resolve, 0);
+    };
+
+    if (page && typeof page.setData === 'function') {
+      page.setData(state, afterSetData);
+      return;
+    }
+
+    afterSetData();
+  });
+```
+
+### 2. Le Contrôleur de Page avec Garde Anti-Zombie (`isDisposed`)
+```javascript
+import { waitForNextPaint } from '../../utils/helpers/pageHelper';
+
+Page({
+  data: {
+    isLoading: true,
+    flightResults: []
+  },
+
+  async onLoad(options) {
+    // 1. Initialise le flag de vie de l'instance
+    this.isDisposed = false;
+
+    // 2. Garantit que le loader de vol est peint sur l'écran
+    await waitForNextPaint(this, { isLoading: true });
+
+    // 3. Clause de garde : si l'utilisateur est revenu en arrière pendant le paint, on s'arrête !
+    if (this.isDisposed) return;
+
+    try {
+      // Tâche asynchrone / appel API
+      const results = await this.fetchFlightsData(options);
+
+      // 4. Protection Anti-Zombie : ne jamais faire setData si la page a été quittée
+      if (this.isDisposed) return;
+
+      this.setData({
+        flightResults: results,
+        isLoading: false
+      });
+    } catch (err) {
+      if (this.isDisposed) return;
+      this.setData({ isLoading: false });
+      wx.showToast({ title: 'Erreur de chargement', icon: 'none' });
+    }
+  },
+
+  onUnload() {
+    // 5. Désactive immédiatement l'instance : neutralise toutes les promesses en cours
+    this.isDisposed = true;
+  }
+});
+```
+
+---
+
+## 🔢 Recette 67 : Indicateur d'Étapes Horizontal pour Entonnoirs Multi-Écrans (`app-stepper`)
+
+**Quand l'utiliser ?** Dans les parcours en plusieurs étapes (tunnels de réservation de vol/bus, formulaires KYC en 3 étapes, checkout de paiement) pour donner à l'utilisateur un repère visuel clair sur sa progression dans l'entonnoir.
+
+**Ce qu'apporte le composant :**
+* Affichage horizontal compact adapté aux écrans de smartphones.
+* États visuels automatiques : **terminé** (coche validée), **actif** (surbrillance Orange `#FD6602`), et **en attente** (gris neutre).
+* Barres de liaison visuelles continues ou en pointillés.
+* Mode interactif optionnel (`clickable: true`) pour permettre de revenir aux étapes précédentes.
+* Trois variantes graphiques : `'default'` (numéros dans cercles), `'compact'` (petits points discrets), `'pill'` (badges horizontaux).
+
+### 1. Contrôleur du Composant Stepper (`components/ui/stepper/index.js`)
+```javascript
+Component({
+  properties: {
+    steps: {
+      type: Array,
+      value: [] // Ex: [{ label: 'Vols' }, { label: 'Voyageurs' }, { label: 'Sièges' }, { label: 'Paiement' }]
+    },
+    current: {
+      type: Number,
+      value: 0
+    },
+    showLines: {
+      type: Boolean,
+      value: true
+    },
+    clickable: {
+      type: Boolean,
+      value: false
+    },
+    variant: {
+      type: String,
+      value: 'default' // 'default' | 'compact' | 'pill'
+    }
+  },
+
+  methods: {
+    onTapStep(e) {
+      if (!this.properties.clickable) return;
+      const index = Number(e.currentTarget.dataset.index);
+      if (index <= this.properties.current) {
+        this.triggerEvent('change', { index });
+      }
+    }
+  }
+});
+```
+
+### 2. Vue WXML du Stepper (`components/ui/stepper/index.wxml`)
+```xml
+<view class="stepper stepper--{{ variant }}">
+  <block wx:for="{{ steps }}" wx:key="index">
+    <!-- Barre de liaison entre les étapes -->
+    <view 
+      wx:if="{{ index > 0 && showLines }}" 
+      class="stepper__line {{ index <= current ? 'stepper__line--completed' : '' }}"
+      aria-hidden="true">
+    </view>
+
+    <!-- Étape individuelle -->
+    <view 
+      class="stepper__step {{ index < current ? 'stepper__step--completed' : (index === current ? 'stepper__step--active' : 'stepper__step--pending') }}"
+      bindtap="onTapStep"
+      data-index="{{ index }}"
+      aria-role="button"
+      aria-label="Étape {{ index + 1 }} sur {{ steps.length }}: {{ item.label }}, {{ index < current ? 'terminée' : (index === current ? 'en cours' : 'à venir') }}">
+      
+      <!-- Pastille numéro ou coche -->
+      <view class="stepper__badge" aria-hidden="true">
+        <text wx:if="{{ index < current }}" class="stepper__check">✓</text>
+        <text wx:else class="stepper__num">{{ index + 1 }}</text>
+      </view>
+
+      <!-- Libellé de l'étape -->
+      <text class="stepper__label" aria-hidden="true">{{ item.label }}</text>
+    </view>
+  </block>
+</view>
+```
+
+### 3. Styles WXSS Sémantiques (`components/ui/stepper/index.wxss`)
+```css
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 32rpx;
+  background: #FFFFFF;
+  position: relative;
+}
+
+.stepper__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  flex: 1;
+}
+
+.stepper__line {
+  flex: 1;
+  height: 4rpx;
+  background: #EAECF0;
+  margin: 0 -16rpx 36rpx -16rpx;
+  z-index: 1;
+  transition: background 0.3s ease;
+}
+
+.stepper__line--completed {
+  background: #FD6602;
+}
+
+.stepper__badge {
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: 700;
+  transition: all 0.3s ease;
+}
+
+/* État : En cours */
+.stepper__step--active .stepper__badge {
+  background: #FD6602;
+  color: #FFFFFF;
+  box-shadow: 0 0 0 8rpx rgba(253, 102, 2, 0.2);
+}
+
+.stepper__step--active .stepper__label {
+  color: #FD6602;
+  font-weight: 700;
+}
+
+/* État : Validé */
+.stepper__step--completed .stepper__badge {
+  background: #12B76A;
+  color: #FFFFFF;
+}
+
+.stepper__step--completed .stepper__label {
+  color: #344054;
+}
+
+/* État : À venir */
+.stepper__step--pending .stepper__badge {
+  background: #F2F4F7;
+  color: #667085;
+}
+
+.stepper__step--pending .stepper__label {
+  color: #98A2B3;
+}
+
+.stepper__label {
+  font-size: 22rpx;
+  margin-top: 10rpx;
+  text-align: center;
+}
+```
+
+---
+
+## ⚖️ Recette 68 : Machine de Traitement Post-Paiement Tri-Statut (`confirmed` / `failed` / `unknown`)
+
+**Quand l'utiliser ?** Dès qu'un utilisateur déclenche un paiement marchand Orange Money ou un achat de billet sur **Max It**, pendant que l'écran de traitement asynchrone (`pages/processing/index`) interroge le backend pour confirmer la transaction.
+
+**Pourquoi l'état inconnu (`unknown`) est le cas le plus dangereux en fintech ?**
+Lorsque le client valide son code secret Orange Money sur son téléphone :
+1. **Cas Succès (`confirmed`) :** La banque valide, le serveur émet le billet, redirection immédiate vers l'écran de confirmation.
+2. **Cas Échec Explicite (`failed`) :** Solde insuffisant ou code erroné, la banque renvoie un refus clair. On informe l'utilisateur et on lui permet de changer de moyen de paiement.
+3. **Cas Incertain (`unknown` / Timeout réseau) :** La 4G décroche pendant la seconde où le serveur attend la confirmation bancaire. L'argent est **peut-être débité**, ou **peut-être pas**.
+   * ❌ **L'erreur fatale :** Traiter cet état comme un échec et dire au client *"Paiement échoué, veuillez réessayer"*. Le client réessaie et est **débité deux fois** !
+
+**La Solution Industrielle :**
+Une machine d'état tripartite stricte qui isole `unknown` :
+* Verrouille l'`attemptId` unique d'idempotence.
+* Affiche un bouton sécurisé *"Vérifier le statut"* qui ne réémet JAMAIS d'ordre de paiement, mais sonde le résultat de la transaction existante jusqu'à confirmation.
+
+### 1. Contrôleur de Traitement Tri-Statut (`pages/processing/index.js`)
+```javascript
+import { waitForNextPaint } from '../../utils/helpers/pageHelper';
+
+Page({
+  data: {
+    processingStatus: 'processing', // 'processing' | 'confirmed' | 'failed' | 'unknown'
+    processingMessage: 'Validation de votre transaction avec Orange Money...',
+    canResumeCheck: false,
+    transactionId: ''
+  },
+
+  async onLoad(options) {
+    this.isDisposed = false;
+    this.attemptId = options.attemptId || `ATT_${Date.now()}`;
+
+    // 1. Force l'affichage immédiat de l'animation de paiement
+    await waitForNextPaint(this, { processingStatus: 'processing' });
+    if (this.isDisposed) return;
+
+    return this.resolvePaymentOutcome();
+  },
+
+  onUnload() {
+    this.isDisposed = true;
+  },
+
+  async resolvePaymentOutcome() {
+    if (this._inFlight || this.isDisposed) return;
+    this._inFlight = true;
+
+    this.setData({
+      processingStatus: 'processing',
+      processingMessage: 'Confirmation bancaire en cours...',
+      canResumeCheck: false
+    });
+
+    try {
+      // 2. Appel à l'API de finalisation avec clé d'idempotence attemptId
+      const outcome = await this.queryTransactionStatus(this.attemptId);
+
+      if (this.isDisposed) return;
+
+      if (outcome.status === 'confirmed') {
+        // Succès : Redirection automatique vers la confirmation
+        this.setData({ processingStatus: 'confirmed' });
+        wx.redirectTo({
+          url: `/pages/confirmed/index?reference=${outcome.bookingReference}`
+        });
+      } else if (outcome.status === 'failed') {
+        // Échec bancaire explicite
+        this.setData({
+          processingStatus: 'failed',
+          processingMessage: outcome.errorMessage || 'Transaction refusée par l\'opérateur.'
+        });
+      } else {
+        // État inconnu (timeout / micro-coupure)
+        throw new Error('OUTCOME_UNKNOWN');
+      }
+    } catch (err) {
+      if (this.isDisposed) return;
+
+      // 3. Gestion sécurisée de l'état inconnu sans risquer de double débit
+      this.setData({
+        processingStatus: 'unknown',
+        processingMessage: 'Votre paiement est en cours de réconciliation. Aucun montant supplémentaire ne sera prélevé.',
+        canResumeCheck: true
+      });
+    } finally {
+      this._inFlight = false;
+    }
+  },
+
+  // Bouton : Reprendre la vérification (sans repayer !)
+  onTapResumeCheck() {
+    return this.resolvePaymentOutcome();
+  },
+
+  // Mock de la requête API d'interrogation
+  async queryTransactionStatus(attemptId) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ status: 'confirmed', bookingReference: 'SN-AIR-9921' });
+      }, 1200);
+    });
+  }
+});
+```
+
+### 2. Vue WXML Tri-Statut (`pages/processing/index.wxml`)
+```xml
+<view class="processing-page">
+  <!-- État 1 : Chargement / En cours -->
+  <block wx:if="{{ processingStatus === 'processing' }}">
+    <view class="spinner-loader animate-spin"></view>
+    <text class="status-title">Transaction en cours</text>
+    <text class="status-desc">{{ processingMessage }}</text>
+  </block>
+
+  <!-- État 2 : Échec Explicite -->
+  <block wx:elif="{{ processingStatus === 'failed' }}">
+    <view class="status-icon status-icon--failed">✕</view>
+    <text class="status-title">Paiement refusé</text>
+    <text class="status-desc">{{ processingMessage }}</text>
+    <button class="action-btn" bindtap="resolvePaymentOutcome">Changer de moyen de paiement</button>
+  </block>
+
+  <!-- État 3 : Incertain (Unknown) - Bouclier Anti-Double Débit -->
+  <block wx:elif="{{ processingStatus === 'unknown' }}">
+    <view class="status-icon status-icon--warning">⚠️</view>
+    <text class="status-title">Vérification du statut</text>
+    <text class="status-desc">{{ processingMessage }}</text>
+    <button class="action-btn action-btn--primary" bindtap="onTapResumeCheck">
+      🔄 Vérifier la confirmation
+    </button>
+  </block>
+</view>
+```
+
 
 
 

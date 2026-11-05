@@ -57,6 +57,7 @@ pages/ma-page/
 - **`components/ui/`** : Composants de présentation purs. Ne portent AUCUN état asynchrone ni skeleton.
 - **`components/ux/`** : Composants d'état et d'attente (Skeletons, Empty-states, Error-boundaries).
 - **Animation Shimmer Universelle** : Utiliser la classe `.shimmer` avec dégradé fluide à 60 FPS sans bloquer le thread principal.
+- **Rendu Garanti avant Traitement Lourd (`waitForNextPaint`)** : Utiliser `waitForNextPaint(this, state)` pour garantir que le loader ou skeleton est physiquement peint par la WebView avant d'exécuter un calcul JS bloquant. Toujours associer au flag `this.isDisposed` pour neutraliser les mises à jour zombies après `onUnload`.
 
 ### 1.4 Feedback Tactile au Clic (`hover-class`)
 - Bannir le CSS `:active` web. Toujours utiliser `hover-class="btn--pressed"` avec `hover-start-time="20"` et `hover-stay-time="100"` (`transform: scale(0.96); opacity: 0.85;`).
@@ -183,6 +184,7 @@ Exécuter impérativement dans cet ordre :
 - En cas de coupure réseau 4G pendant la confirmation backend, le bouton "Réessayer" court-circuite complètement le débit bancaire (0 franc prélevé en plus).
 - Utiliser le Smart Polling à 3 essais avec backoff progressif (0s, 2s, 4s).
 - Si `err.uncertain === true`, NE JAMAIS redemander de payer immédiatement.
+- **Résolution Post-Paiement Tri-Statut** : Isoler strictement les 3 états (`confirmed`, `failed`, `unknown`). En cas d'état incertain (`unknown`), ne jamais afficher d'écran d'échec : conserver l'`attemptId` unique et proposer un bouton "Vérifier le statut" idempotent.
 
 ### 4.3 Sécurité des Écrans Sensibles
 - Verrouiller la capture d'écran sur les billets QR via `miniSDK.screen.protect(true)`.
@@ -216,7 +218,7 @@ Exécuter impérativement dans cet ordre :
 - **`node scripts/create-component.js <dossier> [--ux]`** : Échafaude les 4 fichiers d'un composant (`Component()`, lifetimes strictes, `triggerEvent`, BEM, Safe Areas) en mode présentation ou UX skeleton shimmer.
 - **`node scripts/create-api.js <domaine>`** : Échafaude le service API (`utils/apis/<domaine>.api.js`) et son mappeur `json-sculpt` (`utils/mappers/<domaine>.js`) avec endpoints, méthodes CRUD et gestion d'erreurs typées.
 - **`node scripts/test-page-harness.js` (`npm run test:harness`)** : Émulateur headless en mémoire pour tester les transitions de machine à états `uiState` (loading -> success -> error) et le nettoyage mémoire de `onUnload()` sans ouvrir WeChat DevTools. Voir [docs/DOC_TESTING_HEADLESS_PAGE_ET_UISTATE.md](docs/DOC_TESTING_HEADLESS_PAGE_ET_UISTATE.md).
-- **Snippets IDE VSCode & Cursor** : Auto-complétion instantanée (`.vscode/wechat-pmt.code-snippets`) pour insérer en 1 clic les templates `pmt-page-js`, `pmt-om-pill`, `pmt-i18n-wxs`, `pmt-outbox`, `pmt-throttle-scroll`, `pmt-chunk-upload`, `pmt-secure-storage`, `pmt-websocket`, `pmt-optimistic-action`, `pmt-subpackage-guard`, `pmt-announce-a11y` et `pmt-dynamic-form`.
+- **Snippets IDE VSCode & Cursor** : Auto-complétion instantanée (`.vscode/wechat-pmt.code-snippets`) pour insérer en 1 clic les templates `pmt-page-js`, `pmt-om-pill`, `pmt-i18n-wxs`, `pmt-outbox`, `pmt-throttle-scroll`, `pmt-chunk-upload`, `pmt-secure-storage`, `pmt-websocket`, `pmt-optimistic-action`, `pmt-subpackage-guard`, `pmt-announce-a11y`, `pmt-dynamic-form`, `pmt-wait-paint`, `pmt-stepper` et `pmt-tri-state`.
 - **Showcase Playground (`playground/`)** : Mini-programme autonome prêt à être importé dans WeChat DevTools (`touristappid`) pour tester en direct tous les composants ODS Sonatel, Solde OM, i18n Wolof et Outbox hors-ligne.
 - **`npm test` / `npm run doctor`** : Automatise l'audit de conformité (zéro BOM UTF-8, syntaxe JSON, WXSS, déclencheurs IA, générateurs, bundle doctor, headless test harness) exécuté par la CI GitHub Actions.
 
