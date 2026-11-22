@@ -16,6 +16,7 @@
     "test:journal": "node scripts/state-journal.js --self-test",
     "test:harness": "node scripts/test-page-harness.js",
     "test": "node scripts/skill-doctor.js && node scripts/test-generators.js && node scripts/bundle-doctor.js --self-test && node scripts/guardian-doctor.js --self-test && node scripts/state-journal.js --self-test && node scripts/test-page-harness.js",
+    "skill:propose": "node scripts/propose-recipe.js",
     "dev:onboard": "node scripts/state-journal.js onboard",
     "dev:enable": "node scripts/state-journal.js enable",
     "dev:disable": "node scripts/state-journal.js disable",
