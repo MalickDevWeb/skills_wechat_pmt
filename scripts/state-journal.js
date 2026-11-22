@@ -350,9 +350,50 @@ if (require.main === module) {
       console.log('\n😴 Aucune tâche en cours. Prêt pour un nouveau travail !');
     }
     console.log('====================================================\n');
-  } else {
-    console.log('Usage: node scripts/state-journal.js [status|--self-test]');
+    process.exit(0);
   }
+
+  if (cmd === 'start') {
+    const title = args[1] || 'Nouvelle tâche';
+    const devIdx = args.indexOf('--dev');
+    const dev = devIdx !== -1 ? args[devIdx + 1] : 'malick';
+    const typeIdx = args.indexOf('--type');
+    const type = typeIdx !== -1 ? args[typeIdx + 1] : 'feat';
+    const slugIdx = args.indexOf('--slug');
+    const slug = slugIdx !== -1 ? args[slugIdx + 1] : '';
+
+    const task = startTask({ title, developer: dev, type, slug });
+    console.log(`\n🚀 Tâche [${task.id}] démarrée avec succès par ${task.developer} !`);
+    console.log(`🌿 Branche active : ${task.branch}`);
+    console.log(`📓 Journal Markdown initialisé dans docs/journal/${task.developer}/`);
+    process.exit(0);
+  }
+
+  if (cmd === 'step') {
+    const fileIdx = args.indexOf('--file');
+    const file = fileIdx !== -1 ? args[fileIdx + 1] : '';
+    const task = recordStep({ fileModified: file });
+    console.log(`\n💾 Étape enregistrée pour la tâche [${task.id}]. Fichiers modifiés : ${task.filesModified.length}`);
+    process.exit(0);
+  }
+
+  if (cmd === 'done') {
+    const summaryIdx = args.indexOf('--summary');
+    const summary = summaryIdx !== -1 ? args[summaryIdx + 1] : 'Tâche terminée';
+    const commitIdx = args.indexOf('--commit');
+    const commit = commitIdx !== -1 ? args[commitIdx + 1] : '';
+    const task = completeTask({ summary, commitHash: commit });
+    console.log(`\n✅ Tâche [${task.id}] clôturée avec succès !`);
+    console.log(`📓 Entrée archivée dans docs/journal/${task.developer}/`);
+    process.exit(0);
+  }
+
+  console.log('Usage:');
+  console.log('  node scripts/state-journal.js status');
+  console.log('  node scripts/state-journal.js start "Titre de la tâche" [--dev <nom>] [--type fix|feat] [--slug <nom>]');
+  console.log('  node scripts/state-journal.js step --file <chemin/fichier>');
+  console.log('  node scripts/state-journal.js done --summary "Description" [--commit <hash>]');
+  console.log('  node scripts/state-journal.js --self-test');
 }
 
 module.exports = {
