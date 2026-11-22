@@ -7,6 +7,7 @@
     "lint": "node scripts/skill-doctor.js",
     "doctor": "node scripts/skill-doctor.js",
     "analyze": "node scripts/bundle-doctor.js",
+    "lint:duplicates": "node scripts/duplication-doctor.js",
     "test:doctor": "node scripts/skill-doctor.js",
     "test:generators": "node scripts/test-generators.js",
     "test:bundle": "node scripts/bundle-doctor.js --self-test",

@@ -293,4 +293,19 @@ Exécuter impérativement dans cet ordre :
   - `retryAsync(fn, options)` : Relance avec backoff exponentiel pour les opérations post-paiement.
 - *Référentiel détaillé : [docs/DOC_RECETTES_COPIER_COLLER.md](docs/DOC_RECETTES_COPIER_COLLER.md#recette-74).*
 
+## 🏭 PÔLE 7 : USINE LOGICIELLE, CATALOGUE MULTI-PROJETS & ANTI-DUPLICATION
+
+### 7.1 Les 4 Règles d'Or d'Architecture Anti-Duplication
+1. **« Il vaut mieux une petite duplication propre qu'une mauvaise dépendance partagée » :**
+   - Mutualiser les briques graphiques pures (`components/ui/` : Boutons, Modales, Stepper, Typography, NavBar, Input).
+   - Garder les composants métiers (`components/custom/` : Carte Vol vs Carte Ambulance) strictement séparés sans créer d'usine à gaz couplant deux domaines.
+2. **Indépendance Physique des Projets :**
+   - Chaque projet garde son repository propre. Le Registre multi-projets sert de modèle d'inspiration, jamais de dépendance physique fragile bloquant Git.
+3. **Conseiller Bienveillant (Warning Non-Bloquant) :**
+   - L'outil `npm run lint:duplicates` (`scripts/duplication-doctor.js`) agit comme un conseiller : il suggère poliment l'utilisation des helpers existants sans bloquer la compilation ni la CI (`exit 0`).
+4. **Seuil Strict de Découpage (35-40 lignes) :**
+   - Ne découper que lorsque la fonction dépasse 35-40 lignes ou gère des étapes critiques hétérogènes (préparation, calcul, appel SDK, confirmation, échec - Pattern Kalidou).
+- *Référentiel détaillé : [docs/DOC_REGISTRE_COMPOSANTS_MULTI_PROJETS.md](docs/DOC_REGISTRE_COMPOSANTS_MULTI_PROJETS.md).*
+
+
 
