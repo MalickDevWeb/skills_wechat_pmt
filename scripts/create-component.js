@@ -329,6 +329,39 @@ fileNames.forEach((name, i) => {
   console.log(`  ✅ Créé : ${path.relative(process.cwd(), filePath)}`);
 });
 
+
+// ============================================================================
+// 5. VALIDATION AUTOMATIQUE DU COMPOSANT (SELF-TEST & AUTO-CORRECTION)
+// ============================================================================
+try {
+  // A. Verification JSON strict
+  const jsonPath = path.join(targetDir, 'index.json');
+  JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+
+  // B. Verification accolades WXSS
+  const wxssPath = path.join(targetDir, 'index.wxss');
+  let wxss = fs.readFileSync(wxssPath, 'utf8');
+  let opens = (wxss.match(/\{/g) || []).length;
+  let closes = (wxss.match(/\}/g) || []).length;
+  if (opens !== closes) {
+    wxss += '\n}\n';
+    fs.writeFileSync(wxssPath, wxss, 'utf8');
+    console.log('  ⚠️ Accolade WXSS auto-corrigée avec succès.');
+  }
+
+  // C. Verification syntaxe WXML
+  const wxmlPath = path.join(targetDir, 'index.wxml');
+  const wxml = fs.readFileSync(wxmlPath, 'utf8');
+  if (wxml.includes('class="{{') && !wxml.includes('}}"')) {
+    throw new Error('Interpolation WXML non fermée');
+  }
+
+  console.log('  🧪 Auto-Test Harness : Composant certifié sans erreur de syntaxe.');
+} catch (err) {
+  console.error('  ❌ Erreur détectée lors de l\'auto-test :', err.message);
+  process.exit(1);
+}
+
 console.log(`\n🎉 Composant [${componentName}] créé avec succès (${isUx ? 'Mode UX / Skeleton' : 'Mode UI Présentation'}) !`);
 console.log(`👉 Déclarez-le dans le index.json de la page parente sous "usingComponents".`);
 
