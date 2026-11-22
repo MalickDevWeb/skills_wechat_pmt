@@ -84,6 +84,7 @@ Chaque recette est une **solution complète et autonome**. Vous trouvez votre si
 | 💬 [Recette 73](#-recette-73--pont-hybride-support-client-whatsapp--téléphone-modale-in-app-long-press-qr-et-anti-black-screen) | Passerelle support WhatsApp avec modale in-app anti-écran noir, détection appui long et liens courts | Moyenne |
 | ⚡ [Recette 74](#-recette-74--découpage-modulaire-dun-tunnel-monolithique-et-helpers-de-page-pattern-kalidou) | Découpage en 6 méthodes atomiques d'un tunnel de paiement/action et helpers de page | Avancée |
 | ✂️ [Recette 75](#-recette-75--découpage-complet-dun-tunnel-monolithique-de-réservation-147-lignes--6-méthodes-atomiques) | Découpage d'un gros tunnel (validation, vérification doublons, appel API, gestion incertaine) en 6 sous-méthodes de 15 lignes | Avancée |
+| 🟡 [Recette 76](#-recette-76--bottom-sheet-officielle-de-simulation-de-paiement-marchand-orange-money--max-it-maxit-pay-sheet) | Tiroir officiel de simulation de paiement Orange Money (solde, marchand, toggle QA solde insuffisant) | Moyenne |
 
 ---
 
@@ -6866,4 +6867,92 @@ test("booking controller respects single-responsibility atomic methods", () => {
   assert.equal(page.validateBookingPreconditions(), true, "Doit valider une commande conforme");
 });
 ```
+
+---
+
+## 🟡 Recette 76 : Bottom Sheet Officielle de Simulation de Paiement Marchand Orange Money / Max It (`maxit-pay-sheet`)
+
+**Quand l'utiliser ?** Dans le simulateur WeChat DevTools PC (ou en mode test avant mise en production réelle), lorsque le SDK officiel `miniSDK.merchantPay` n'a pas d'application hôte Max It (`!miniSDK.hasHost()`), vous devez afficher le tiroir de paiement Orange Money identique au natif pour valider ou rejeter la transaction.
+
+### Caractéristiques ODS Sonatel :
+- **Carte Marchand :** Icône utilisateur, nom de la structure (`receiverName`) et code marchand Orange 6 chiffres (`receiver`).
+- **Carte Total :** Icône globe mondial et montant exact formaté en FCFA (`formattedAmount F`).
+- **Carte Compte Principal :** Affichage du solde Orange Money (`currentBalance F`) avec badge orange coché.
+- **Barre d'actions :** Boutons jumeaux « Quitter » (secondaire) et « Valider » (Orange 500 officiel).
+- **Basculement QA discret :** Toggle interactif permettant de simuler instantanément un solde insuffisant (alerte rouge) ou un solde normal.
+
+### Étape 1/3 — Déclaration dans la Page (`pages/ma-page/index.json`)
+```json
+{
+  "usingComponents": {
+    "maxit-pay-sheet": "/components/custom/ui/maxit-pay-sheet/index"
+  }
+}
+```
+
+### Étape 2/3 — Intégration WXML (`pages/ma-page/index.wxml`)
+```xml
+<!-- Tiroir de simulation Orange Money Max It -->
+<maxit-pay-sheet
+  visible="{{ showSimulatedPaySheet }}"
+  amount="{{ simulatedPayment.amount }}"
+  formattedAmount="{{ simulatedPayment.formattedAmount }}"
+  receiver="{{ simulatedPayment.receiver || '141414' }}"
+  receiverName="{{ simulatedPayment.receiverName || 'Orange Money Marchand' }}"
+  orderId="{{ simulatedPayment.orderId }}"
+  bind:confirm="onSimulatedPayConfirm"
+  bind:cancel="onSimulatedPayCancel"
+/>
+```
+
+### Étape 3/3 — Contrôleur JS (`pages/ma-page/index.js`)
+```javascript
+Page({
+  data: {
+    showSimulatedPaySheet: false,
+    simulatedPayment: {
+      amount: 45000,
+      formattedAmount: '45 000',
+      receiver: '141414',
+      receiverName: 'Sama Loyer / SAMU',
+      orderId: 'CMD-9942'
+    }
+  },
+
+  // 1. Déclenchement de la simulation (si miniSDK.hasHost() === false)
+  openSimulatedPayment(context) {
+    this.setData({
+      showSimulatedPaySheet: true,
+      simulatedPayment: {
+        amount: context.amount,
+        formattedAmount: new Intl.NumberFormat('fr-FR').format(context.amount),
+        receiver: context.receiver || '141414',
+        receiverName: context.receiverName || 'Paiement Marchand',
+        orderId: context.orderId || context.txnid
+      }
+    });
+  },
+
+  // 2. Confirmation simulée (succès de débit Orange Money)
+  async onSimulatedPayConfirm(e) {
+    const { txnid, amount, orderId } = e.detail;
+    this.setData({ showSimulatedPaySheet: false });
+    wx.showLoading({ title: 'Confirmation en cours...', mask: true });
+
+    try {
+      // Suite du parcours : confirmation backend avec le txnid simulé
+      await this.confirmPaymentReceipt({ txnid, amount, orderId });
+    } catch (err) {
+      this.handlePaymentFailure(err);
+    }
+  },
+
+  // 3. Annulation par le client
+  onSimulatedPayCancel() {
+    this.setData({ showSimulatedPaySheet: false });
+    wx.showToast({ title: 'Paiement annulé', icon: 'none' });
+  }
+});
+```
+
 

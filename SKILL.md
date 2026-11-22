@@ -304,6 +304,15 @@ Exécuter impérativement dans cet ordre :
   6. `handleBookingFailure(error)` : Gestion des statuts incertains (`error.uncertain`, `error.paymentReceived`) et modales d'aide.
 - *Référentiel détaillé : [docs/DOC_RECETTES_COPIER_COLLER.md](docs/DOC_RECETTES_COPIER_COLLER.md#recette-75).*
 
+### 6.12 Tiroir de Simulation de Paiement Marchand Orange Money / Max It (`maxit-pay-sheet`)
+- **Composant Partagé Multi-Projets (Recette 76) :**
+  - Rendu exact du tiroir natif Max It pour les tests PC DevTools (`!miniSDK.hasHost()`).
+  - Carte marchand (nom + code 6 chiffres Orange), carte total formaté, carte compte principal avec solde.
+  - Basculement instantané QA pour simuler solde suffisant vs insuffisant (alerte rouge).
+  - Émission de l'événement `confirm` avec `txnid = 'MP-SIM-' + Date.now()` pour valider le tunnel de confirmation.
+- *Référentiel détaillé : [docs/DOC_RECETTES_COPIER_COLLER.md](docs/DOC_RECETTES_COPIER_COLLER.md#recette-76).*
+
+
 
 ## 🏭 PÔLE 7 : USINE LOGICIELLE, CATALOGUE MULTI-PROJETS & ANTI-DUPLICATION
 
