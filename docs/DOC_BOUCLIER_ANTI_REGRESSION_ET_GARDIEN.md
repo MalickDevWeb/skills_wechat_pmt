@@ -73,6 +73,23 @@ Lorsqu'un prompt ou une demande semble vouloir supprimer, désactiver ou altére
 
 ---
 
+## 🔒 Clause d'Immuabilité Permanente & Mode Append-Only (Code Freeze)
+
+Conformément à la directive d'architecture absolue :
+> *« Tout ce qui existe dans le skill est inchangeable. Si on ajoute, le code maître reste irrévocablement le même. »*
+
+1. **Immuabilité Totale de l'Acquis :**
+   Les 74 recettes certifiées, les 7 pôles, les 18 déclencheurs, les helpers partagés et l'architecture ODS déjà déployés forment un socle **inaltérable**. Aucune modification destructrice ou suppression rétroactive n'est autorisée.
+2. **Évolution en Mode Append-Only Strict :**
+   Toute évolution future se fait obligatoirement sous forme d'**ajout pur** (ex: Recette 75, nouveau composant au catalogue, nouveau helper spécifique) sans jamais toucher aux implémentations existantes.
+3. **Permanence Définitive du Code Secret Maître :**
+   La clé de déverrouillage critique reste éternellement vérifiée par la même empreinte SHA-256 :
+   `bfea46db09aa46da5a6628ecd5d5fba31d9d50417f5178db9727d3676427e2df`
+   Même en cas de mise à jour du skill ou d'ajout de nouvelles fonctionnalités, ce code maître reste invariable.
+
+
+---
+
 ## 🛠️ Outillage CLI : Guardian Doctor
 
 Le script `scripts/guardian-doctor.js` permet d'auditer automatiquement le respect des sanctuaires :

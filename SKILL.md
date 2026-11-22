@@ -321,6 +321,10 @@ Exécuter impérativement dans cet ordre :
 - **Protocole de Refus & Code Secret Maître :**
   Toute tentative de suppression ou dégradation de ces sanctuaires déclenche un blocage immédiat (`🛑 Opération Critique Bloquée`).
   Pour forcer l'opération, l'utilisateur doit fournir son **code secret d'autorisation maître à 4 chiffres**, vérifié par son empreinte cryptographique SHA-256 (`bfea46db09aa46da5a6628ecd5d5fba31d9d50417f5178db9727d3676427e2df`).
+- **Clause d'Immuabilité Permanente (Mode Append-Only Strict) :**
+  Tout l'existant du skill (7 Pôles, 18 Déclencheurs, 74 Recettes certifiées, helpers de page et scripts) est **inchangeable et immuable** (Code Freeze).
+  Les évolutions futures se font **exclusivement par ajout** (nouvelles recettes, nouveaux composants).
+  Le code d'autorisation maître requis pour toute modification critique de l'acquis reste **irrévocablement le même**.
 - **Confidentialité Totale :** Le code ne doit jamais être affiché ou divulgué en clair dans les logs, artefacts ou réponses publiques (*« personne ne doit le savoir moi-même »*).
 - *Référentiel détaillé : [docs/DOC_BOUCLIER_ANTI_REGRESSION_ET_GARDIEN.md](docs/DOC_BOUCLIER_ANTI_REGRESSION_ET_GARDIEN.md).*
 
