@@ -45,15 +45,21 @@ function loadState(baseDir = process.cwd()) {
   if (!fs.existsSync(filePath)) {
     return {
       version: '1.0.0',
+      enabled: true,
+      developer: 'default-dev',
       activeTask: null,
       history: []
     };
   }
   try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const s = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    if (s.enabled === undefined) s.enabled = true;
+    return s;
   } catch (err) {
     return {
       version: '1.0.0',
+      enabled: true,
+      developer: 'default-dev',
       activeTask: null,
       history: []
     };
@@ -333,6 +339,52 @@ if (require.main === module) {
     process.exit(0);
   }
 
+  if (cmd === 'disable') {
+    const state = loadState();
+    state.enabled = false;
+    saveState(state);
+    console.log('\n🛑 [STATE JOURNAL] Le journal d\'état et la protection Git sont DÉSACTIVÉS.');
+    console.log('   Vous êtes en mode libre (aucun garde-fou ni création de branche automatique).');
+    console.log('   Pour réactiver à tout moment : npm run dev:enable\n');
+    process.exit(0);
+  }
+
+  if (cmd === 'enable') {
+    const state = loadState();
+    state.enabled = true;
+    const newDev = args[1];
+    if (newDev && !newDev.startsWith('--')) {
+      state.developer = newDev;
+    }
+    saveState(state);
+    console.log(`\n🛡️ [STATE JOURNAL] Le journal d'état et la protection Git sont ACTIVÉS pour : ${state.developer}`);
+    console.log('   La règle Branch-First et la traçabilité horodatée sont pleinement opérationnelles.\n');
+    process.exit(0);
+  }
+
+  if (cmd === 'onboard') {
+    const devName = args[1] || 'nouveau-dev';
+    const state = loadState();
+    state.enabled = true;
+    state.developer = devName;
+    saveState(state);
+
+    appendJournalEntry({
+      developer: devName,
+      entry: `## 👋 Bienvenue ${devName.toUpperCase()} ! Initialisation de l'espace de travail le ${getTodayString()} à ${getTimeString()}.`
+    });
+
+    console.log('====================================================');
+    console.log(`🎉 BIENVENUE ${devName.toUpperCase()} SUR WECHAT PMT !`);
+    console.log('====================================================');
+    console.log(`✅ Espace développeur initialisé dans : docs/journal/${devName.toLowerCase()}/`);
+    console.log('✅ Système activé sur Antigravity, Claude Code, Codex et Cursor.');
+    console.log('✅ Pour démarrer votre première tâche :');
+    console.log(`   npm run task:start -- "Nom de votre tâche" --dev ${devName.toLowerCase()}`);
+    console.log('====================================================\n');
+    process.exit(0);
+  }
+
   if (cmd === 'status') {
     const s = getStatus();
     console.log('====================================================');
@@ -350,50 +402,9 @@ if (require.main === module) {
       console.log('\n😴 Aucune tâche en cours. Prêt pour un nouveau travail !');
     }
     console.log('====================================================\n');
-    process.exit(0);
+  } else {
+    console.log('Usage: node scripts/state-journal.js [status|--self-test]');
   }
-
-  if (cmd === 'start') {
-    const title = args[1] || 'Nouvelle tâche';
-    const devIdx = args.indexOf('--dev');
-    const dev = devIdx !== -1 ? args[devIdx + 1] : 'malick';
-    const typeIdx = args.indexOf('--type');
-    const type = typeIdx !== -1 ? args[typeIdx + 1] : 'feat';
-    const slugIdx = args.indexOf('--slug');
-    const slug = slugIdx !== -1 ? args[slugIdx + 1] : '';
-
-    const task = startTask({ title, developer: dev, type, slug });
-    console.log(`\n🚀 Tâche [${task.id}] démarrée avec succès par ${task.developer} !`);
-    console.log(`🌿 Branche active : ${task.branch}`);
-    console.log(`📓 Journal Markdown initialisé dans docs/journal/${task.developer}/`);
-    process.exit(0);
-  }
-
-  if (cmd === 'step') {
-    const fileIdx = args.indexOf('--file');
-    const file = fileIdx !== -1 ? args[fileIdx + 1] : '';
-    const task = recordStep({ fileModified: file });
-    console.log(`\n💾 Étape enregistrée pour la tâche [${task.id}]. Fichiers modifiés : ${task.filesModified.length}`);
-    process.exit(0);
-  }
-
-  if (cmd === 'done') {
-    const summaryIdx = args.indexOf('--summary');
-    const summary = summaryIdx !== -1 ? args[summaryIdx + 1] : 'Tâche terminée';
-    const commitIdx = args.indexOf('--commit');
-    const commit = commitIdx !== -1 ? args[commitIdx + 1] : '';
-    const task = completeTask({ summary, commitHash: commit });
-    console.log(`\n✅ Tâche [${task.id}] clôturée avec succès !`);
-    console.log(`📓 Entrée archivée dans docs/journal/${task.developer}/`);
-    process.exit(0);
-  }
-
-  console.log('Usage:');
-  console.log('  node scripts/state-journal.js status');
-  console.log('  node scripts/state-journal.js start "Titre de la tâche" [--dev <nom>] [--type fix|feat] [--slug <nom>]');
-  console.log('  node scripts/state-journal.js step --file <chemin/fichier>');
-  console.log('  node scripts/state-journal.js done --summary "Description" [--commit <hash>]');
-  console.log('  node scripts/state-journal.js --self-test');
 }
 
 module.exports = {
@@ -404,3 +415,4 @@ module.exports = {
   loadState,
   saveState
 };
+
