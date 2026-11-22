@@ -299,3 +299,29 @@ Toujours utiliser les clés de traduction : `{{ t('ma.cle') }}`
 
 
 
+
+---
+
+## REGLE 14 - Protocole de Fusion Simulee & Controle Humain (Human-in-the-Loop)
+
+1. **Interdiction Formelle de Fusion Automatique :**
+   - L'agent ne doit **JAMAIS** executer de fusion directe (`git merge`, `git pull origin`, `git push`) vers la branche d'integration principale (`develop` ou `main`).
+   - Le controle de la fusion finale appartient **exclusivement au developpeur humain**.
+
+2. **Branche Cible par Defaut (`develop`) :**
+   - Dans le workflow Gitflow du projet, la branche d'integration cible est par defaut **`develop`** (sauf indication explicite pour `main` en cas de release/hotfix).
+
+3. **Simulation de Fusion a Blanc (Dry-Run Merge) :**
+   - Avant de proposer la moindre fusion, l'agent execute une simulation non destructive :
+     `git merge --no-commit --no-ff <branche-de-travail>`
+   - Il verifie :
+     * Qu'il y a **0 conflit Git**.
+     * Que la suite du **Test Harness Universel** (`test-page-harness.js`) passe a 100%.
+     * Que la taille du paquet reste inferieure aux 2 Mo autorises.
+   - Il annule immediatement la simulation (`git merge --abort`) pour laisser le working tree intact.
+
+4. **Question Explicite de Validation Obligatoire :**
+   - L'agent presente un rapport clair (fichiers modifies, 0 conflit detecte, statut des tests) et pose obligatoirement la question formelle :
+     > « **Tu confirmes la fusion vers la branche `develop` : oui ou non ?** »
+   - Si l'utilisateur repond **oui** (ou `"je confirme"`), l'agent fournit les commandes exactes pretes a copier-coller pour que le developpeur realise la fusion en toute serenite.
+   - Si l'utilisateur repond **non**, l'agent conserve la branche de travail intacte et ne touche a rien.

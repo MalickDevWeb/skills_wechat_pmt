@@ -351,3 +351,10 @@ Exécuter impérativement dans cet ordre :
 
 
 
+
+### 7.3 Protocole de Fusion Simulee & Controle Humain (Regle 14)
+- **Branche Cible par Defaut (`develop`) :** Dans Gitflow, toute integration se fait vers la branche `develop`.
+- **Simulation a Blanc :** L'agent simule le merge (`git merge --no-commit --no-ff`) pour prouver l'absence de conflit et l'integrite du Test Harness sans alterer le code.
+- **Interdiction de Fusion Autonome :** L'agent ne merge jamais de son propre chef.
+- **Validation Formelle :** L'agent pose obligatoirement la question :
+  > « **Tu confirmes la fusion vers la branche `develop` : oui ou non ?** »
