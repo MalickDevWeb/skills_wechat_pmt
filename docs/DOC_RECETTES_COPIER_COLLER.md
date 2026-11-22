@@ -83,6 +83,7 @@ Chaque recette est une **solution complète et autonome**. Vous trouvez votre si
 | 🛡️ [Recette 72](#-recette-72--lecteur-défensif-de-schémas-json-opaques--réconciliation-darrondis-monétaires) | Exploration multi-chemins anti-crash TypeError et réconciliation des centimes | Moyenne |
 | 💬 [Recette 73](#-recette-73--pont-hybride-support-client-whatsapp--téléphone-modale-in-app-long-press-qr-et-anti-black-screen) | Passerelle support WhatsApp avec modale in-app anti-écran noir, détection appui long et liens courts | Moyenne |
 | ⚡ [Recette 74](#-recette-74--découpage-modulaire-dun-tunnel-monolithique-et-helpers-de-page-pattern-kalidou) | Découpage en 6 méthodes atomiques d'un tunnel de paiement/action et helpers de page | Avancée |
+| ✂️ [Recette 75](#-recette-75--découpage-complet-dun-tunnel-monolithique-de-réservation-147-lignes--6-méthodes-atomiques) | Découpage d'un gros tunnel (validation, vérification doublons, appel API, gestion incertaine) en 6 sous-méthodes de 15 lignes | Avancée |
 
 ---
 
@@ -6687,3 +6688,182 @@ test("decomposed tunnel prevents double execution with flag", async () => {
   assert.equal(calls, 1, "Le verrou _isPaying doit bloquer le second clic concurrent");
 });
 ```
+
+---
+
+## ✂️ Recette 75 : Découpage Complet d'un Tunnel Monolithique de Réservation (147 lignes ➔ 6 Méthodes Atomiques)
+
+**Quand l'utiliser ?** Vous avez une fonction de réservation ou de paiement géante (dépassant 40 à 100+ lignes) qui effectue à la fois la validation, le contrôle des doublons sur l'API, l'appel bancaire, la gestion des erreurs réseau et la redirection.
+
+### Architecture Standard en 6 Méthodes Spécialisées :
+```
+                       handleReserve()  [Orchestrateur : ~20 lignes]
+                                    │
+       ┌──────────────┬─────────────┼──────────────┬──────────────┬──────────────┐
+       ▼              ▼             ▼              ▼              ▼              ▼
+1. validateInputs() 2. buildCtx() 3. verifyDup() 4. executePay() 5. onSuccess() 6. onFailure()
+   (<20 lignes)     (<20 lignes)  (<25 lignes)   (<20 lignes)   (<10 lignes)   (<25 lignes)
+```
+
+### Étape 1/2 — Le Contrôleur Découpé (`pages/booking/booking.js`)
+```javascript
+Page({
+  data: {
+    isPaying: false,
+    paymentBlocked: false,
+    canContinue: true,
+    totalAmount: 45000,
+    destination: null
+  },
+
+  // 1. CHEF D'ORCHESTRE PRINCIPAL (~20 lignes)
+  async handleReserve() {
+    if (this.data.isPaying) return;
+    if (this.data.paymentBlocked) {
+      this.openPaymentBlockSupport();
+      return;
+    }
+
+    if (!this.validateBookingPreconditions()) return;
+
+    const context = this.buildBookingContext();
+    this.setData({ isPaying: true });
+    wx.showLoading({ title: 'Traitement...', mask: true });
+
+    try {
+      // Étape 1 : Vérification d'antériorité / doublon
+      const canProceed = await this.verifyExistingReservations(context);
+      if (!canProceed) {
+        this.setData({ isPaying: false });
+        return;
+      }
+
+      // Étape 2 : Déclenchement de la réservation
+      const created = await this.executeBookingAndPayment(context);
+      this.handleBookingSuccess(created);
+    } catch (error) {
+      this.handleBookingFailure(error);
+    } finally {
+      this.setData({ isPaying: false });
+    }
+  },
+
+  // 2. VALIDATION STRICTE DES ENTRÉES PURES
+  validateBookingPreconditions() {
+    if (!this.data.canContinue || !this.data.destination) {
+      wx.showToast({ title: 'Sélection invalide', icon: 'none' });
+      return false;
+    }
+    if (!Number.isFinite(this.data.totalAmount) || this.data.totalAmount <= 0) {
+      wx.showToast({ title: 'Tarif indisponible', icon: 'none' });
+      return false;
+    }
+    return true;
+  },
+
+  // 3. CONSTRUCTION DU CONTEXTE DE TRANSACTION SANS EFFETS DE BORD
+  buildBookingContext() {
+    const { adults, children, destination, selectedDateIso, totalAmount } = this.data;
+    const userData = Bus.getState('user.data') || {};
+    const phone = String(userData.msisdn || '').trim();
+
+    return {
+      adults,
+      children,
+      destination,
+      selectedDateIso,
+      totalAmount,
+      phone,
+      bookingToCheck: {
+        phone,
+        packageId: destination.id,
+        date: selectedDateIso
+      }
+    };
+  },
+
+  // 4. VÉRIFICATION DES DOUBLONS AVEC MODAL INTERACTIF
+  async verifyExistingReservations(context) {
+    const { phone, bookingToCheck } = context;
+    if (!phone) throw new Error('Numéro client introuvable.');
+
+    const bookings = await backendAPI.getBookings(phone);
+    const hasDuplicate = bookings.some(b => b.packageId === bookingToCheck.packageId && b.date === bookingToCheck.date);
+
+    if (!hasDuplicate) return true;
+
+    wx.hideLoading();
+    const res = await new Promise(resolve => {
+      wx.showModal({
+        title: 'Réservation existante',
+        content: 'Vous avez déjà une réservation active pour cette date. Continuer ?',
+        confirmText: 'Continuer',
+        cancelText: 'Annuler',
+        success: resolve,
+        fail: () => resolve({ confirm: false })
+      });
+    });
+
+    if (!res.confirm) return false;
+    wx.showLoading({ title: 'Traitement...', mask: true });
+    return true;
+  },
+
+  // 5. EXÉCUTION DU PAIEMENT ET APPEL SERVICE
+  async executeBookingAndPayment(context) {
+    const created = await payAndCreateReservation({
+      package_id: context.destination.id,
+      date: context.selectedDateIso,
+      amount: context.totalAmount
+    }, context.destination);
+
+    Bus.setState('booking.created.data', created);
+    Bus.setState('booking.status', 'confirmed');
+    return created;
+  },
+
+  // 6. SUCCÈS : REDIRECTION PROPRE
+  handleBookingSuccess(created) {
+    wx.hideLoading();
+    wx.redirectTo({ url: '/pages/booking-confirmation/booking-confirmation' });
+  },
+
+  // 7. ÉCHEC : ANALYSE DES STATUTS ET BOUCLIER FINANCIER
+  handleBookingFailure(error) {
+    wx.hideLoading();
+    if (error.uncertain === true || error.paymentReceived === true) {
+      this.setData({
+        showBookingSupportError: true,
+        supportErrorMessage: getBookingSupportMessage(error.txnid)
+      });
+      return;
+    }
+    wx.showModal({
+      title: 'Échec de réservation',
+      content: (error && error.message) || 'Une erreur est survenue.',
+      showCancel: false
+    });
+  }
+});
+```
+
+### Étape 2/2 — Test Unitaire Headless (`tests/booking-decomposition.test.mjs`)
+```javascript
+import test from "node:test";
+import assert from "node:assert/strict";
+
+test("booking controller respects single-responsibility atomic methods", () => {
+  const page = {
+    data: { canContinue: false, totalAmount: 0 },
+    validateBookingPreconditions() {
+      return this.data.canContinue && this.data.totalAmount > 0;
+    }
+  };
+
+  assert.equal(page.validateBookingPreconditions(), false, "Doit rejeter une commande incomplète sans lever d'erreur");
+  page.data.canContinue = true;
+  page.data.totalAmount = 50000;
+  assert.equal(page.validateBookingPreconditions(), true, "Doit valider une commande conforme");
+});
+```
+

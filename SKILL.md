@@ -294,6 +294,17 @@ Exécuter impérativement dans cet ordre :
   - `retryAsync(fn, options)` : Relance avec backoff exponentiel pour les opérations post-paiement.
 - *Référentiel détaillé : [docs/DOC_RECETTES_COPIER_COLLER.md](docs/DOC_RECETTES_COPIER_COLLER.md#recette-74).*
 
+### 6.11 Découpage d'un Tunnel de Réservation Monolithique (Recette 75)
+- **Transformation de fonctions géantes (> 100 lignes) en 6 sous-méthodes atomiques :**
+  1. `validateBookingPreconditions()` : Validation stricte des entrées et retours d'avertissement immédiats.
+  2. `buildBookingContext()` : Extraction et sérialisation des données transactionnelles (adultes, enfants, tarifs, msisdn).
+  3. `verifyExistingReservations(context)` : Détection des doublons sur l'API et dialogue interactif utilisateur.
+  4. `executeBookingAndPayment(context)` : Déclenchement de la réservation et synchronisation avec le Bus d'état.
+  5. `handleBookingSuccess(created)` : Masquage du loader et redirection vers la confirmation.
+  6. `handleBookingFailure(error)` : Gestion des statuts incertains (`error.uncertain`, `error.paymentReceived`) et modales d'aide.
+- *Référentiel détaillé : [docs/DOC_RECETTES_COPIER_COLLER.md](docs/DOC_RECETTES_COPIER_COLLER.md#recette-75).*
+
+
 ## 🏭 PÔLE 7 : USINE LOGICIELLE, CATALOGUE MULTI-PROJETS & ANTI-DUPLICATION
 
 ### 7.1 Les 4 Règles d'Or d'Architecture Anti-Duplication
