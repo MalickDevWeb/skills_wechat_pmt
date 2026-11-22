@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+// #!/usr/bin/env node
 
 /**
  * ⚡ CREATE-COMPONENT — WeChat PMT

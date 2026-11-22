@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+// #!/usr/bin/env node
 
 /**
  * 🧪 HEADLESS PAGE & UISTATE TEST HARNESS — WeChat PMT
