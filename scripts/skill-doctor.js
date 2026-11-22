@@ -137,6 +137,7 @@ if (fs.existsSync(skillMdPath)) {
     '@COMPILER-SAFE',
     '@TUNNEL-COMPLEXE',
     '@SUPPORT-WHATSAPP',
+    '@DECOMPOSE-METHODS',
   ];
 
   let missingTriggers = 0;

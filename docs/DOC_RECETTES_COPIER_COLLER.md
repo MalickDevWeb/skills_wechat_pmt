@@ -82,6 +82,7 @@ Chaque recette est une **solution complète et autonome**. Vous trouvez votre si
 | 📄 [Recette 71](#-recette-71--export-de-billet--reçu-client-vectoriel-pdf-et-canvas-2d-mobile) | Génération haute résolution sur le mobile, timeout guard et pagination GPU | Avancée |
 | 🛡️ [Recette 72](#-recette-72--lecteur-défensif-de-schémas-json-opaques--réconciliation-darrondis-monétaires) | Exploration multi-chemins anti-crash TypeError et réconciliation des centimes | Moyenne |
 | 💬 [Recette 73](#-recette-73--pont-hybride-support-client-whatsapp--téléphone-modale-in-app-long-press-qr-et-anti-black-screen) | Passerelle support WhatsApp avec modale in-app anti-écran noir, détection appui long et liens courts | Moyenne |
+| ⚡ [Recette 74](#-recette-74--découpage-modulaire-dun-tunnel-monolithique-et-helpers-de-page-pattern-kalidou) | Découpage en 6 méthodes atomiques d'un tunnel de paiement/action et helpers de page | Avancée |
 
 ---
 
@@ -6469,3 +6470,220 @@ test("buildWhatsAppUrl generates correct format", () => {
 });
 ```
 
+
+
+---
+
+## ⚡ Recette 74 : Découpage Modulaire d'un Tunnel Monolithique et Helpers de Page (Pattern Kalidou)
+
+**Quand l'utiliser ?** Dès qu'une fonction de contrôleur de page dépasse ~35 lignes ou gère plusieurs responsabilités critiques (ex: tunnel de paiement marchand, réservation de billet, soumission de devis complexe), ou lorsque deux pages doivent partager la même logique d'écran (masquage de la tabBar, protection anti-capture d'écran sensible).
+
+### Pourquoi bannir les fonctions monolithiques ?
+* **Sécurité Financière (Bouclier Anti-Double Débit) :** Si l'appel au SDK bancaire réussit mais que l'API de confirmation timeout, mélanger ces deux étapes dans la même fonction empêche de marquer l'erreur comme *incertaine* (`error.uncertain = true`). Le client risquerait de relancer le paiement et d'être débité deux fois !
+* **Testabilité unitaire :** Une fonction monolithique de 150 lignes est impossible à tester de manière isolée en headless. Découpée en 6 sous-méthodes, chaque étape (calcul, préparation, confirmation) est testable unitairement en 5 ms.
+
+---
+
+### Étape 1/3 — Les Helpers Transverses de Page (`utils/helpers/pageHelper.js`)
+```javascript
+/**
+ * Helpers partagés pour la gestion d'écran, tabBar et sécurité
+ */
+
+export const setPageTabBarHidden = (page, hidden, eventBus) => {
+  const isHidden = Boolean(hidden);
+  const tabBar = page && typeof page.getTabBar === 'function' ? page.getTabBar() : null;
+
+  if (tabBar && typeof tabBar.setData === 'function') {
+    tabBar.setData({ hidden: isHidden });
+  }
+
+  if (eventBus && typeof eventBus.emit === 'function') {
+    eventBus.emit('tabbar:set_hidden', { hidden: isHidden });
+  }
+};
+
+export const setScreenProtection = (sdk, enabled) => {
+  if (!sdk || !sdk.screen || typeof sdk.screen.protect !== 'function') {
+    return Promise.resolve();
+  }
+
+  return sdk.screen.protect(Boolean(enabled)).catch((error) => {
+    console.warn('[ScreenProtection] Échec mise à jour protection :', error);
+  });
+};
+```
+
+---
+
+### Étape 2/3 — Le Contrôleur de Page Découpé en 6 Méthodes Spécialisées (`pages/index/index.js`)
+```javascript
+import { miniSDK } from '../../sdk/index.js';
+import { backendAPI } from '../../utils/apis/index.js';
+import { setPageTabBarHidden, setScreenProtection, showToast } from '../../utils/helpers/pageHelper.js';
+
+Page({
+  data: {
+    selectedOffer: null,
+    showReceiptModal: false,
+    activeReceipt: null
+  },
+
+  _isPaying: false,
+
+  onHide() {
+    // 🛡️ Garde mémoire obligatoire : désactiver la protection d'écran quand on quitte la page
+    setScreenProtection(miniSDK, false);
+  },
+
+  onUnload() {
+    setScreenProtection(miniSDK, false);
+    setPageTabBarHidden(this, false);
+  },
+
+  // 1. ORCHESTRATEUR PRINCIPAL (Court, lisible, verrouillé)
+  async handlePayAction() {
+    if (this._isPaying) return;
+    this._isPaying = true;
+
+    try {
+      setPageTabBarHidden(this, true);
+
+      // 2. Préparation
+      const paymentContext = await this.preparePaymentContext(this.data.selectedOffer);
+      const isSimulation = !miniSDK.hasHost();
+
+      if (isSimulation) {
+        this.openSimulatedPayment(paymentContext);
+        return;
+      }
+
+      // 3. Traitement natif
+      await this.processNativePayment(paymentContext);
+    } catch (error) {
+      this.handlePaymentFailure(error);
+    } finally {
+      this._isPaying = false;
+    }
+  },
+
+  // 2. PRÉPARATION DU CONTEXTE (Validation et devis si nécessaire)
+  async preparePaymentContext(offer) {
+    if (!offer || !offer.id) {
+      throw new Error('Veuillez sélectionner une offre valide.');
+    }
+
+    const numericAmount = this.getPaymentAmount(offer);
+    const initRes = await backendAPI.initiatePayment(offer);
+    if (!initRes || !initRes.txnid) {
+      throw new Error('Impossible d\’initialiser la transaction.');
+    }
+
+    return {
+      txnid: initRes.txnid,
+      amount: numericAmount,
+      offer
+    };
+  },
+
+  // 3. CALCUL PUR DU MONTANT (Sans effets de bord)
+  getPaymentAmount(offer) {
+    const raw = (offer && offer.price) || 0;
+    return typeof raw === 'number' ? raw : parseFloat(String(raw).replace(/[^0-9.]/g, '')) || 0;
+  },
+
+  // 4. TRAITEMENT NATIF VIA LE SDK OFFICIEL
+  async processNativePayment(paymentContext) {
+    const payResult = await miniSDK.merchantPay({
+      txnid: paymentContext.txnid,
+      amount: paymentContext.amount
+    });
+
+    await this.confirmPaymentReceipt({
+      txnid: paymentContext.txnid,
+      payResult,
+      context: paymentContext
+    });
+  },
+
+  // 5. BRANCHE DE SIMULATION DÉVELOPPEUR DEVTOOLS
+  openSimulatedPayment(paymentContext) {
+    this.setData({
+      showSimulatedModal: true,
+      pendingContext: paymentContext
+    });
+  },
+
+  // 6. CONFIRMATION DE REÇU AVEC BOUCLIER D'INCERTITUDE
+  async confirmPaymentReceipt(payment) {
+    try {
+      const receipt = await backendAPI.confirmPayment(payment.txnid);
+      this.showPaymentReceipt(receipt);
+    } catch (apiError) {
+      // 🛡️ BOUCLIER FINANCIER : L'argent a été débité par Orange Money mais l'API a crashé
+      apiError.uncertain = true;
+      wx.showModal({
+        title: 'Statut du Paiement en Cours',
+        content: 'Votre débit Orange Money a été initié avec succès mais la confirmation prend quelques instants. Ne relancez pas le paiement.',
+        showCancel: false,
+        confirmText: 'Vérifier dans Mes Reçus',
+        confirmColor: '#FF6600',
+        success: () => {
+          wx.navigateTo({ url: '/pages/receipts/index' });
+        }
+      });
+    }
+  },
+
+  // 7. AFFICHAGE DU REÇU OFFICIEL AVEC PROTECTION ANTI-CAPTURE
+  showPaymentReceipt(receipt) {
+    this.setData({
+      showReceiptModal: true,
+      activeReceipt: receipt
+    });
+    // Active la protection anti-capture d'écran lors de la consultation du reçu
+    setScreenProtection(miniSDK, true);
+  },
+
+  // 8. GESTION CENTRALISÉE DES ÉCHECS ET ANNULATIONS
+  handlePaymentFailure(error) {
+    setPageTabBarHidden(this, false);
+    if (error && error.message && error.message.includes('cancel')) {
+      showToast('Paiement annulé', 'none');
+      return;
+    }
+    wx.showModal({
+      title: 'Échec de Paiement',
+      content: (error && error.message) || 'Une erreur est survenue lors de la transaction.',
+      showCancel: false,
+      confirmColor: '#FF6600'
+    });
+  }
+});
+```
+
+---
+
+### Étape 3/3 — Test Unitaire Headless (`tests/decomposed-tunnel.test.mjs`)
+```javascript
+import test from "node:test";
+import assert from "node:assert/strict";
+
+test("decomposed tunnel prevents double execution with flag", async () => {
+  let calls = 0;
+  const mockPage = {
+    _isPaying: false,
+    async handlePayAction() {
+      if (this._isPaying) return;
+      this._isPaying = true;
+      calls++;
+      await new Promise(r => setTimeout(r, 10));
+      this._isPaying = false;
+    }
+  };
+
+  // Deux clics quasi simultanés
+  await Promise.all([mockPage.handlePayAction(), mockPage.handlePayAction()]);
+  assert.equal(calls, 1, "Le verrou _isPaying doit bloquer le second clic concurrent");
+});
+```

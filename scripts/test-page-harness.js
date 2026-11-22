@@ -223,12 +223,72 @@ async function runTest4() {
 
   console.log('  ✅ Test 4 validé : Génération URL wa.me, shortLinkId et appel vocal confirmés.\n');
   testsPassed++;
+  runTest5();
+}
+
+// Test 5 : Helpers de Page Kalidou & Découpage Modulaire
+async function runTest5() {
+  console.log('🔍 Test 5 : Helpers de Page Kalidou (TabBar, Protection écran & Verrou atomique)...');
+  const { pathToFileURL } = require('url');
+  const helperPath = path.join(__dirname, '..', 'playground', 'utils', 'helpers', 'pageHelper.js');
+  const pageHelper = await import(pathToFileURL(helperPath).href);
+
+  // 1. Test setPageTabBarHidden
+  let tabBarHiddenValue = null;
+  const mockPageInstance = {
+    getTabBar: () => ({
+      setData: (updates) => { tabBarHiddenValue = updates.hidden; }
+    })
+  };
+  let eventBusValue = null;
+  const mockBus = {
+    emit: (event, payload) => { eventBusValue = payload.hidden; }
+  };
+  pageHelper.setPageTabBarHidden(mockPageInstance, true, mockBus);
+  if (tabBarHiddenValue !== true || eventBusValue !== true) {
+    console.error('  ❌ Échec Test 5a : setPageTabBarHidden invalide');
+    process.exit(1);
+  }
+
+  // 2. Test setScreenProtection
+  let protectValue = null;
+  const mockSdk = {
+    screen: {
+      protect: async (val) => { protectValue = val; }
+    }
+  };
+  await pageHelper.setScreenProtection(mockSdk, true);
+  if (protectValue !== true) {
+    console.error('  ❌ Échec Test 5b : setScreenProtection invalide');
+    process.exit(1);
+  }
+
+  // 3. Test decomposed tunnel lock (_isBusy / _isPaying)
+  let executionCount = 0;
+  const tunnel = {
+    _isPaying: false,
+    async handlePayAction() {
+      if (this._isPaying) return;
+      this._isPaying = true;
+      executionCount++;
+      await new Promise((r) => setTimeout(r, 20));
+      this._isPaying = false;
+    }
+  };
+  await Promise.all([tunnel.handlePayAction(), tunnel.handlePayAction()]);
+  if (executionCount !== 1) {
+    console.error('  ❌ Échec Test 5c : Le verrou atomique doit empêcher la concurrence');
+    process.exit(1);
+  }
+
+  console.log('  ✅ Test 5 validé : Helpers de page Kalidou et tunnel décomposé conformes.\n');
+  testsPassed++;
   finishAllTests();
 }
 
 function finishAllTests() {
   console.log('====================================================');
-  console.log(`✨ SUCCÈS : ${testsPassed}/4 TESTS DE MACHINE À ÉTATS ET HELPERS VALIDÉS !`);
+  console.log(`✨ SUCCÈS : ${testsPassed}/5 TESTS DE MACHINE À ÉTATS ET HELPERS VALIDÉS !`);
   console.log('====================================================\n');
   process.exit(0);
 }

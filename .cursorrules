@@ -27,6 +27,7 @@ You MUST follow ALL rules in this document for every code change.
 | `@COMPILER-SAFE` | Élimine les pièges de compilation fatals : zéro BOM UTF-8 (`\uFEFF`), zéro `@font-face` local, clauses de garde obligatoires dans `onLoad` avec retour automatique. |
 | `@TUNNEL-COMPLEXE` | Orchestre les entonnoirs multi-écrans : générateur PDF vectoriel natif 0 dépendance (%PDF-1.4), plan de sièges GDS 15 champs, rendu par lots de 20 (batching anti-freeze IPC) et décomposition tarifaire certifiée. |
 | `@SUPPORT-WHATSAPP` | Déploie le pont hybride support client (WhatsApp Business, Téléphone vocal, E-mail) : modale in-app anti-écran noir pour simulateur DevTools, appui long (`show-menu-by-longpress`) et ActionSheet multi-canaux. |
+| `@DECOMPOSE-METHODS` | Découpe les tunnels complexes monolithiques (> 35 lignes) en 6 sous-méthodes atomiques (Pattern Kalidou) avec gestion error.uncertain et helpers de page. |
 
 ---
 
@@ -235,4 +236,21 @@ Toujours utiliser les clés de traduction : `{{ t('ma.cle') }}`
 2. **Appui Long Natif Obligatoire :** Place toujours `show-menu-by-longpress="{{ true }}"` sur la balise `<image>` du QR Code pour que l'utilisateur mobile puisse déclencher l'action "Identifier le code QR" sans matériel externe.
 3. **ActionSheet Hybride Multi-Canaux :** Offre 3 options résilientes : 📷 Afficher QR Code, 📋 Copier lien direct (avec `wa.me/message/...` ou message pré-rempli `?text=...`), 📞 Appel vocal direct `wx.makePhoneCall`.
 4. **Retour Haptique & Feedback :** Tout événement de copie presse-papier doit appeler `wx.vibrateShort({ type: 'medium' })` et un toast de confirmation.
+
+---
+
+## RÈGLE 11 — Découpage Strict des Tunnels Monolithiques (Pattern Kalidou)
+
+1. **Bannir les fonctions monolithiques > 35 lignes :** Ne jamais mélanger préparation, calcul, appel SDK, confirmation et gestion d'erreur dans une seule fonction géante.
+2. **Architecture Standardisée en 6 Méthodes :**
+   - `handlePayAction()` / `handleMainAction()` : Orchestrateur pur protégé par verrou `_isBusy` / `_isPaying` avec `try / catch / finally`.
+   - `preparePaymentContext(item)` : Validation de l'objet et initialisation de la transaction backend.
+   - `getPaymentAmount(item)` : Calcul pur sans effets de bord.
+   - `processNativePayment(context)` : Appel direct au SDK officiel (`miniSDK.merchantPay`).
+   - `openSimulatedPayment(context)` : Fallback automatique simulateur DevTools.
+   - `confirmPaymentReceipt(payment)` : Confirmation backend avec étiquette `apiError.uncertain = true` en cas de timeout post-débit.
+   - `handlePaymentFailure(error)` : Centralisation bienveillante des erreurs et annulations.
+3. **Protection Mémoire Écran Obligatoire :** Tout appel à `setScreenProtection(sdk, true)` doit être annulé avec `setScreenProtection(sdk, false)` dans `onHide` et `onUnload`.
+4. **Gestion Déclarative de la TabBar :** Utiliser `setPageTabBarHidden(page, hidden)` pour éviter les scintillements visuels lors de l'ouverture de modales ou tiroirs plein écran.
+
 

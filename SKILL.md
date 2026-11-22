@@ -34,6 +34,7 @@ Ce skill impose les règles strictes d'ingénierie logicielle pour concevoir, st
 | **`@COMPILER-SAFE`** | Compilateur TCMPP | Élimine les pièges de compilation fatals : zéro BOM UTF-8 (`\uFEFF`), zéro `@font-face` local, clauses de garde obligatoires dans `onLoad` avec retour automatique. |
 | **`@TUNNEL-COMPLEXE`** | Billetterie & Funnels | Orchestre les entonnoirs multi-écrans : générateur PDF vectoriel natif 0 dépendance (%PDF-1.4), plan de sièges GDS 15 champs, rendu par lots de 20 (batching anti-freeze IPC) et décomposition tarifaire certifiée. |
 | **`@SUPPORT-WHATSAPP`** | Support & WhatsApp | Déploie le pont hybride support client (WhatsApp Business, Téléphone vocal, E-mail) : modale in-app anti-écran noir pour simulateur DevTools, appui long (`show-menu-by-longpress`) et ActionSheet multi-canaux. |
+| **`@DECOMPOSE-METHODS`** | Découpage Modulaire | Découpe les tunnels complexes (> 35 lignes) en 6 sous-méthodes atomiques (Pattern Kalidou) avec gestion error.uncertain et helpers de page. |
 
 ---
 
@@ -275,4 +276,21 @@ Exécuter impérativement dans cet ordre :
 - **Détection Appui Long Mobile (`show-menu-by-longpress`) :** Activer l'attribut natif WeChat sur la balise `<image>` pour permettre à l'utilisateur de scanner le QR code directement depuis l'écran de son smartphone sans second appareil.
 - **Support Universel Liens Courts & Messages Pré-remplis :** Construction sécurisée d'URLs WhatsApp avec liens courts Business (`wa.me/message/...`) ou paramètres encodés (`wa.me/<phone>?text=...`).
 - **ActionSheet Multi-Canaux Résilient :** Menu natif proposant l'affichage du QR Code, la copie du lien direct (avec vibration haptique et confirmation toast) et l'appel vocal direct (`wx.makePhoneCall`).
+
+### 6.10 Découpage Modulaire des Tunnels Complexes & Helpers de Page (Pattern Kalidou)
+- **Bannir les fonctions monolithiques > 35 lignes :** Ne jamais mélanger préparation, calcul, appel SDK, confirmation et gestion d'erreur dans une seule fonction géante.
+- **Découpage strict en 6 sous-méthodes atomiques :**
+  1. `handlePayAction()` : Orchestrateur pur avec verrou `_isPaying` et gestion `try / catch / finally`.
+  2. `preparePaymentContext(offer)` : Validation et devis/initiation de la transaction backend.
+  3. `getPaymentAmount(offer)` : Calcul pur sans effets de bord.
+  4. `processNativePayment(context)` : Déclenchement du paiement via le SDK officiel (`miniSDK.merchantPay`).
+  5. `openSimulatedPayment(context)` : Fallback développeur pour le simulateur WeChat DevTools.
+  6. `confirmPaymentReceipt(payment)` : Confirmation backend avec marquage `error.uncertain = true` en cas de timeout post-débit (bouclier anti-double débit).
+  7. `handlePaymentFailure(error)` : Gestion centralisée des annulations et échecs avec dialogue d'information bienveillant.
+- **Helpers transverses centralisés (`utils/helpers/pageHelper.js`) :**
+  - `setPageTabBarHidden(page, hidden, eventBus)` : Contrôle de la visibilité de la Custom TabBar sans scintillement.
+  - `setScreenProtection(sdk, enabled)` : Activation/désactivation de la protection anti-capture d'écran (`sdk.screen.protect`) avec désactivation obligatoire dans `onHide` et `onUnload`.
+  - `retryAsync(fn, options)` : Relance avec backoff exponentiel pour les opérations post-paiement.
+- *Référentiel détaillé : [docs/DOC_RECETTES_COPIER_COLLER.md](docs/DOC_RECETTES_COPIER_COLLER.md#recette-74).*
+
 
