@@ -13,8 +13,10 @@
     "test:generators": "node scripts/test-generators.js",
     "test:bundle": "node scripts/bundle-doctor.js --self-test",
     "test:guardian": "node scripts/guardian-doctor.js --self-test",
+    "test:journal": "node scripts/state-journal.js --self-test",
     "test:harness": "node scripts/test-page-harness.js",
-    "test": "node scripts/skill-doctor.js && node scripts/test-generators.js && node scripts/bundle-doctor.js --self-test && node scripts/guardian-doctor.js --self-test && node scripts/test-page-harness.js",
+    "test": "node scripts/skill-doctor.js && node scripts/test-generators.js && node scripts/bundle-doctor.js --self-test && node scripts/guardian-doctor.js --self-test && node scripts/state-journal.js --self-test && node scripts/test-page-harness.js",
+    "task:status": "node scripts/state-journal.js status",
     "create:page": "node scripts/create-page.js",
     "create:component": "node scripts/create-component.js",
     "create:api": "node scripts/create-api.js"

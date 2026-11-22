@@ -325,3 +325,21 @@ Toujours utiliser les clés de traduction : `{{ t('ma.cle') }}`
      > « **Tu confirmes la fusion vers la branche `develop` : oui ou non ?** »
    - Si l'utilisateur repond **oui** (ou `"je confirme"`), l'agent fournit les commandes exactes pretes a copier-coller pour que le developpeur realise la fusion en toute serenite.
    - Si l'utilisateur repond **non**, l'agent conserve la branche de travail intacte et ne touche a rien.
+
+---
+
+## REGLE 15 - Memoire d'Etat Persistante, Journal Developpeur & Regle Git Branch-First
+
+1. **Memoire Persistante Anti-Crash (.pmt-state.json) :**
+   - A chaque etape d'une tache, l'etat est synchronise dans `.pmt-state.json` a la racine du projet.
+   - En cas de coupure de courant, de crash ou d'extinction de la machine, l'agent lit `.pmt-state.json` des la reprise et continue exactement la ou le travail s'etait arrete.
+
+2. **Regle Git Branch-First ("Zero code direct sur main/develop") :**
+   - Avant de modifier ou d'ecrire la moindre ligne de code, l'agent verifie la branche courante.
+   - S'il se trouve sur `main`, `master` ou `develop`, il a l'obligation stricte d'initialiser une branche locale isolee (`feat/<slug>` ou `fix/<slug>`).
+   - Le code et les tests se font exclusivement sur cette branche.
+
+3. **Tracabilite & Journal de Bord par Developpeur (docs/journal/<dev>/YYYY-MM-DD.md) :**
+   - Chaque developpeur possede son espace dedie dans `docs/journal/<nom-developpeur>/`.
+   - Chaque tache demarree et chaque tache validee est horodatee a la seconde pres avec la date, l'heure, l'ID de tache, la liste des fichiers touches et le hash du commit Git.
+   - Permet un audit historique infalsifiable a tout moment.

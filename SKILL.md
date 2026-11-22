@@ -358,3 +358,8 @@ Exécuter impérativement dans cet ordre :
 - **Interdiction de Fusion Autonome :** L'agent ne merge jamais de son propre chef.
 - **Validation Formelle :** L'agent pose obligatoirement la question :
   > « **Tu confirmes la fusion vers la branche `develop` : oui ou non ?** »
+
+### 7.4 Memoire Persistante, Journal Developpeur & Regle Branch-First (Regle 15)
+- **Persistance Anti-Crash :** Fichier d'etat `.pmt-state.json` pour reprise sans perte apres extinction ou deconnexion.
+- **Regle Branch-First :** Creation automatique de branche locale (`feat/*`, `fix/*`) - interdiction de coder sur `develop` ou `main`.
+- **Journal d'Audit Quotidien :** `docs/journal/<developpeur>/YYYY-MM-DD.md` enregistre chaque action horodatee avec son hash de commit.
