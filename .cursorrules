@@ -25,6 +25,8 @@ You MUST follow ALL rules in this document for every code change.
 | `@ANALYTICS-TRACK` | Suivi d'audience et de conversion conforme Sonatel/Orange : traçage des écrans (`page_view`), clics CTA, tunnel de réservation et paiements avec file d'attente hors-ligne. |
 | `@DARK-MODE` | Support du mode sombre natif WeChat (`theme.json`), variables CSS sémantiques adaptatives et respect des normes de contraste WCAG AA. |
 | `@COMPILER-SAFE` | Élimine les pièges de compilation fatals : zéro BOM UTF-8 (`\uFEFF`), zéro `@font-face` local, clauses de garde obligatoires dans `onLoad` avec retour automatique. |
+| `@TUNNEL-COMPLEXE` | Orchestre les entonnoirs multi-écrans : générateur PDF vectoriel natif 0 dépendance (%PDF-1.4), plan de sièges GDS 15 champs, rendu par lots de 20 (batching anti-freeze IPC) et décomposition tarifaire certifiée. |
+| `@SUPPORT-WHATSAPP` | Déploie le pont hybride support client (WhatsApp Business, Téléphone vocal, E-mail) : modale in-app anti-écran noir pour simulateur DevTools, appui long (`show-menu-by-longpress`) et ActionSheet multi-canaux. |
 
 ---
 
@@ -224,3 +226,13 @@ Toujours utiliser les clés de traduction : `{{ t('ma.cle') }}`
 1. **Feedback Tactile :** N'utilise JAMAIS `:active`. Utilise toujours `hover-class="btn--pressed"` avec `transform: scale(0.96); opacity: 0.85;`.
 2. **Entrée de Page Fluide :** Ajoute la classe `.page-enter` sur le conteneur principal de la page (`cubic-bezier(0.22, 1, 0.36, 1)`).
 3. **Animations Séquentielles :** Utilise `wx.createAnimation()` pour les séquences de succès / pop avec docking.
+
+---
+
+## RÈGLE 10 — Support Client WhatsApp & Modale Anti-Black-Screen
+
+1. **Pas de `wx.previewImage` sur chemins relatifs locaux :** Sur WeChat DevTools PC, `wx.previewImage({ urls: ['/assets/...'] })` bloque sur un écran noir infini. Utilise toujours une modale in-app (`<whatsapp-modal>` ou `<osn-modal>`).
+2. **Appui Long Natif Obligatoire :** Place toujours `show-menu-by-longpress="{{ true }}"` sur la balise `<image>` du QR Code pour que l'utilisateur mobile puisse déclencher l'action "Identifier le code QR" sans matériel externe.
+3. **ActionSheet Hybride Multi-Canaux :** Offre 3 options résilientes : 📷 Afficher QR Code, 📋 Copier lien direct (avec `wa.me/message/...` ou message pré-rempli `?text=...`), 📞 Appel vocal direct `wx.makePhoneCall`.
+4. **Retour Haptique & Feedback :** Tout événement de copie presse-papier doit appeler `wx.vibrateShort({ type: 'medium' })` et un toast de confirmation.
+

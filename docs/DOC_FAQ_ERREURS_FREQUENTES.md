@@ -101,6 +101,20 @@ this.setData({ uiState: 'content', liste: data, total: data.length });
 
 ---
 
+**Q : Pourquoi `wx.previewImage()` bloque-t-il sur un écran noir infini dans WeChat DevTools sur PC ?**
+> `wx.previewImage` sur PC attend des URL distantes `https://` ou des fichiers temporaires `wxfile://`. Si on lui passe un chemin relatif d'asset local (`/assets/...`), le lecteur d'image natif de WeChat n'arrive pas à le résoudre et boucle sur un écran noir avec une roue de chargement.
+> **Solution recommandée (Recette 73) :** Afficher l'image ou le QR Code dans une modale in-app (`<whatsapp-modal>` ou `<osn-modal>`) avec l'attribut `show-menu-by-longpress="{{ true }}"` sur la balise `<image>`. Sur mobile, l'utilisateur fait un appui long d'1 seconde pour identifier le QR code et ouvrir WhatsApp directement, et sur simulateur PC DevTools l'image s'affiche instantanément à 100%.
+```xml
+<!-- Modale In-App avec détection appui long natif -->
+<image
+  src="/assets/images/contact/whatsapp-qr.png"
+  mode="widthFix"
+  show-menu-by-longpress="{{ true }}"
+/>
+```
+
+---
+
 **Q : Comment afficher un texte différent si une liste est vide ou si elle a des items ?**
 > Utilisez `wx:if` et `wx:else` directement dans le WXML.
 ```xml

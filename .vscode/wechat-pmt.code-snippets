@@ -549,5 +549,20 @@
       "  }",
       "});"
     ]
+  },
+  "PMT: WhatsApp In-App Modal (WXML)": {
+    "scope": "xml,html",
+    "prefix": "pmt-whatsapp-modal",
+    "description": "Template WXML pour modale in-app WhatsApp anti-écran noir avec scan appui long natif",
+    "body": [
+      "<whatsapp-modal",
+      "  visible=\"{{ ${1:showWhatsAppModal} }}\"",
+      "  title=\"${2:WhatsApp — Support Client}\"",
+      "  qrImage=\"${3:/assets/images/contact/whatsapp-qr.png}\"",
+      "  whatsappUrl=\"${4:https://wa.me/message/F5VM5FMWEDWLJ1}\"",
+      "  hintText=\"${5:Maintenez le doigt sur le code pour ouvrir WhatsApp}\"",
+      "  bind:close=\"${6:handleCloseWhatsAppModal}\"",
+      "/>"
+    ]
   }
 }

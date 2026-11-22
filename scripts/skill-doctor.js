@@ -136,6 +136,7 @@ if (fs.existsSync(skillMdPath)) {
     '@DARK-MODE',
     '@COMPILER-SAFE',
     '@TUNNEL-COMPLEXE',
+    '@SUPPORT-WHATSAPP',
   ];
 
   let missingTriggers = 0;

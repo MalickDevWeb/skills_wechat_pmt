@@ -269,3 +269,10 @@ Exécuter impérativement dans cet ordre :
 - Pagination dynamique (`paginateTicketModel`) prévenant les dépassements de mémoire GPU (anti-OOM).
 - Enregistrement dans l'album photo (`saveTicketToPhotosAlbum`) avec détection `auth deny` et guidage vers `wx.openSetting`.
 - *Référentiel détaillé : [docs/DOC_TUNNELS_METIERS_ET_BILLETTERIE_AVANCEE.md](docs/DOC_TUNNELS_METIERS_ET_BILLETTERIE_AVANCEE.md).*
+
+### 6.9 Pont Hybride Support Client WhatsApp & Modale Anti-Black-Screen (`whatsappBridge.js`)
+- **Élimination de l'écran noir DevTools :** Bannir `wx.previewImage({ urls: ['/assets/...'] })` pour les assets locaux dans le simulateur PC. Afficher une modale in-app (`<whatsapp-modal>` ou `<osn-modal>`) centrée.
+- **Détection Appui Long Mobile (`show-menu-by-longpress`) :** Activer l'attribut natif WeChat sur la balise `<image>` pour permettre à l'utilisateur de scanner le QR code directement depuis l'écran de son smartphone sans second appareil.
+- **Support Universel Liens Courts & Messages Pré-remplis :** Construction sécurisée d'URLs WhatsApp avec liens courts Business (`wa.me/message/...`) ou paramètres encodés (`wa.me/<phone>?text=...`).
+- **ActionSheet Multi-Canaux Résilient :** Menu natif proposant l'affichage du QR Code, la copie du lien direct (avec vibration haptique et confirmation toast) et l'appel vocal direct (`wx.makePhoneCall`).
+

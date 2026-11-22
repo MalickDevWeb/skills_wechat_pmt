@@ -180,7 +180,7 @@ function runTest3() {
     if (intervalCleared && eventUnsubscribed && harness3.timerId === null) {
       console.log('  ✅ Test 3 validé : Timer nettoyé et ressources libérées sans fuite.\n');
       testsPassed++;
-      finishAllTests();
+      runTest4();
     } else {
       console.error('  ❌ Échec Test 3 : Ressources non libérées dans onUnload');
       process.exit(1);
@@ -188,9 +188,47 @@ function runTest3() {
   });
 }
 
+// Test 4 : Pont Hybride WhatsApp & Formatage Téléphone
+async function runTest4() {
+  console.log('🔍 Test 4 : Pont Hybride WhatsApp (URL, shortLinkId, encodage et téléphone)...');
+  const { pathToFileURL } = require('url');
+  const bridgePath = path.join(__dirname, '..', 'playground', 'utils', 'helpers', 'whatsappBridge.js');
+  const bridge = await import(pathToFileURL(bridgePath).href);
+
+  // 1. Test shortLinkId
+  const url1 = bridge.buildWhatsAppUrl({ shortLinkId: 'F5VM5FMWEDWLJ1' });
+  if (url1 !== 'https://wa.me/message/F5VM5FMWEDWLJ1') {
+    console.error('  ❌ Échec Test 4a : shortLinkId invalide', url1);
+    process.exit(1);
+  }
+
+  // 2. Test phone + message
+  const url2 = bridge.buildWhatsAppUrl({ phone: '+221 77 000 00 00', message: 'Bonjour Fly Afritrip' });
+  if (url2 !== 'https://wa.me/221770000000?text=Bonjour%20Fly%20Afritrip') {
+    console.error('  ❌ Échec Test 4b : phone + text invalide', url2);
+    process.exit(1);
+  }
+
+  // 3. Test phone call helper
+  let callNumber = '';
+  global.wx.makePhoneCall = (opts) => {
+    callNumber = opts.phoneNumber;
+    if (opts.success) opts.success();
+  };
+  await bridge.makeSupportPhoneCall('+221 77 000 00 00');
+  if (callNumber !== '221770000000') {
+    console.error('  ❌ Échec Test 4c : nettoyage numéro makePhoneCall invalide', callNumber);
+    process.exit(1);
+  }
+
+  console.log('  ✅ Test 4 validé : Génération URL wa.me, shortLinkId et appel vocal confirmés.\n');
+  testsPassed++;
+  finishAllTests();
+}
+
 function finishAllTests() {
   console.log('====================================================');
-  console.log(`✨ SUCCÈS : ${testsPassed}/3 TESTS DE MACHINE À ÉTATS VALIDÉS !`);
+  console.log(`✨ SUCCÈS : ${testsPassed}/4 TESTS DE MACHINE À ÉTATS ET HELPERS VALIDÉS !`);
   console.log('====================================================\n');
   process.exit(0);
 }

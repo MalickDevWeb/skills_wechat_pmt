@@ -74,7 +74,7 @@ export function copyToClipboard(data, toastTitle = "Copié !") {
  */
 export function makeSupportPhoneCall(phoneNumber) {
   return new Promise((resolve) => {
-    const cleanPhone = String(phoneNumber || "").replace(/[^0-9+]/g, "");
+    const cleanPhone = String(phoneNumber || "").replace(/[^0-9]/g, "");
     if (!cleanPhone) return resolve(false);
     wx.makePhoneCall({
       phoneNumber: cleanPhone,
