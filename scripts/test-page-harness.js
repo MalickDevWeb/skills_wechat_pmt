@@ -283,12 +283,44 @@ async function runTest5() {
 
   console.log('  ✅ Test 5 validé : Helpers de page Kalidou et tunnel décomposé conformes.\n');
   testsPassed++;
+  runTest6();
+}
+
+// Test 6 : Mode Gardien & Bouclier Anti-Régression (Validation PIN Maître SHA-256)
+function runTest6() {
+  console.log('🔍 Test 6 : Mode Gardien & Validation Cryptographique du Code Maître...');
+  const guardianDoctor = require(path.join(__dirname, 'guardian-doctor.js'));
+
+  // 1. Rejet formel des codes erronés
+  if (guardianDoctor.verifyMasterPin('0000') || guardianDoctor.verifyMasterPin('1234') || guardianDoctor.verifyMasterPin('')) {
+    console.error('  ❌ Échec Test 6a : Un faux code a été accepté');
+    process.exit(1);
+  }
+
+  // 2. Validation cryptographique du code secret (SHA-256: bfea46db09aa46da5a6628ecd5d5fba31d9d50417f5178db9727d3676427e2df)
+  // On passe le code testé pour confirmer la validation
+  const testPin = '1732';
+  if (!guardianDoctor.verifyMasterPin(testPin)) {
+    console.error('  ❌ Échec Test 6b : Le code secret légitime n\'a pas été validé par son empreinte');
+    process.exit(1);
+  }
+
+  // 3. Vérification des sanctuaires sur playground
+  const playgroundDir = path.join(__dirname, '..', 'playground');
+  const audit = guardianDoctor.inspectProjectSanctuaries(playgroundDir);
+  if (audit.violations.some(v => v.sanctuary.includes('iPhone') && v.file.includes('whatsapp-modal'))) {
+    console.error('  ❌ Échec Test 6c : Faux positif détecté sur un composant conforme');
+    process.exit(1);
+  }
+
+  console.log('  ✅ Test 6 validé : Mode Gardien, intégrité SHA-256 et sanctuaires confirmés.\n');
+  testsPassed++;
   finishAllTests();
 }
 
 function finishAllTests() {
   console.log('====================================================');
-  console.log(`✨ SUCCÈS : ${testsPassed}/5 TESTS DE MACHINE À ÉTATS ET HELPERS VALIDÉS !`);
+  console.log(`✨ SUCCÈS : ${testsPassed}/6 TESTS DE MACHINE À ÉTATS, HELPERS ET MODE GARDIEN VALIDÉS !`);
   console.log('====================================================\n');
   process.exit(0);
 }

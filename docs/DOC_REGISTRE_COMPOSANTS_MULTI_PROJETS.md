@@ -101,3 +101,4 @@ Lorsque l'utilisateur soumet un prompt pour une nouvelle fonctionnalité, l'agen
 3. SEUIL DE DÉCOUPAGE :
    - Si la fonction du contrôleur dépasse 35-40 lignes : appliquer la Recette 74 (Pattern Kalidou en 6 sous-méthodes).
 ```
+

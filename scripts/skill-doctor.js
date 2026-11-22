@@ -138,6 +138,7 @@ if (fs.existsSync(skillMdPath)) {
     '@TUNNEL-COMPLEXE',
     '@SUPPORT-WHATSAPP',
     '@DECOMPOSE-METHODS',
+    '@GUARDIAN-LOCK',
   ];
 
   let missingTriggers = 0;
