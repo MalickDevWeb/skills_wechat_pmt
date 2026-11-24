@@ -3,7 +3,11 @@
   "version": "2.0.0",
   "description": "Le Référentiel Industriel & Kit d'Architecture pour WeChat Mini-Program (PMT / TCMPP)",
   "main": "scripts/skill-doctor.js",
+  "bin": {
+    "wechat-pmt": "scripts/cli.js"
+  },
   "scripts": {
+    "init": "node scripts/cli.js init",
     "lint": "node scripts/skill-doctor.js",
     "doctor": "node scripts/skill-doctor.js",
     "analyze": "node scripts/bundle-doctor.js",
