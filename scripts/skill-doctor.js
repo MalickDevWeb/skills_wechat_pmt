@@ -195,6 +195,32 @@ if (brokenLinksCount === 0) {
 }
 
 // -----------------------------------------------------------------------------
+// TEST 6 : DÉTECTION DES FICHIERS DE CONFIG & AUTO-HEAL
+// -----------------------------------------------------------------------------
+console.log('🔍 Test 6 : Contrôle des fichiers de configuration & Auto-Heal...');
+let missingConfigsCount = 0;
+
+// Auto-heal pour les fichiers d'exemple (ex: config.example.js -> config.js)
+const exampleFiles = allFiles.filter((f) => f.endsWith('.example.js'));
+exampleFiles.forEach((exampleFile) => {
+  const targetFile = exampleFile.replace(/\.example\.js$/, '.js');
+  if (!fs.existsSync(targetFile)) {
+    try {
+      fs.copyFileSync(exampleFile, targetFile);
+      console.log(`  ⚡ [Auto-Heal] Fichier régénéré automatiquement : ${path.basename(targetFile)} depuis ${path.basename(exampleFile)}`);
+    } catch (e) {
+      console.error(`  ❌ Impossible de générer ${targetFile} : ${e.message}`);
+      missingConfigsCount++;
+      hasError = true;
+    }
+  }
+});
+
+if (missingConfigsCount === 0) {
+  console.log('  ✅ Fichiers de configuration contrôlés et opérationnels.\n');
+}
+
+// -----------------------------------------------------------------------------
 // BILAN FINAL
 // -----------------------------------------------------------------------------
 console.log('====================================================');
