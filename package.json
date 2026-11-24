@@ -1,5 +1,5 @@
 {
-  "name": "wechat-pmt-skills",
+  "name": "wechat-pmt",
   "version": "2.0.0",
   "description": "Le Référentiel Industriel & Kit d'Architecture pour WeChat Mini-Program (PMT / TCMPP)",
   "main": "scripts/skill-doctor.js",
