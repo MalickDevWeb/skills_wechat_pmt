@@ -81,6 +81,16 @@ Tout agent opérant sous ce référentiel (Antigravity, Claude Code, Cursor, Cod
   - Vérification des Safe Areas iPhone (`calc(XXrpx + env(safe-area-inset-bottom))`).
 - L'agent ne rend la main au développeur QU'APRÈS avoir exécuté et confirmé que tous les tests sont au vert.
 
+### 4. Réflexe Pré-Merge & Simulation Sans Risque (Merge Doctor OBLIGATOIRE avant tout Push / MR) :
+- Avant de pousser (`git push`) ou d'ouvrir/actualiser une Merge Request vers `develop`, l'agent DOIT impérativement exécuter :
+  `node scripts/merge-doctor.js` (ou `npm run merge:doctor`).
+- L'agent audite automatiquement :
+  - Zéro code mort ou duplication de conditions (`DEAD_CODE_DUPLICATE_BRANCH`).
+  - Scellage bancaire strict : `_confirmedTxnid` lié obligatoirement à `_confirmedOfferId`.
+  - Intégrité du chargement différé TCMPP (`lazyCodeLoading: "requiredComponents"`).
+  - Zéro composant orphelin déclaré dans `usingComponents`.
+- Si une anomalie est détectée, l'agent applique ou propose le correctif AVANT de pousser pour garantir zéro blocage sur GitLab CI / GitLab Duo.
+
 
 ---
 

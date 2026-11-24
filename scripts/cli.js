@@ -123,11 +123,19 @@ import config from '../config.js';
  * @param {Function} confirmBackendCall Fonction async validant la commande côté serveur
  */
 export async function executePaymentWithShield(context, paymentParams, confirmBackendCall) {
-  // 1. VÉRIFICATION DU SCELLAGE EXISTANT (Bouclier Bancaire)
+  const offerKey = String(paymentParams.orderId || paymentParams.offerId || paymentParams.amount || 'default');
+
+  // 1. VÉRIFICATION DU SCELLAGE EXISTANT AVEC CONTRÔLE D'OFFRE
   if (context._confirmedTxnid) {
-    console.warn('[Bouclier Orange Money] Débit bancaire déjà validé avec txnid :', context._confirmedTxnid);
-    console.warn('[Bouclier Orange Money] Saut de l\'appel natif -> Rejeu direct de la confirmation backend.');
-    return await reconfirmBackendWithPolling(context._confirmedTxnid, confirmBackendCall);
+    if (context._confirmedOfferKey && context._confirmedOfferKey !== offerKey) {
+      console.warn('[Bouclier Orange Money] Changement d\'offre détecté. Réinitialisation du scellement précédent.');
+      context._confirmedTxnid = null;
+      context._confirmedOfferKey = null;
+    } else {
+      console.warn('[Bouclier Orange Money] Débit bancaire déjà validé avec txnid :', context._confirmedTxnid);
+      console.warn('[Bouclier Orange Money] Saut de l\'appel natif -> Rejeu direct de la confirmation backend.');
+      return await reconfirmBackendWithPolling(context._confirmedTxnid, confirmBackendCall);
+    }
   }
 
   // 2. APPEL DU PLUGIN NATIF MAX IT / ORANGE MONEY
@@ -135,10 +143,18 @@ export async function executePaymentWithShield(context, paymentParams, confirmBa
 
   // 3. SCELLAGE IMMÉDIAT DÈS LE SUCCÈS BANCAIRE
   context._confirmedTxnid = String(txnid);
-  console.log('[Bouclier Orange Money] Transaction scellée avec succès :', context._confirmedTxnid);
+  context._confirmedOfferKey = offerKey;
+  console.log('[Bouclier Orange Money] Transaction scellée avec succès :', context._confirmedTxnid, 'pour l\'offre :', offerKey);
 
   // 4. VALIDATION BACKEND AVEC SMART POLLING (Résilience 4G)
-  return await reconfirmBackendWithPolling(context._confirmedTxnid, confirmBackendCall);
+  try {
+    const res = await reconfirmBackendWithPolling(context._confirmedTxnid, confirmBackendCall);
+    context._confirmedTxnid = null;
+    context._confirmedOfferKey = null;
+    return res;
+  } catch (err) {
+    throw err;
+  }
 }
 
 /**
@@ -221,6 +237,7 @@ async function reconfirmBackendWithPolling(txnid, confirmBackendCall, maxRetries
     'e2e-runner.js',
     'bundle-doctor.js',
     'tcmpp-matrix.js',
+    'merge-doctor.js',
     'create-page.js',
     'create-component.js',
     'create-api.js',
@@ -258,6 +275,7 @@ async function reconfirmBackendWithPolling(txnid, confirmBackendCall, maxRetries
   targetPkg.scripts.test = "node scripts/test-page-harness.js && node scripts/check-wechat-quality.cjs . && node scripts/tcmpp-matrix.js . && node scripts/e2e-runner.js .";
   targetPkg.scripts.fix = "node scripts/check-wechat-quality.cjs . --fix";
   targetPkg.scripts['audit:tcmpp'] = "node scripts/tcmpp-matrix.js .";
+  targetPkg.scripts['merge:doctor'] = "node scripts/merge-doctor.js";
   targetPkg.scripts['test:harness'] = "node scripts/test-page-harness.js";
   targetPkg.scripts['test:e2e'] = "node scripts/e2e-runner.js .";
   targetPkg.scripts['quality:wechat'] = "node scripts/check-wechat-quality.cjs .";
@@ -266,9 +284,9 @@ async function reconfirmBackendWithPolling(txnid, confirmBackendCall, maxRetries
   targetPkg.scripts['create:api'] = "node scripts/create-api.js";
 
   fs.writeFileSync(targetPkgPath, JSON.stringify(targetPkg, null, 2) + '\n', 'utf8');
-  console.log('  ✅ Scripts de tests (Harness, TCA, E2E, Matrice TCMPP) et générateurs installés.');
+  console.log('  ✅ Scripts de tests (Harness, TCA, E2E, Matrice TCMPP, Merge Doctor) et générateurs installés.');
   console.log('  ✅ tcmpp.config.json configuré (Profil Sonatel Max It 2.4.x / 3.0.x).');
-  console.log('  ✅ package.json configuré avec npm test et npm run fix.\n');
+  console.log('  ✅ package.json configuré avec npm test, npm run fix et npm run merge:doctor.\n');
 
   console.log('====================================================');
   console.log('🎉 PROJET INITIALISÉ AVEC SUCCÈS ! (100% CONFORME TCMPP)');
@@ -278,15 +296,29 @@ async function reconfirmBackendWithPolling(txnid, confirmBackendCall, maxRetries
   process.exit(0);
 }
 
+if (command === 'merge-doctor' || command === 'merge:doctor') {
+  const mergeDoctorScript = path.join(skillRoot, 'scripts', 'merge-doctor.js');
+  const forwardedArgs = process.argv.slice(3).map(a => `"${a}"`).join(' ');
+  const { execSync } = require('child_process');
+  try {
+    execSync(`node "${mergeDoctorScript}" ${forwardedArgs}`, { stdio: 'inherit' });
+    process.exit(0);
+  } catch (err) {
+    process.exit(err.status || 1);
+  }
+}
+
 // Affiche l'aide
 console.log(`
 ⚡ WeChat PMT CLI — Outil d'Architecture & Production
 
 Usage :
   npx wechat-pmt init [dossier-cible]     Initialise un projet WeChat avec les standards Sonatel
+  npx wechat-pmt merge-doctor [cible]     Simulateur prédictif de merge en arrière-plan
   node scripts/cli.js init [dossier]      Initialise un projet en local
 
 Options :
-  init        Déploie les directives IA, la triade de composants UI et le bouclier bancaire
-  --help      Affiche ce message d'aide
+  init          Déploie les directives IA, la triade de composants UI et le bouclier bancaire
+  merge-doctor  Analyse en mémoire les conflits Git et guide la réconciliation (Zero-Risk)
+  --help        Affiche ce message d'aide
 `);

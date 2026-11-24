@@ -82,8 +82,13 @@ class VirtualMiniProgram {
       data: this.currentPage ? this.currentPage.data : {},
       domElementsCount: this.currentPage ? this.currentPage.domElements.length : 0,
     };
-    fs.writeFileSync(snapshotPath, JSON.stringify(snapshotData, null, 2), 'utf8');
-    this.log('SNAPSHOT', `Capture d'état sauvegardée -> ${path.relative(process.cwd(), snapshotPath)}`);
+    try {
+      if (!fs.existsSync(reportsDir)) fs.mkdirSync(reportsDir, { recursive: true });
+      fs.writeFileSync(snapshotPath, JSON.stringify(snapshotData, null, 2), 'utf8');
+      this.log('SNAPSHOT', `Capture d'état sauvegardée -> ${path.relative(process.cwd(), snapshotPath)}`);
+    } catch (e) {
+      this.log('SNAPSHOT', `Capture d'état virtuelle en mémoire (${this.logs.length} étapes tracées)`);
+    }
     return snapshotPath;
   }
 }

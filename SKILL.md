@@ -352,12 +352,19 @@ Exécuter impérativement dans cet ordre :
 
 
 
-### 7.3 Protocole de Fusion Simulee & Controle Humain (Regle 14)
-- **Branche Cible par Defaut (`develop`) :** Dans Gitflow, toute integration se fait vers la branche `develop`.
-- **Simulation a Blanc :** L'agent simule le merge (`git merge --no-commit --no-ff`) pour prouver l'absence de conflit et l'integrite du Test Harness sans alterer le code.
-- **Interdiction de Fusion Autonome :** L'agent ne merge jamais de son propre chef.
-- **Validation Formelle :** L'agent pose obligatoirement la question :
-  > « **Tu confirmes la fusion vers la branche `develop` : oui ou non ?** »
+### 7.3 Protocole de Fusion Prédictive en Mémoire (Merge Doctor & Contrôle Humain)
+- **Simulateur Pré-Merge en Mémoire Vive (`node scripts/merge-doctor.js`) :**
+  - Exécute une simulation 100% en RAM via `git merge-tree` sans modifier le working tree ni toucher au code sur le disque.
+  - Détecte en amont les conflits de configuration `app.json` (`lazyCodeLoading`), dépendances `usingComponents`, templates WXML et styles WXSS.
+  - **Détection Automatique de Dead Code :** Identifie les conditions `else if` dupliquées consécutives issues d'une mauvaise réconciliation.
+  - **Garantie Bancaire Multi-Offres :** Vérifie que tout usage de `_confirmedTxnid` est strictement scellé avec son identifiant d'offre `_confirmedOfferId` pour interdire la validation d'un reçu sur la mauvaise prestation.
+  - **Rapport Pédagogique en 2 Volets :**
+    1. *À corriger ICI sur votre branche locale avant de pousser* (commits de retard, conflits évitables).
+    2. *À surveiller LÀ-BAS lors de la réconciliation* (stratégie sans écraser le travail de l'autre).
+- **Interdiction Formelle de Fusionner Autonomement :**
+  - L'agent ne pousse et ne fusionne jamais de son propre chef sans l'accord explicite du développeur.
+  - L'agent pose obligatoirement la question de validation :
+    > « **Tu confirmes la fusion vers la branche `develop` : oui ou non ?** »
 
 ### 7.4 Memoire Persistante, Journal Developpeur & Regle Branch-First (Regle 15)
 - **Persistance Anti-Crash :** Fichier d'etat `.pmt-state.json` pour reprise sans perte apres extinction ou deconnexion.

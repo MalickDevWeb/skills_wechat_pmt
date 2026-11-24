@@ -40,3 +40,4 @@ function callNativeMerchantPay(params) {
 async function reconfirmBackendWithPolling(txnid, confirmBackendCall) {
   return await confirmBackendCall(txnid);
 }
+
