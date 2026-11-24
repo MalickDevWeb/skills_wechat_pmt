@@ -47,6 +47,7 @@ function getAllFiles(dir, extensions) {
 console.log('🔍 Test 1 : Détection du BOM UTF-8...');
 const allFiles = getAllFiles(SKILL_DIR, ['.md', '.js', '.json', '.wxss', '.wxml', '.cursorrules', '.code-snippets']);
 let bomCount = 0;
+const shouldFix = process.argv.includes('--fix');
 
 allFiles.forEach((file) => {
   const buf = Buffer.alloc(3);
@@ -55,9 +56,15 @@ allFiles.forEach((file) => {
   fs.closeSync(fd);
 
   if (buf[0] === 0xEF && buf[1] === 0xBB && buf[2] === 0xBF) {
-    console.error(`  ❌ BOM Détecté : ${path.relative(SKILL_DIR, file)}`);
-    bomCount++;
-    hasError = true;
+    if (shouldFix) {
+      const raw = fs.readFileSync(file);
+      fs.writeFileSync(file, raw.slice(3));
+      console.log(`  🛠️ [Auto-Fix] BOM UTF-8 retiré avec succès de ${path.relative(SKILL_DIR, file)}`);
+    } else {
+      console.error(`  ❌ BOM Détecté : ${path.relative(SKILL_DIR, file)}`);
+      bomCount++;
+      hasError = true;
+    }
   }
 });
 

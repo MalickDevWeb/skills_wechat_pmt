@@ -220,6 +220,7 @@ async function reconfirmBackendWithPolling(txnid, confirmBackendCall, maxRetries
     'check-wechat-quality.cjs',
     'e2e-runner.js',
     'bundle-doctor.js',
+    'tcmpp-matrix.js',
     'create-page.js',
     'create-component.js',
     'create-api.js',
@@ -233,6 +234,9 @@ async function reconfirmBackendWithPolling(txnid, confirmBackendCall, maxRetries
     const dest = path.join(targetScriptsDir, scriptFile);
     copyFileSafe(src, dest);
   });
+
+  // Copie de tcmpp.config.json à la racine du projet
+  copyFileSafe(path.join(skillRoot, 'tcmpp.config.json'), path.join(targetDir, 'tcmpp.config.json'));
 
   // Mise à jour ou création du package.json cible
   const targetPkgPath = path.join(targetDir, 'package.json');
@@ -251,7 +255,9 @@ async function reconfirmBackendWithPolling(txnid, confirmBackendCall, maxRetries
   }
 
   targetPkg.scripts = targetPkg.scripts || {};
-  targetPkg.scripts.test = "node scripts/test-page-harness.js && node scripts/check-wechat-quality.cjs . && node scripts/e2e-runner.js .";
+  targetPkg.scripts.test = "node scripts/test-page-harness.js && node scripts/check-wechat-quality.cjs . && node scripts/tcmpp-matrix.js . && node scripts/e2e-runner.js .";
+  targetPkg.scripts.fix = "node scripts/check-wechat-quality.cjs . --fix";
+  targetPkg.scripts['audit:tcmpp'] = "node scripts/tcmpp-matrix.js .";
   targetPkg.scripts['test:harness'] = "node scripts/test-page-harness.js";
   targetPkg.scripts['test:e2e'] = "node scripts/e2e-runner.js .";
   targetPkg.scripts['quality:wechat'] = "node scripts/check-wechat-quality.cjs .";
@@ -260,8 +266,9 @@ async function reconfirmBackendWithPolling(txnid, confirmBackendCall, maxRetries
   targetPkg.scripts['create:api'] = "node scripts/create-api.js";
 
   fs.writeFileSync(targetPkgPath, JSON.stringify(targetPkg, null, 2) + '\n', 'utf8');
-  console.log('  ✅ Scripts de tests (Harness, TCA, E2E) et générateurs installés.');
-  console.log('  ✅ package.json configuré avec npm test.\n');
+  console.log('  ✅ Scripts de tests (Harness, TCA, E2E, Matrice TCMPP) et générateurs installés.');
+  console.log('  ✅ tcmpp.config.json configuré (Profil Sonatel Max It 2.4.x / 3.0.x).');
+  console.log('  ✅ package.json configuré avec npm test et npm run fix.\n');
 
   console.log('====================================================');
   console.log('🎉 PROJET INITIALISÉ AVEC SUCCÈS ! (100% CONFORME TCMPP)');

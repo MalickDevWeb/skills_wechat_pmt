@@ -1,0 +1,41 @@
+{
+  "$schema": "https://sonatel.sn/schemas/tcmpp-matrix.json",
+  "project": "WeChat PMT Max It Suite",
+  "targetVersion": "2.4.x",
+  "environment": "sonatel-sn-prod",
+  "supportedVersions": ["2.4.x", "3.0.x"],
+  "profiles": {
+    "2.4.x": {
+      "name": "Sonatel Max It Current (Stable)",
+      "description": "Conteneur de production actuel Max It (Sénégal & Ouest-Africain)",
+      "paymentApi": "wx.tcpay",
+      "requiresMerchantCode": true,
+      "maxSubpackageSizeMB": 2.0,
+      "maxTotalPackageSizeMB": 12.0,
+      "navigationStackLimit": 10,
+      "lazyCodeLoadingRequired": true,
+      "features": {
+        "biometrics": false,
+        "virtualDOM": true,
+        "smartPolling": true,
+        "skylineRenderer": false
+      }
+    },
+    "3.0.x": {
+      "name": "Sonatel Max It Next-Gen (2025/2026)",
+      "description": "Conteneur nouvelle génération avec bridge unifié et biométrie",
+      "paymentApi": "wx.requestPayment",
+      "requiresMerchantCode": false,
+      "maxSubpackageSizeMB": 2.0,
+      "maxTotalPackageSizeMB": 20.0,
+      "navigationStackLimit": 15,
+      "lazyCodeLoadingRequired": true,
+      "features": {
+        "biometrics": true,
+        "virtualDOM": true,
+        "smartPolling": true,
+        "skylineRenderer": true
+      }
+    }
+  }
+}
