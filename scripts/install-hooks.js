@@ -88,3 +88,4 @@ try {
   console.error('❌ Échec de l\'écriture du hook :', err.message);
   process.exit(1);
 }
+
