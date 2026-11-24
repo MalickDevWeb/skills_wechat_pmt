@@ -213,6 +213,56 @@ async function reconfirmBackendWithPolling(txnid, confirmBackendCall, maxRetries
     }
   }
 
+  // 5. INJECTION DE L'ARSENAL DE TESTS & GÉNÉRATEURS CLI
+  console.log('🧪 5. Déploiement de l\'Arsenal de Tests & Commandes CLI...');
+  const scriptsToCopy = [
+    'test-page-harness.js',
+    'check-wechat-quality.cjs',
+    'e2e-runner.js',
+    'bundle-doctor.js',
+    'create-page.js',
+    'create-component.js',
+    'create-api.js',
+    'install-hooks.js'
+  ];
+  const targetScriptsDir = path.join(targetDir, 'scripts');
+  if (!fs.existsSync(targetScriptsDir)) fs.mkdirSync(targetScriptsDir, { recursive: true });
+
+  scriptsToCopy.forEach(scriptFile => {
+    const src = path.join(skillRoot, 'scripts', scriptFile);
+    const dest = path.join(targetScriptsDir, scriptFile);
+    copyFileSafe(src, dest);
+  });
+
+  // Mise à jour ou création du package.json cible
+  const targetPkgPath = path.join(targetDir, 'package.json');
+  let targetPkg = {};
+  if (fs.existsSync(targetPkgPath)) {
+    try {
+      targetPkg = JSON.parse(fs.readFileSync(targetPkgPath, 'utf8'));
+    } catch (e) {}
+  } else {
+    targetPkg = {
+      name: path.basename(targetDir),
+      version: '1.0.0',
+      description: 'WeChat Mini-Program (TCMPP Sonatel)',
+      scripts: {}
+    };
+  }
+
+  targetPkg.scripts = targetPkg.scripts || {};
+  targetPkg.scripts.test = "node scripts/test-page-harness.js && node scripts/check-wechat-quality.cjs . && node scripts/e2e-runner.js .";
+  targetPkg.scripts['test:harness'] = "node scripts/test-page-harness.js";
+  targetPkg.scripts['test:e2e'] = "node scripts/e2e-runner.js .";
+  targetPkg.scripts['quality:wechat'] = "node scripts/check-wechat-quality.cjs .";
+  targetPkg.scripts['create:page'] = "node scripts/create-page.js";
+  targetPkg.scripts['create:component'] = "node scripts/create-component.js";
+  targetPkg.scripts['create:api'] = "node scripts/create-api.js";
+
+  fs.writeFileSync(targetPkgPath, JSON.stringify(targetPkg, null, 2) + '\n', 'utf8');
+  console.log('  ✅ Scripts de tests (Harness, TCA, E2E) et générateurs installés.');
+  console.log('  ✅ package.json configuré avec npm test.\n');
+
   console.log('====================================================');
   console.log('🎉 PROJET INITIALISÉ AVEC SUCCÈS ! (100% CONFORME TCMPP)');
   console.log('====================================================\n');

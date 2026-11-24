@@ -18,7 +18,10 @@
 const fs = require('fs');
 const path = require('path');
 
-const targetProject = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve(__dirname, '..', 'playground');
+const defaultTarget = fs.existsSync(path.resolve(__dirname, '..', 'playground')) 
+  ? path.resolve(__dirname, '..', 'playground') 
+  : process.cwd();
+const targetProject = process.argv[2] ? path.resolve(process.argv[2]) : defaultTarget;
 const reportsDir = path.join(targetProject, 'reports', 'e2e');
 
 if (!fs.existsSync(reportsDir)) {

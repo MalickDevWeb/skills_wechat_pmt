@@ -13,3 +13,7 @@ desktop.ini
 # Logs
 *.log
 
+
+# Test reports & snapshots
+reports/
+playground/reports/
