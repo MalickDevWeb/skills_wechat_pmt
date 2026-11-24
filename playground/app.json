@@ -9,6 +9,7 @@
     "navigationBarTextStyle": "white",
     "backgroundColor": "#F6F6F6"
   },
+  "lazyCodeLoading": "requiredComponents",
   "style": "v2",
   "sitemapLocation": "sitemap.json"
 }
