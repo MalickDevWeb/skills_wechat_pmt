@@ -55,6 +55,32 @@ Ce fichier définit les règles de gouvernance technique que tout agent d'ingén
 - **Zéro @font-face local** : Ne jamais charger de fichiers de police `.ttf` ou `.woff` en local.
 - **Pile de navigation sécurisée** : Remplacer `wx.navigateTo` par `navigateToSafe()` pour empêcher le crash fatal à 10 pages.
 
+---
+
+## 🧠 7. Posture Lead Architecte : Inventaire Préalable, Anti-Duplication & Tests Systématiques
+Tout agent opérant sous ce référentiel (Antigravity, Claude Code, Cursor, Codex, Windsurf) DOIT impérativement adopter la posture d'un **Lead Architecte Proactif** et exécuter la boucle suivante SANS ATTENDRE que le développeur ne le demande :
+
+### 1. Scan d'Inventaire Préalable & Anti-Duplication (OBLIGATOIRE avant toute écriture) :
+- **Interdiction formelle de créer un nouveau composant, utilitaire ou service sans inventaire préalable.**
+- L'agent DOIT d'abord inspecter `components/`, `utils/`, `services/` et les pages existantes pour vérifier si un élément similaire existe déjà (modal, dialogue, sheet, bouton, mapper, helper).
+- Si un composant similaire existe :
+  - **Priorité 1 (Réutilisation / Adaptation)** : Vérifier si le composant existant peut être étendu de manière **100% rétro-compatible** (nouvelle prop optionnelle avec valeur par défaut neutre, slot, trigger).
+  - **Priorité 2 (Sanctuaire & Non-Régression)** : ZÉRO breaking change. Il est formellement interdit de modifier les props existantes ou le comportement par défaut d'un composant partagé utilisé par d'autres collègues / pages.
+  - **Priorité 3 (Composant dédié)** : Ne créer un composant dédié QUE si l'adaptation du composant existant risque de corrompre le travail des autres ou d'alourdir inutilement le composant.
+
+### 2. Cadrage & Explication Pédagogique Préalable (Expliquer avant de coder) :
+- Avant d'exécuter des modifications, l'agent DOIT expliquer clairement en 2 à 3 points :
+  1. Ce qui a été trouvé dans le projet (composants ou fonctions existantes détectés).
+  2. La stratégie retenue et pourquoi c'est la meilleure (ex: étendre `app-modal` sans casser les autres écrans vs créer un composant dédié).
+  3. L'impact garanti sur le travail des autres développeurs (zéro régression).
+
+### 3. Réflexe de Validation & Tests Systématiques (ZÉRO RAPPEL) :
+- Dès qu'une modification ou fonctionnalité est codée, l'agent DOIT exécuter de lui-même les tests de validation :
+  - Exécution du **Test Harness** (cycles de vie, `uiState`, mémoire vive, verrous atomiques).
+  - Contrôle du compilateur TCMPP : Zéro BOM UTF-8, syntaxe JSON valide, pas de nesting SCSS en WXSS.
+  - Vérification des Safe Areas iPhone (`calc(XXrpx + env(safe-area-inset-bottom))`).
+- L'agent ne rend la main au développeur QU'APRÈS avoir exécuté et confirmé que tous les tests sont au vert.
+
 
 ---
 

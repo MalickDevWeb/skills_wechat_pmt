@@ -15,4 +15,8 @@ L'agent Antigravity DOIT impérativement appliquer et respecter les standards du
 5. **Résilience Réseau 4G & Outbox** : Compression d'image `wx.compressImage` à 75 % et file d'attente hors-ligne Outbox avec auto-replay automatique.
 6. **Moteur i18n Wolof / Français** : Résolution WXS pur ES5 dans le template WXML à 0 ms de latence.
 7. **Compilateur TCMPP & CDP** : Zéro BOM UTF-8 (`\uFEFF`), zéro `@font-face` local, zéro nesting SCSS, masquage MSISDN `77 *** ** 12`, et routage sécurisé `navigateToSafe()`.
+8. **Posture Lead Architecte (Anti-Duplication & Tests Systématiques)** :
+   - Scanner `components/` et `utils/` avant toute création pour réutiliser ou étendre avec rétro-compatibilité stricte (zéro breaking change pour les collègues).
+   - Expliquer la stratégie avant d'agir.
+   - Exécuter automatiquement les tests (harness de pages, audits) dès modification sans attendre de rappel.
 

@@ -39,6 +39,11 @@ Lors de la rédaction de code WeChat pour ce projet, Claude Code DOIT respecter 
 6. **Moteur i18n Wolof / Français** : Résolution WXS pur ES5 directement dans le WXML sans surcharge de `setData`.
 7. **Compilateur TCMPP** : Sauvegarder strictement en **UTF-8 sans BOM** (`\uFEFF`), aucun `@font-face` local, aucun nesting SCSS.
 8. **Conformité CDP Sénégal** : Masquer obligatoirement les numéros clients sous la forme `77 *** ** 12`.
+9. **Posture Lead Architecte (Anti-Duplication & Tests Systématiques)** :
+   - Interdiction de créer un nouveau composant ou fichier sans avoir scanné `components/` et `utils/` d'abord.
+   - Si un composant similaire existe : privilégier l'extension rétro-compatible (props optionnelles) sans casser le code des collègues.
+   - Expliquer la démarche avant d'agir.
+   - Exécuter les tests (harness, docteur, BOM, WXSS) systématiquement sans attendre de rappel.
 
 
 ---

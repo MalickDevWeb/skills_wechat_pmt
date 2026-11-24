@@ -33,6 +33,10 @@ npm run dev:disable
 4. **Bouclier Financier Orange Money** : Verrou `_isPaying`, scellement `_confirmedTxnid`, aucun double débit.
 5. **WXS pur ES5** : Dictionnaires plats, syntaxe ES5 stricte.
 6. **Règle Git Branch-First (Règle 15)** : Interdiction formelle de coder directement sur `develop` ou `main`.
+7. **Posture Lead Architecte (Anti-Duplication & Tests Systématiques)** :
+   - Scan d'inventaire obligatoire avant création de composant (réutiliser/étendre sans régression).
+   - Explication claire et choix architectural avant modification.
+   - Exécution systématique des tests de validation et harness sans attendre d'instruction.
 
 
 ---
