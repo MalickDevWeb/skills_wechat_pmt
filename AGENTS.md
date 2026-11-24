@@ -81,15 +81,28 @@ Tout agent opérant sous ce référentiel (Antigravity, Claude Code, Cursor, Cod
   - Vérification des Safe Areas iPhone (`calc(XXrpx + env(safe-area-inset-bottom))`).
 - L'agent ne rend la main au développeur QU'APRÈS avoir exécuté et confirmé que tous les tests sont au vert.
 
-### 4. Réflexe Pré-Merge & Simulation Sans Risque (Merge Doctor OBLIGATOIRE avant tout Push / MR) :
+### 4. Réflexe Pré-Merge & Émulateur GitLab Duo Local (Merge Doctor Pro OBLIGATOIRE avant tout Push / MR) :
 - Avant de pousser (`git push`) ou d'ouvrir/actualiser une Merge Request vers `develop`, l'agent DOIT impérativement exécuter :
-  `node scripts/merge-doctor.js` (ou `npm run merge:doctor`).
-- L'agent audite automatiquement :
+  `node scripts/merge-doctor.js origin/develop` (ou `npm run merge:doctor`).
+- **Balayage Sémantique Exhaustif en 1 Seule Passe (Mieux & Plus Rapide que GitLab Duo)** :
+  L'agent audite automatiquement l'ensemble des 8 failles sémantiques critiques :
   - Zéro code mort ou duplication de conditions (`DEAD_CODE_DUPLICATE_BRANCH`).
-  - Scellage bancaire strict : `_confirmedTxnid` lié obligatoirement à `_confirmedOfferId`.
-  - Intégrité du chargement différé TCMPP (`lazyCodeLoading: "requiredComponents"`).
-  - Zéro composant orphelin déclaré dans `usingComponents`.
-- Si une anomalie est détectée, l'agent applique ou propose le correctif AVANT de pousser pour garantir zéro blocage sur GitLab CI / GitLab Duo.
+  - Scellage bancaire strict : `_confirmedTxnid` lié obligatoirement à `_confirmedOfferId` ou `_confirmedOfferKey`.
+  - Clé composite d'itinéraire : inclusion systématique de l'origine et de la destination pour les trajets paramétrés.
+  - Zéro fuite de variables mutables globales (`this.data.transferDestinationCity`) dans les offres fixes.
+  - Zéro heuristique textuelle fragile sur les libellés (`offer.label.toLowerCase().includes(...)`) : alignement strict sur `offer.id`.
+  - Réinitialisation propre du scellement (`this._confirmedTxnid = null;`) en cas de mismatch d'offre pour ne jamais bloquer le client.
+  - Présence obligatoire des Safe Areas iPhone (`padding-bottom: calc(... + env(safe-area-inset-bottom))`).
+  - Intégrité du chargement différé TCMPP (`lazyCodeLoading: "requiredComponents"`) et zéro BOM UTF-8 (`\uFEFF`).
+
+### 5. Protocole de Transparence & Aval Obligatoire du Développeur (Zéro Surprise) :
+- Si `Merge Doctor Pro` ou l'audit préventif détecte la moindre anomalie :
+  - **Interdiction formelle de modifier les fichiers en douce ou de pousser sans prévenir.**
+  - L'agent DOIT impérativement présenter au développeur un rapport structuré en 3 points :
+    1. **Le Diagnostic Précis** : L'anomalie détectée, son impact et son niveau de sévérité.
+    2. **Les Fichiers Touchés** : La liste exacte des fichiers qui seront modifiés et le diff proposé (avant / après).
+    3. **La Demande d'Aval** : Demander formellement : *« Validez-vous ce correctif avant que je l'applique et que je relance la suite de validation ? »*
+  - Ce n'est **QU'APRÈS** avoir reçu l'aval explicite du développeur que l'agent applique le correctif (`--fix` ou chirurgical), valide que 100% des tests sont au vert, et confirme le feu vert intégral.
 
 
 ---

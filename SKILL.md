@@ -352,15 +352,25 @@ Exécuter impérativement dans cet ordre :
 
 
 
-### 7.3 Protocole de Fusion Prédictive en Mémoire (Merge Doctor & Contrôle Humain)
-- **Simulateur Pré-Merge en Mémoire Vive (`node scripts/merge-doctor.js`) :**
+### 7.3 Protocole de Fusion Prédictive en Mémoire (Merge Doctor Pro & Aval Obligatoire)
+- **Émulateur GitLab Duo Local & Plus Rapide (`node scripts/merge-doctor.js origin/develop`) :**
   - Exécute une simulation 100% en RAM via `git merge-tree` sans modifier le working tree ni toucher au code sur le disque.
-  - Détecte en amont les conflits de configuration `app.json` (`lazyCodeLoading`), dépendances `usingComponents`, templates WXML et styles WXSS.
-  - **Détection Automatique de Dead Code :** Identifie les conditions `else if` dupliquées consécutives issues d'une mauvaise réconciliation.
-  - **Garantie Bancaire Multi-Offres :** Vérifie que tout usage de `_confirmedTxnid` est strictement scellé avec son identifiant d'offre `_confirmedOfferId` pour interdire la validation d'un reçu sur la mauvaise prestation.
-  - **Rapport Pédagogique en 2 Volets :**
-    1. *À corriger ICI sur votre branche locale avant de pousser* (commits de retard, conflits évitables).
-    2. *À surveiller LÀ-BAS lors de la réconciliation* (stratégie sans écraser le travail de l'autre).
+  - Détecte en UNE SEULE PASSE ce que GitLab Duo égraine en plusieurs allers-retours :
+    1. **Dead Code & Branches dupliquées :** Identifie les conditions `else if` dupliquées consécutives issues d'une mauvaise réconciliation.
+    2. **Garantie Bancaire Multi-Offres :** Vérifie que tout usage de `_confirmedTxnid` est strictement scellé avec son identifiant d'offre `_confirmedOfferId` ou sa clé composite `_confirmedOfferKey`.
+    3. **Unicité des Itinéraires :** Vérifie la présence de la destination dans la clé scellée pour les trajets paramétrés.
+    4. **Dérive de Clé Scellée :** Empêche l'injection de variables globales mutables (`transferDestinationCity`) dans les offres fixes.
+    5. **Zéro Heuristique Textuelle Fragile :** Remplace les tests sur les libellés (`offer.label.toLowerCase().includes(...)`) par des identifiants stricts immuables.
+    6. **Nettoyage sur Mismatch :** Exige la réinitialisation `this._confirmedTxnid = null;` en cas de changement d'offre pour ne jamais bloquer le client.
+    7. **Safe Areas iPhone :** Contrôle la présence de `env(safe-area-inset-bottom)` sur les conteneurs fixés au bas de l'écran.
+    8. **Compilateur TCMPP :** Préserve `lazyCodeLoading: "requiredComponents"` et garantit 0 BOM UTF-8 (`\uFEFF`).
+- **Protocole de Transparence & Aval Obligatoire du Développeur (Zéro Action en Douce) :**
+  - Si une anomalie est détectée, l'agent NE DOIT JAMAIS modifier les fichiers en douce.
+  - L'agent présente obligatoirement :
+    1. *Le diagnostic précis et le niveau de sévérité.*
+    2. *La liste exacte des fichiers touchés et le diff proposé (avant / après).*
+    3. *La demande formelle d'aval :* « **Validez-vous ce correctif avant que je l'applique et que je relance les tests ?** »
+  - L'agent attend l'accord formel du développeur avant d'appliquer la correction (`node scripts/merge-doctor.js --fix` ou chirurgical).
 - **Interdiction Formelle de Fusionner Autonomement :**
   - L'agent ne pousse et ne fusionne jamais de son propre chef sans l'accord explicite du développeur.
   - L'agent pose obligatoirement la question de validation :
