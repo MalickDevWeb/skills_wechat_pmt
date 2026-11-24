@@ -23,6 +23,7 @@
     "task:status": "node scripts/state-journal.js status",
     "task:start": "node scripts/state-journal.js start",
     "task:done": "node scripts/state-journal.js done",
+    "hook:install": "node scripts/install-hooks.js",
     "create:page": "node scripts/create-page.js",
     "create:component": "node scripts/create-component.js",
     "create:api": "node scripts/create-api.js"

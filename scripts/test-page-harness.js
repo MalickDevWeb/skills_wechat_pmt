@@ -199,7 +199,8 @@ function createPageHarness(pageDefinition, { initialData = {}, route = 'pages/in
  * @param {Object} [options.properties] - Valeurs de propriétés injectées par le parent
  * @param {Object} [options.initialData] - Données d'état interne
  */
-function createComponentHarness(componentDefinition, { properties: propOverrides = {}, initialData = {} } = {}) {
+function createComponentHarness(componentDefinition, options = {}) {
+  const { properties: propOverrides = {}, initialData = {}, wxml = '' } = options;
   const props = {};
   const propConfig = componentDefinition.properties || {};
 
@@ -307,11 +308,200 @@ function createComponentHarness(componentDefinition, { properties: propOverrides
     });
   }
 
+  instance.renderWxml = (wxmlString) => renderWxml(wxmlString, instance);
+  if (options && options.wxml) {
+    instance.wxml = instance.renderWxml(options.wxml);
+  }
+
   return instance;
 }
 
 // =============================================================================
-// 4. RUNNER DE BOUTS DE CODE & SNIPPETS (testSnippet)
+// 4. MOTEUR DE RENDU VIRTUEL WXML (MINIPROGRAM SIMULATE ENGINE)
+// =============================================================================
+
+class WxmlNode {
+  constructor({ tag, attrs = {}, text = '', parent = null }) {
+    this.tag = tag;
+    this.attrs = attrs;
+    this._text = text;
+    this.children = [];
+    this.parent = parent;
+    this._instance = null;
+  }
+
+  get id() { return this.attrs.id || ''; }
+  get className() { return this.attrs.class || ''; }
+  get classList() { return this.className.split(/\s+/).filter(Boolean); }
+
+  get dataset() {
+    const ds = {};
+    Object.keys(this.attrs).forEach((k) => {
+      if (k.startsWith('data-')) {
+        const prop = k.slice(5).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+        ds[prop] = this.attrs[k];
+      }
+    });
+    return ds;
+  }
+
+  get text() {
+    if (this._text) return this._text;
+    return this.children.map((c) => c.text).join('').trim();
+  }
+
+  querySelector(selector) {
+    if (!selector) return null;
+    if (selector.startsWith('.')) {
+      const cls = selector.slice(1);
+      if (this.classList.includes(cls)) return this;
+      for (const child of this.children) {
+        const found = child.querySelector(selector);
+        if (found) return found;
+      }
+    } else if (selector.startsWith('#')) {
+      const id = selector.slice(1);
+      if (this.id === id) return this;
+      for (const child of this.children) {
+        const found = child.querySelector(selector);
+        if (found) return found;
+      }
+    } else {
+      if (this.tag === selector) return this;
+      for (const child of this.children) {
+        const found = child.querySelector(selector);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  querySelectorAll(selector) {
+    const results = [];
+    const check = (node) => {
+      let match = false;
+      if (selector.startsWith('.')) {
+        if (node.classList.includes(selector.slice(1))) match = true;
+      } else if (selector.startsWith('#')) {
+        if (node.id === selector.slice(1)) match = true;
+      } else {
+        if (node.tag === selector) match = true;
+      }
+      if (match) results.push(node);
+      node.children.forEach(check);
+    };
+    this.children.forEach(check);
+    return results;
+  }
+
+  dispatchEvent(eventType, customDetail = {}) {
+    const norm = eventType.toLowerCase();
+    const catchKey = Object.keys(this.attrs).find(k => k === `catch:${norm}` || k === `catch${norm}`);
+    const bindKey = Object.keys(this.attrs).find(k => k === `bind:${norm}` || k === `bind${norm}`);
+
+    const handlerName = (catchKey && this.attrs[catchKey]) || (bindKey && this.attrs[bindKey]);
+    const isCatch = Boolean(catchKey);
+
+    if (!handlerName) return { handled: false, isCatch: false };
+
+    const event = {
+      type: eventType,
+      timeStamp: Date.now(),
+      target: { id: this.id, dataset: this.dataset },
+      currentTarget: { id: this.id, dataset: this.dataset },
+      detail: customDetail
+    };
+
+    const inst = this._instance;
+    if (!inst) throw new Error(`[WxmlSimulator] Aucun composant associé à ce nœud.`);
+
+    const fn = (inst.methods && inst.methods[handlerName]) || inst[handlerName];
+    if (typeof fn !== 'function') throw new Error(`[WxmlSimulator] Méthode '${handlerName}' introuvable.`);
+
+    const result = fn.call(inst, event);
+    return { handled: true, methodName: handlerName, isCatch, result };
+  }
+
+  tap(customDetail = {}) { return this.dispatchEvent('tap', customDetail); }
+}
+
+function renderWxml(wxmlStr, instance) {
+  const cleanWxml = wxmlStr.replace(/<!--[\s\S]*?-->/g, '');
+  const evaluateExpr = (expr, data) => {
+    const trimmed = expr.trim();
+    if (trimmed.startsWith('!')) return !Boolean(data[trimmed.slice(1).trim()]);
+    return Boolean(data[trimmed]);
+  };
+
+  const root = new WxmlNode({ tag: 'root', parent: null });
+  root._instance = instance;
+
+  const tagRegex = /<\/?([a-zA-Z0-9_:-]+)((?:\s+[^>]*?)?)\s*(\/?)>|([^<]+)/g;
+  let match;
+  let current = root;
+
+  while ((match = tagRegex.exec(cleanWxml)) !== null) {
+    const [full, tag, attrsStr, selfClose, textContent] = match;
+
+    if (textContent) {
+      const text = textContent.trim();
+      if (text) {
+        const interpolated = text.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, key) => {
+          return (instance && instance.data && instance.data[key] !== undefined) ? instance.data[key] : '';
+        });
+        const textNode = new WxmlNode({ tag: '#text', text: interpolated, parent: current });
+        textNode._instance = instance;
+        current.children.push(textNode);
+      }
+      continue;
+    }
+
+    if (full.startsWith('</')) {
+      if (current.parent) current = current.parent;
+      continue;
+    }
+
+    const attrs = {};
+    if (attrsStr) {
+      const attrRegex = /([a-zA-Z0-9_:-]+)(?:=(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g;
+      let attrMatch;
+      while ((attrMatch = attrRegex.exec(attrsStr)) !== null) {
+        const attrName = attrMatch[1];
+        const attrVal = attrMatch[2] !== undefined ? attrMatch[2] : (attrMatch[3] !== undefined ? attrMatch[3] : (attrMatch[4] !== undefined ? attrMatch[4] : true));
+        attrs[attrName] = attrVal;
+      }
+    }
+
+    if (attrs['wx:if']) {
+      const condMatch = attrs['wx:if'].match(/\{\{\s*(.*?)\s*\}\}/);
+      if (condMatch) {
+        const isTrue = evaluateExpr(condMatch[1], (instance && instance.data) || {});
+        if (!isTrue) {
+          let depth = 1;
+          while (depth > 0 && (match = tagRegex.exec(cleanWxml)) !== null) {
+            const [f, t, _, sc] = match;
+            if (f.startsWith('</') && t === tag) depth--;
+            else if (f.startsWith('<') && !f.startsWith('</') && t === tag && !sc) depth++;
+          }
+          continue;
+        }
+      }
+    }
+
+    const node = new WxmlNode({ tag, attrs, parent: current });
+    node._instance = instance;
+    current.children.push(node);
+
+    if (!selfClose && !full.endsWith('/>')) {
+      current = node;
+    }
+  }
+
+  return root;
+}
+
+// =============================================================================
+// 5. RUNNER DE BOUTS DE CODE & SNIPPETS (testSnippet)
 // =============================================================================
 
 /**
@@ -334,6 +524,8 @@ async function testSnippet(description, testFn) {
 module.exports = {
   createPageHarness,
   createComponentHarness,
+  renderWxml,
+  WxmlNode,
   testSnippet,
   resetWxMock,
   getWxMock: () => global.wx
@@ -566,12 +758,73 @@ if (require.main === module) {
     console.log('  ✅ Test 6 validé : Mode Gardien, intégrité SHA-256 et sanctuaires confirmés.\n');
     testsPassed++;
 
+    runWxmlSimulateTests();
+  }
+
+  // --- NIVEAU 5 : RENDU VISUEL WXML & SIMULATEUR DE COMPOSANT ---
+  function runWxmlSimulateTests() {
+    console.log('🔍 [WXML Simulate] Test 7 : Rendu Visuel WXML, Slots, Événements catchtap & Virtual DOM...');
+    const fs = require('fs');
+    const modalJsPath = path.join(__dirname, '..', 'playground', 'components', 'ui', 'modal', 'index.js');
+    const modalWxmlPath = path.join(__dirname, '..', 'playground', 'components', 'ui', 'modal', 'index.wxml');
+
+    let modalDef = null;
+    const originalComponent = global.Component;
+    global.Component = (def) => { modalDef = def; };
+    try {
+      delete require.cache[require.resolve(modalJsPath)];
+      require(modalJsPath);
+    } finally {
+      global.Component = originalComponent;
+    }
+
+    if (!modalDef || !fs.existsSync(modalWxmlPath)) {
+      console.error('  ❌ Échec chargement du composant modal pour test WXML');
+      process.exit(1);
+    }
+
+    const wxmlContent = fs.readFileSync(modalWxmlPath, 'utf8');
+    const comp = createComponentHarness(modalDef, { properties: { visible: false } });
+
+    // 1. Conditionnel wx:if="{{ visible }}" : invisible quand visible = false
+    let dom = renderWxml(wxmlContent, comp);
+    if (dom.querySelector('.osn-modal-overlay')) {
+      console.error('  ❌ Échec Test 7 : Overlay ne devrait pas être rendu quand visible = false');
+      process.exit(1);
+    }
+
+    // 2. Réactivité : quand visible = true, overlay et slots sont rendus
+    comp.setData({ visible: true, hasHeader: true });
+    dom = renderWxml(wxmlContent, comp);
+    const overlay = dom.querySelector('.osn-modal-overlay');
+    if (!overlay) {
+      console.error('  ❌ Échec Test 7 : Overlay non rendu quand visible = true');
+      process.exit(1);
+    }
+
+    // 3. Simulation utilisateur : Clic tap sur overlay déclenche onOverlayTap et émet \'close\'
+    const tapResult = overlay.tap();
+    if (!tapResult.handled || tapResult.methodName !== 'onOverlayTap' || !comp.emittedEvents.some(e => e.name === 'close')) {
+      console.error('  ❌ Échec Test 7 : Simulation tap sur overlay échouée');
+      process.exit(1);
+    }
+
+    // 4. Contrôle catch:tap="noop" (stop propagation) sur le container
+    const container = dom.querySelector('.osn-modal-container');
+    const containerTap = container.tap();
+    if (!containerTap.isCatch || containerTap.methodName !== 'noop') {
+      console.error('  ❌ Échec Test 7 : catch:tap="noop" non détecté sur le container');
+      process.exit(1);
+    }
+
+    console.log('  ✅ Test 7 validé : Rendu WXML, simulation tap utilisateur et verrous catch:tap certifiés.\n');
+    testsPassed++;
     finishAllTests();
   }
 
   function finishAllTests() {
     console.log('====================================================');
-    console.log(`✨ SUCCÈS : ${testsPassed}/6 SUITES DE TESTS (PAGES, COMPOSANTS, SNIPPETS & GARDIEN) VALIDÉES !`);
+    console.log(`✨ SUCCÈS : ${testsPassed}/7 SUITES DE TESTS (PAGES, COMPOSANTS, WXML SIMULATEUR, SNIPPETS & GARDIEN) VALIDÉES !`);
     console.log('====================================================\n');
     process.exit(0);
   }
