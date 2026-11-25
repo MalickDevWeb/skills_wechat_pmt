@@ -353,17 +353,20 @@ Exécuter impérativement dans cet ordre :
 
 
 ### 7.3 Protocole de Fusion Prédictive en Mémoire (Merge Doctor Pro & Aval Obligatoire)
-- **Émulateur GitLab Duo Local & Plus Rapide (`node scripts/merge-doctor.js origin/develop`) :**
-  - Exécute une simulation 100% en RAM via `git merge-tree` sans modifier le working tree ni toucher au code sur le disque.
-  - Détecte en UNE SEULE PASSE ce que GitLab Duo égraine en plusieurs allers-retours :
-    1. **Dead Code & Branches dupliquées :** Identifie les conditions `else if` dupliquées consécutives issues d'une mauvaise réconciliation.
-    2. **Garantie Bancaire Multi-Offres :** Vérifie que tout usage de `_confirmedTxnid` est strictement scellé avec son identifiant d'offre `_confirmedOfferId` ou sa clé composite `_confirmedOfferKey`.
-    3. **Unicité des Itinéraires :** Vérifie la présence de la destination dans la clé scellée pour les trajets paramétrés.
-    4. **Dérive de Clé Scellée :** Empêche l'injection de variables globales mutables (`transferDestinationCity`) dans les offres fixes.
-    5. **Zéro Heuristique Textuelle Fragile :** Remplace les tests sur les libellés (`offer.label.toLowerCase().includes(...)`) par des identifiants stricts immuables.
-    6. **Nettoyage sur Mismatch :** Exige la réinitialisation `this._confirmedTxnid = null;` en cas de changement d'offre pour ne jamais bloquer le client.
-    7. **Safe Areas iPhone :** Contrôle la présence de `env(safe-area-inset-bottom)` sur les conteneurs fixés au bas de l'écran.
-    8. **Compilateur TCMPP :** Préserve `lazyCodeLoading: "requiredComponents"` et garantit 0 BOM UTF-8 (`\uFEFF`).
+- **Pré-revue locale avant la MR (`node scripts/merge-doctor.js origin/develop`) :**
+  - Simule la fusion via `git merge-tree --write-tree` (repli automatique pour Git < 2.38) : aucune modification du working tree ni des branches.
+  - Analyse le code **de la branche source** (`git show`), ou le working tree si la source est la branche courante.
+  - **Comme GitLab Duo, ne commente que les lignes modifiées par la branche** ; les problèmes existants sont résumés à part (`--all` pour le détail).
+  - **Analyse statique à règles, SANS LLM** : elle ne remplace ni GitLab Duo ni une revue humaine (la logique métier lui échappe). Rejouée sur les 6 commits « resolve GitLab Duo comments » de mp-samu, elle retrouve 12 des 21 remarques de Duo (≈ 57 %, mesure optimiste car plusieurs règles ont été écrites à partir de ces commits).
+  - Familles de règles (code dans `scripts/doctor/`) :
+    1. **🛡️ Métier / bouclier Orange Money :** `_confirmedTxnid` lié à l'offre, clé composite (pas l'id seul), destination dans la clé interurbaine, pas de variable mutable dans la clé, pas d'heuristique sur le libellé, nettoyage du scellement en cas de mismatch, pas de montant en dur en repli, code mort `else if`.
+    2. **🧹 Qualité JS :** promesse flottante / `await` manquant, verrou (`_isPaying`) libéré hors `finally`, `wx.showLoading` jamais masqué en cas d'erreur, `catch` vide, `JSON.parse` non protégé, variables/imports inutilisés, code dupliqué ou commenté, fonction trop longue.
+    3. **🔐 Sécurité :** secret en dur, URL `http://`, données personnelles (msisdn, token…) dans les logs.
+    4. **📱 Mini-programme :** mutation directe de `this.data`, `setData` en boucle, écouteurs (`wx.on*`, `Bus.on`) non retirés, `setInterval` non nettoyé, effet de bord dans `observers`, `wx:for` sans `wx:key`, `wx.request` sans `fail`, fausses données de démo en repli dans le WXML.
+    5. **🔗 Cohérence projet :** handler WXML absent du JS, composant non déclaré ou chemin `usingComponents` cassé, image introuvable, route inexistante ou mauvaise API (`switchTab` ↔ `navigateTo`), page déclarée sans fichiers, `lazyCodeLoading: "requiredComponents"`.
+    6. **🎨 Design system & assets :** valeur de repli `var(--token, x)` divergente, token indéfini, couleur en dur, Safe Area iPhone sur les barres fixées en bas, SVG encapsulant un PNG, métadonnées Photoshop, image > 200 Ko, BOM UTF-8, saut de ligne final.
+  - Cas volontaire : `// doctor-ignore RULE_ID` sur la ligne ou la ligne précédente.
+  - Code de sortie `1` si conflit Git ou anomalie **critique** sur les lignes modifiées (utilisable en CI / hook pré-push).
 - **Protocole de Transparence & Aval Obligatoire du Développeur (Zéro Action en Douce) :**
   - Si une anomalie est détectée, l'agent NE DOIT JAMAIS modifier les fichiers en douce.
   - L'agent présente obligatoirement :
