@@ -16,8 +16,12 @@ npm run analyze
 # Tests unitaires headless de machine à états uiState
 npm run test:harness
 
-# Analyse prédictive de merge en mémoire vive (Zero-Risk Git Tree Simulation)
+# Simulation de merge + pré-revue statique des lignes modifiées (à lancer avant tout push / MR)
 npm run merge:doctor
+# Inclure les problèmes existants hors de la branche
+node scripts/merge-doctor.js --all
+# Tests unitaires du Merge Doctor
+npm run test:merge
 
 # Générateur de page (racine ou sous-paquet avec API optionnelle)
 node scripts/create-page.js <nom> [--subpackage <sous-paquet>] [--with-api]

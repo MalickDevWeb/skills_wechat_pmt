@@ -238,6 +238,10 @@ async function reconfirmBackendWithPolling(txnid, confirmBackendCall, maxRetries
     'bundle-doctor.js',
     'tcmpp-matrix.js',
     'merge-doctor.js',
+    // modules requis par merge-doctor.js (sans eux : "Cannot find module './doctor/parse'")
+    'doctor/parse.js',
+    'doctor/rules-quality.js',
+    'doctor/rules-miniprogram.js',
     'create-page.js',
     'create-component.js',
     'create-api.js',
@@ -276,6 +280,10 @@ async function reconfirmBackendWithPolling(txnid, confirmBackendCall, maxRetries
   targetPkg.scripts.fix = "node scripts/check-wechat-quality.cjs . --fix";
   targetPkg.scripts['audit:tcmpp'] = "node scripts/tcmpp-matrix.js .";
   targetPkg.scripts['merge:doctor'] = "node scripts/merge-doctor.js";
+  targetPkg.scripts['merge:report'] = "node scripts/merge-doctor.js --report";
+  targetPkg.scripts['merge:all'] = "node scripts/merge-doctor.js --all";
+  targetPkg.scripts['merge:fix'] = "node scripts/merge-doctor.js --fix";
+  targetPkg.scripts['merge:test'] = "node scripts/merge-doctor.js --self-test";
   targetPkg.scripts['test:harness'] = "node scripts/test-page-harness.js";
   targetPkg.scripts['test:e2e'] = "node scripts/e2e-runner.js .";
   targetPkg.scripts['quality:wechat'] = "node scripts/check-wechat-quality.cjs .";
@@ -319,6 +327,8 @@ Usage :
 
 Options :
   init          Déploie les directives IA, la triade de composants UI et le bouclier bancaire
-  merge-doctor  Analyse en mémoire les conflits Git et guide la réconciliation (Zero-Risk)
+  merge-doctor  Simule la fusion (sans toucher au disque) + revue statique des lignes modifiées
+                (métier, qualité, sécurité, mini-programme, cohérence WXML/JSON/assets)
+                Options : --all  --fix  --report  --json  --self-test
   --help        Affiche ce message d'aide
 `);

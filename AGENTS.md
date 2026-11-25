@@ -81,20 +81,18 @@ Tout agent opérant sous ce référentiel (Antigravity, Claude Code, Cursor, Cod
   - Vérification des Safe Areas iPhone (`calc(XXrpx + env(safe-area-inset-bottom))`).
 - L'agent ne rend la main au développeur QU'APRÈS avoir exécuté et confirmé que tous les tests sont au vert.
 
-### 4. Réflexe Pré-Merge & Émulateur GitLab Duo Local (Merge Doctor Pro OBLIGATOIRE avant tout Push / MR) :
+### 4. Réflexe Pré-Merge (Merge Doctor OBLIGATOIRE avant tout Push / MR) :
 - Avant de pousser (`git push`) ou d'ouvrir/actualiser une Merge Request vers `develop`, l'agent DOIT impérativement exécuter :
   `node scripts/merge-doctor.js origin/develop` (ou `npm run merge:doctor`).
-- **Balayage Sémantique Exhaustif en 1 Seule Passe (Mieux & Plus Rapide que GitLab Duo)** :
-  L'agent audite automatiquement l'ensemble des 8 failles sémantiques critiques :
-  - Zéro code mort ou duplication de conditions (`DEAD_CODE_DUPLICATE_BRANCH`).
-  - Scellage bancaire strict : `_confirmedTxnid` lié obligatoirement à `_confirmedOfferId` ou `_confirmedOfferKey`.
-  - Clé composite d'itinéraire : inclusion systématique de l'origine et de la destination pour les trajets paramétrés.
-  - Zéro fuite de variables mutables globales (`this.data.transferDestinationCity`) dans les offres fixes.
-  - Zéro heuristique textuelle fragile sur les libellés (`offer.label.toLowerCase().includes(...)`) : alignement strict sur `offer.id`.
-  - Réinitialisation propre du scellement (`this._confirmedTxnid = null;`) en cas de mismatch d'offre pour ne jamais bloquer le client.
-  - Présence obligatoire des Safe Areas iPhone (`padding-bottom: calc(... + env(safe-area-inset-bottom))`).
-  - Intégrité du chargement différé TCMPP (`lazyCodeLoading: "requiredComponents"`) et zéro BOM UTF-8 (`\uFEFF`).
-
+- **Pré-revue statique des lignes modifiées (sans LLM, complète GitLab Duo sans le remplacer)** :
+  - Simulation de fusion `git merge-tree` (aucune modification du disque ni des branches) et conflits prédits.
+  - Métier / bouclier Orange Money : `_confirmedTxnid` scellé avec une clé composite (`_confirmedOfferKey`, pas l'id seul), destination dans la clé interurbaine, zéro variable mutable (`this.data.transferDestinationCity`) dans la clé, zéro heuristique sur `offer.label`, nettoyage du scellement en cas de mismatch, zéro montant en dur en repli, zéro `else if` mort.
+  - Qualité JS : promesses non attendues, verrous libérés dans un `finally`, `wx.hideLoading` en cas d'erreur, pas de `catch` vide, code mort / dupliqué / commenté.
+  - Sécurité : zéro secret en dur, HTTPS uniquement, msisdn/token masqués dans les logs.
+  - Mini-programme : `setData` (jamais `this.data.x = …`), écouteurs retirés, `wx:key`, observers sans effet de bord.
+  - Cohérence : handlers WXML existants, composants déclarés, images et routes existantes, `lazyCodeLoading: "requiredComponents"`.
+  - Design system : tokens `var(--samu-*)` cohérents, Safe Areas iPhone, zéro BOM UTF-8.
+- Les problèmes **existants** (hors lignes modifiées) sont signalés à part (`npm run merge:all`) : l'agent ne les corrige qu'avec l'accord du développeur.
 ### 5. Protocole de Transparence & Aval Obligatoire du Développeur (Zéro Surprise) :
 - Si `Merge Doctor Pro` ou l'audit préventif détecte la moindre anomalie :
   - **Interdiction formelle de modifier les fichiers en douce ou de pousser sans prévenir.**
