@@ -205,8 +205,9 @@ function auditOtherFiles(relPath, content) {
   const issues = [];
   const ext = path.extname(relPath).toLowerCase();
 
-  if ((ext === '.wxss' || ext === '.css') && !content.includes('safe-area-inset-bottom')) {
-    // Seule une BARRE collée en bas (fixed + bottom:0 sans top) est concernée.
+  if (ext === '.wxss' || ext === '.css') {
+    // Seule une BARRE collée en bas (fixed + bottom:0 sans top) est concernée, vérifiée BLOC PAR BLOC
+    // (un autre bloc du fichier qui utilise safe-area ne protège pas celui-ci).
     const css = content.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '));
     const lineOf = makeLineIndex(css);
     for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
@@ -214,7 +215,7 @@ function auditOtherFiles(relPath, content) {
       const isFixed = /(?:^|[;\s])position\s*:\s*fixed\b/.test(body);
       const atBottom = /(?:^|[;\s])bottom\s*:\s*0(?:rpx|px)?\s*(?:!important\s*)?(?:;|$)/.test(body);
       const hasTop = /(?:^|[;\s])top\s*:/.test(body) || /(?:^|[;\s])inset\s*:/.test(body);
-      if (isFixed && atBottom && !hasTop) {
+      if (isFixed && atBottom && !hasTop && !/safe-area-inset-bottom/.test(body)) {
         issues.push({
           file: relPath, category: 'métier', line: lineOf(m.index + m[1].search(/\S/)), type: 'WXSS_SAFE_AREA_MISSING', severity: 'HAUTE', fixable: false,
           message: `\`${m[1].trim()}\` est fixé en bas d'écran (\`position: fixed; bottom: 0\`) sans Safe Area iPhone.`,
@@ -784,6 +785,7 @@ function selfTest() {
   check('F: commentaire ignoré', has(`pay() { if (this._confirmedOfferKey !== key) { /* this._confirmedTxnid = null; */ } }`, 'SHIELD_MISMATCH_STALE_SEAL_CLEANUP'));
   const sa = (css) => types(auditOtherFiles('x.wxss', css)).includes('WXSS_SAFE_AREA_MISSING');
   check('SafeArea: barre basse', sa('.bar { position: fixed; left: 0; bottom: 0; }'));
+  check('SafeArea: autre bloc protégé ne masque pas celui-ci', sa('.ok { position: fixed; bottom: 0; padding-bottom: env(safe-area-inset-bottom); }\n.ko { position: fixed; left: 0; bottom: 0; }'));
   check('SafeArea: overlay ignoré', !sa('.mask { position: fixed; top: 0; bottom: 0; }'));
   check('SafeArea: padding-bottom: 0 ignoré', !sa('.pb-0 { padding-bottom: 0; } .x { position: fixed; top: 1px; }'));
   check('BOM', types(auditOtherFiles('x.js', '﻿const a = 1;')).includes('BOM_UTF8_DETECTED'));
