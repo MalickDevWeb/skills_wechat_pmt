@@ -364,7 +364,11 @@ function parseMergeTreeOutput(rawOutput) {
 }
 
 function simulateMerge(targetBranch, sourceBranch, mergeBase) {
-  const r = git(['merge-tree', '--write-tree', '--name-only', '--messages', targetBranch, sourceBranch]);
+  // MERGE_DOCTOR_FORCE_LEGACY=1 : force l'ancien moteur (tests du repli Git < 2.38)
+  const forceLegacy = process.env.MERGE_DOCTOR_FORCE_LEGACY === '1';
+  const r = forceLegacy
+    ? { status: 129, stdout: '', stderr: 'forced legacy' }
+    : git(['merge-tree', '--write-tree', '--name-only', '--messages', targetBranch, sourceBranch]);
   const unsupported = r.status === 129 || /unknown option|usage: git merge-tree/i.test(r.stderr);
   if (unsupported) {
     const legacy = git(['merge-tree', mergeBase, targetBranch, sourceBranch]);
@@ -874,7 +878,8 @@ function selfTest() {
     'pages/home/index.json': JSON.stringify({ usingComponents: { 'app-card': '/components/card/index', 'app-old': '/components/old/index', 'app-unused': '/components/card/index' } }, null, 2),
     'pages/home/index.wxml': '<view bindtap="onTap"><app-card/><app-old/><app-x/>\n<image src="/assets/missing.png"/><image src="/assets/ok.png"/>\n<view bind:tap="ghostHandler"/></view>',
     'pages/home/index.js': "const b = require('./mixin');\nPage({ onTap() { wx.switchTab({ url: '/pages/list/index' }); wx.navigateTo({ url: '/pages/home/index' }); wx.navigateTo({ url: '/pages/nope/index' }); } });",
-    'pages/home/mixin.js': 'module.exports = { fromMixin() {} };',
+    'pages/home/mixin.js': "module.exports = { fromMixin() {} };\nconst gone = require('../../utils/renamed');\nconst cfg = require('../../utils/config.js');",
+    'utils/config.example.js': 'module.exports = {};',
     'pages/list/index.js': 'Page({});',
     'pages/list/index.wxml': '<view/>',
     'components/card/index.js': 'Component({});',
@@ -883,6 +888,8 @@ function selfTest() {
   };
   const proj = { files: new Set(Object.keys(mem)), read: (p) => (p in mem ? mem[p] : null), exists: (p) => p in mem };
   const pt = types(auditProject(proj));
+  check('projet: import introuvable', pt.filter(t => t === 'MP_IMPORT_MISSING').length === 1);
+  check('projet: import résolu (sans extension) non signalé', !auditProject(proj).some(i => i.type === 'MP_IMPORT_MISSING' && /mixin/.test(i.message)));
   check('projet: lazyCodeLoading absent', pt.includes('MP_LAZY_CODE_LOADING_MISSING'));
   const memOk = { ...mem, 'app.json': JSON.stringify({ pages: [], lazyCodeLoading: 'requiredComponents' }) };
   check('projet: lazyCodeLoading présent OK', !types(auditProject({ files: new Set(Object.keys(memOk)), read: (p) => (p in memOk ? memOk[p] : null), exists: (p) => p in memOk })).includes('MP_LAZY_CODE_LOADING_MISSING'));

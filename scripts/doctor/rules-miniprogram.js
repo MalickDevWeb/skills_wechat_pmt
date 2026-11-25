@@ -453,6 +453,29 @@ function auditProject(project) {
     }
   }
 
+  // --- import / require vers un module introuvable ---
+  for (const f of all.filter(p => /\.(js|ts|wxs)$/.test(p))) {
+    const text = project.read(f);
+    if (!text) continue;
+    const masked = maskCode(text);
+    const lineOf = makeLineIndex(text);
+    const re = /\b(?:require\s*\(\s*|import\s+(?:[\w$*{}\s,]+\s+from\s+)?|export\s+[\w$*{}\s,]+\s+from\s+)(['"])((?:\.{1,2}\/|\/)[^'"]+)\1/g;
+    for (const m of text.matchAll(re)) {
+      if (masked[m.index] === ' ') continue; // dans un commentaire
+      const base = resolveRef(f, m[2]);
+      if (!base) continue;
+      const candidates = [base, `${base}.js`, `${base}.ts`, `${base}.json`, `${base}.wxs`, `${base}/index.js`, `${base}/index.ts`];
+      if (candidates.some(c => project.exists(c))) continue;
+      // fichier de config local volontairement hors Git (ex : utils/config.js + utils/config.example.js)
+      const stem = base.replace(/\.(js|ts|json)$/, '');
+      if (['.example.js', '.example.ts', '.example.json', '.sample.js'].some(ext => project.exists(stem + ext))) continue;
+      add({ file: f, line: lineOf(m.index), type: 'MP_IMPORT_MISSING', severity: 'CRITIQUE',
+        related: candidates,
+        message: `Module \`${m[2]}\` introuvable.`,
+        detail: 'La page/le composant plantera au chargement ("module is not defined"). Corrigez le chemin (fichier renommé ou supprimé ?).' });
+    }
+  }
+
   // --- Assets référencés introuvables ---
   const refChecks = [];
   for (const f of all) {
