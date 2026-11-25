@@ -544,7 +544,10 @@ function runFullReview(ctx, mergeBase, conflicts) {
     for (const block of conflict.blocks) {
       const our = block.ourContent;
       const their = block.theirContent;
-      if (ext === '.json' && (our.includes('usingComponents') || their.includes('usingComponents'))) {
+      // les lignes en conflit sont souvent les seules entrées `"tag": "/chemin"`, sans le mot usingComponents
+      const componentEntry = /"[\w-]+"\s*:\s*"(\/|\.{1,2}\/)[^"]+"/;
+      if (ext === '.json' && (our.includes('usingComponents') || their.includes('usingComponents')
+          || componentEntry.test(our) || componentEntry.test(their))) {
         rec.watchThereOnMerge.push({ file: conflict.file, type: 'JSON_USING_COMPONENTS',
           advice: 'Fusionnez les dictionnaires "usingComponents" : conservez les composants ajoutés par les deux branches.' });
       }
